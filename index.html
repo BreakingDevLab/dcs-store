@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Davidsonville Community Store | Online Storefront</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root{
       --primary:#0f172a; --brand:#d97706; --brand-gradient:linear-gradient(135deg,#f59e0b 0%,#d97706 100%);
@@ -360,31 +361,21 @@
     <div id="live-tracker-body"></div>
   </div>
 
-  <script>
-    const SHARED_KEY = 'davidsonville_app_state_v15';
+   <script>
+    // -----------------------------------------------------------------
+    // SUPABASE CONFIGURATION
+    // Replace these credentials with your Supabase Project details
+    // -----------------------------------------------------------------
+    const SUPABASE_URL = "https://qbmszgddepljxqxynyxv.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_8P8Zje5nctVEofBxAHY1yg_AZXx3DBV";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    function getSharedState() {
-      try {
-        const stored = localStorage.getItem(SHARED_KEY);
-        if (stored) return JSON.parse(stored);
-      } catch (e) {
-        console.error("Error reading shared state", e);
-      }
-      return { clients: [], orders: [], rawIngredients: [], staffLogs: [] };
-    }
-
-    function saveSharedState(state) {
-      try {
-        localStorage.setItem(SHARED_KEY, JSON.stringify(state));
-        window.dispatchEvent(new CustomEvent('dcsStateUpdated', { detail: state }));
-      } catch (e) {
-        console.error("Error saving shared state", e);
-      }
-    }
-
+    // Local State Caches
     let client = JSON.parse(localStorage.getItem('dcs_client')) || null;
     let cart = JSON.parse(localStorage.getItem('dcs_cart')) || [];
     let favorites = JSON.parse(localStorage.getItem('dcs_favorites')) || [];
+    let activeOrdersList = [];
+    let orderHistoryList = [];
     let appliedDiscountPercentage = 0;
     let activeReviewItemId = null;
     let searchDebounceTimer = null;
@@ -419,136 +410,213 @@
       { id: 'ts4', name: '3 SLICE SCHOOL BOY', category: 'Toasted Sandwiches', price: 40, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80', reviews: [] },
       { id: 'ts5', name: 'SCHOOL GIRL', category: 'Toasted Sandwiches', price: 33, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80', reviews: [] },
       { id: 'ts6', name: '3 SLICE SCHOOL GIRL', category: 'Toasted Sandwiches', price: 38, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80', reviews: [] },
-      { id:'ts7', name:'PATTY BREAD', category:'Toasted Sandwiches', price:40, img:'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=80', reviews:[] },
-      { id:'ts8', name:'3 SLICE PATTY BREAD', category:'Toasted Sandwiches', price:45, img:'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=80', reviews:[] },
-      { id:'ts9', name:'BACON BREAD', category:'Toasted Sandwiches', price:33, img:'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=900&q=80', reviews:[] },
-      { id:'ts10', name:'3 SLICE BACON BREAD', category:'Toasted Sandwiches', price:38, img:'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=900&q=80', reviews:[] },
-      { id:'ts11', name:'CHEESE & TOMATO', category:'Toasted Sandwiches', price:15, img:'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=900&q=80', reviews:[] },
-      { id:'ts12', name:'STEAK BREAD', category:'Toasted Sandwiches', price:50, img:'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=900&q=80', reviews:[] },
-      { id:'ts13', name:'3 SLICE STEAK BREAD', category:'Toasted Sandwiches', price:55, img:'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=900&q=80', reviews:[] },
-      { id:'ts14', name:'BACON, EGG & CHEESE', category:'Toasted Sandwiches', price:38, img:'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=900&q=80', reviews:[] }
+      { id: 'ts7', name: 'PATTY BREAD', category: 'Toasted Sandwiches', price: 40, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=80', reviews: [] },
+      { id: 'ts8', name: '3 SLICE PATTY BREAD', category: 'Toasted Sandwiches', price: 45, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=80', reviews: [] },
+      { id: 'ts9', name: 'BACON BREAD', category: 'Toasted Sandwiches', price: 33, img: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=900&q=80', reviews: [] },
+      { id: 'ts10', name: '3 SLICE BACON BREAD', category: 'Toasted Sandwiches', price: 38, img: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=900&q=80', reviews: [] },
+      { id: 'ts11', name: 'CHEESE & TOMATO', category: 'Toasted Sandwiches', price: 15, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=900&q=80', reviews: [] },
+      { id: 'ts12', name: 'STEAK BREAD', category: 'Toasted Sandwiches', price: 50, img: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=900&q=80', reviews: [] },
+      { id: 'ts13', name: '3 SLICE STEAK BREAD', category: 'Toasted Sandwiches', price: 55, img: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=900&q=80', reviews: [] },
+      { id: 'ts14', name: 'BACON, EGG & CHEESE', category: 'Toasted Sandwiches', price: 38, img: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=900&q=80', reviews: [] }
     ];
 
-    /* ---------- lifecycle ---------- */
-    window.addEventListener('DOMContentLoaded', () => {
+    /* ---------- LIFECYCLE ---------- */
+    window.addEventListener('DOMContentLoaded', async () => {
       checkStoreOperatingHours();
-      if(client) updateClientOnlineStatus(true);
+      if (client) await updateClientOnlineStatus(true);
       renderClientProfile();
       renderCatalog();
       renderCart();
       renderFavorites();
-      renderOrderHistory();
-      renderLiveOrderTrackers();
 
-      window.addEventListener('storage', (e) => {
-        if(e.key === SHARED_KEY){ renderLiveOrderTrackers(); renderOrderHistory(); renderFavorites(); }
-      });
+      if (client) {
+        await fetchOrdersFromSupabase();
+      }
+
+      setupSupabaseRealtime();
 
       const searchInput = document.getElementById('search-input');
-      if(searchInput){
+      if (searchInput) {
         searchInput.addEventListener('input', () => {
           clearTimeout(searchDebounceTimer);
           searchDebounceTimer = setTimeout(renderCatalog, 220);
         });
       }
-
-      setInterval(renderLiveOrderTrackers, 2500);
     });
 
-    window.addEventListener('beforeunload', () => { if(client) updateClientOnlineStatus(false); });
+    window.addEventListener('beforeunload', () => { 
+      if (client) updateClientOnlineStatus(false); 
+    });
 
-    /* ---------- UI helpers ---------- */
-    function toggleCartDrawer(){
+    /* ---------- REALTIME DATABASE LISTENER ---------- */
+    function setupSupabaseRealtime() {
+      supabase
+        .channel('public:orders')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async payload => {
+          if (client) {
+            await fetchOrdersFromSupabase();
+          }
+        })
+        .subscribe();
+    }
+
+    async function fetchOrdersFromSupabase() {
+      if (!client) return;
+
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('phone', client.phone)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading orders:', error);
+        return;
+      }
+
+      orderHistoryList = data || [];
+      activeOrdersList = (data || []).filter(o => o.stage !== 'completed');
+
+      renderLiveOrderTrackers();
+      renderOrderHistory();
+    }
+
+    /* ---------- UI HELPERS ---------- */
+    function toggleCartDrawer() {
       const drawer = document.getElementById('cart-drawer');
       const overlay = document.getElementById('cart-drawer-overlay');
-      if(!drawer || !overlay) return;
+      if (!drawer || !overlay) return;
       drawer.classList.toggle('open'); overlay.classList.toggle('open');
     }
 
-    function toggleLiveTrackerPanel(){
+    function toggleLiveTrackerPanel() {
       const panel = document.getElementById('live-tracker-panel');
       const headerBtn = document.getElementById('header-orders-btn');
-      if(!panel) return;
+      if (!panel) return;
       const isHidden = panel.classList.contains('hidden');
-      if(isHidden){
+      if (isHidden) {
         panel.classList.remove('hidden'); panel.setAttribute('aria-hidden','false');
-        if(headerBtn) headerBtn.setAttribute('aria-expanded','true');
+        if (headerBtn) headerBtn.setAttribute('aria-expanded','true');
       } else {
         panel.classList.add('hidden'); panel.setAttribute('aria-hidden','true');
-        if(headerBtn) headerBtn.setAttribute('aria-expanded','false');
+        if (headerBtn) headerBtn.setAttribute('aria-expanded','false');
       }
     }
 
-    function updateClientOnlineStatus(isOnline){
-      if(!client) return;
-      let state = getSharedState(); if(!state.clients) state.clients = [];
-      const idx = state.clients.findIndex(c => c.phone === client.phone);
-      if(idx >= 0) state.clients[idx].isOnline = isOnline;
-      else if(isOnline){ client.isOnline = true; state.clients.push(client); }
-      saveSharedState(state);
+    async function updateClientOnlineStatus(isOnline) {
+      if (!client) return;
+      client.is_online = isOnline;
+      await supabase.from('clients').upsert({
+        id: client.id,
+        name: client.name,
+        phone: client.phone,
+        address: client.address,
+        points: client.points,
+        is_online: isOnline
+      });
     }
 
-    function checkStoreOperatingHours(){
+    function checkStoreOperatingHours() {
       const now = new Date(); const hour = now.getHours();
       const statusBadge = document.getElementById('store-hours-status');
-      if(!statusBadge) return;
-      if(hour >= 7 && hour < 20){ statusBadge.className = "hours-badge hours-open"; statusBadge.innerText = "● Open Now (7 AM - 8 PM)"; }
+      if (!statusBadge) return;
+      if (hour >= 7 && hour < 20) { statusBadge.className = "hours-badge hours-open"; statusBadge.innerText = "● Open Now (7 AM - 8 PM)"; }
       else { statusBadge.className = "hours-badge hours-closed"; statusBadge.innerText = "● Closed (Opens 7 AM)"; }
     }
 
-    /* ---------- auth ---------- */
-    function handleLoginClient(){
-      const phone = (document.getElementById('login-phone') || {}).value || '';
-      if(!phone.trim()){ alert('Please enter your phone number to login.'); return; }
-      let state = getSharedState();
-      const foundClient = (state.clients || []).find(c => c.phone === phone.trim());
-      if(!foundClient){ alert('No registered account found with this phone number. Please register below.'); return; }
-      client = { ...foundClient, isOnline:true };
+    /* ---------- AUTH (SUPABASE INTEGRATED) ---------- */
+    async function handleLoginClient() {
+      const phoneInput = (document.getElementById('login-phone') || {}).value || '';
+      if (!phoneInput.trim()) return alert('Please enter your phone number to login.');
+
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('phone', phoneInput.trim())
+        .single();
+
+      if (error || !data) {
+        return alert('No registered account found with this phone number. Please register below.');
+      }
+
+      client = { ...data, isOnline: true };
       localStorage.setItem('dcs_client', JSON.stringify(client));
-      const idx = state.clients.findIndex(c => c.phone === phone.trim());
-      if(idx >= 0) state.clients[idx].isOnline = true;
-      saveSharedState(state);
+      await updateClientOnlineStatus(true);
+
       (document.getElementById('login-phone') || {}).value = '';
-      renderClientProfile(); renderCatalog(); renderCart(); renderOrderHistory(); renderLiveOrderTrackers();
+      renderClientProfile(); 
+      renderCatalog(); 
+      renderCart(); 
+      await fetchOrdersFromSupabase();
       alert(`Welcome back, ${client.name}!`);
     }
 
-    function handleRegisterClient(){
+    async function handleRegisterClient() {
       const name = (document.getElementById('new-name') || {}).value || '';
       const phone = (document.getElementById('new-phone') || {}).value || '';
       const address = (document.getElementById('new-address') || {}).value || '';
-      if(!name.trim() || !phone.trim() || !address.trim()){ alert('Please fill in all registration fields.'); return; }
-      client = { id:'cli_'+Date.now(), name:name.trim(), phone:phone.trim(), address:address.trim(), points:50, isOnline:true };
+
+      if (!name.trim() || !phone.trim() || !address.trim()) {
+        return alert('Please fill in all registration fields.');
+      }
+
+      const clientId = 'cli_' + Date.now();
+      const newClientData = {
+        id: clientId,
+        name: name.trim(),
+        phone: phone.trim(),
+        address: address.trim(),
+        points: 50,
+        is_online: true
+      };
+
+      const { data, error } = await supabase
+        .from('clients')
+        .upsert([newClientData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error during registration:', error);
+        return alert('Could not register account. Please try again.');
+      }
+
+      client = data;
       localStorage.setItem('dcs_client', JSON.stringify(client));
-      let state = getSharedState(); if(!state.clients) state.clients = [];
-      const existingIdx = state.clients.findIndex(c => c.phone === phone.trim());
-      if(existingIdx >= 0){ state.clients[existingIdx] = { ...client, isOnline:true, points: state.clients[existingIdx].points || 50 }; client.points = state.clients[existingIdx].points; }
-      else state.clients.push(client);
-      saveSharedState(state);
-      ['new-name','new-phone','new-address'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-      renderClientProfile(); renderCart(); renderOrderHistory();
+
+      ['new-name','new-phone','new-address'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      renderClientProfile(); 
+      renderCart(); 
+      await fetchOrdersFromSupabase();
       alert('Welcome! Your profile is set up with 50 bonus loyalty points.');
     }
 
-    function logoutClient(){
-      if(!confirm('Are you sure you want to log out of your account?')) return;
-      updateClientOnlineStatus(false);
-      client = null; localStorage.removeItem('dcs_client');
+    async function logoutClient() {
+      if (!confirm('Are you sure you want to log out of your account?')) return;
+      await updateClientOnlineStatus(false);
+      client = null; 
+      localStorage.removeItem('dcs_client');
+      activeOrdersList = [];
+      orderHistoryList = [];
+
       document.getElementById('login-panel').style.display = 'block';
       document.getElementById('registration-panel').style.display = 'block';
       document.getElementById('order-history-panel').style.display = 'none';
       document.getElementById('favorites-panel').style.display = 'block';
       document.getElementById('customer-tracker-panel').style.display = 'none';
-      renderClientProfile(); renderCart();
+
+      renderClientProfile(); 
+      renderCart();
       alert('You have successfully logged out.');
     }
 
-    function renderClientProfile(){
+    function renderClientProfile() {
       const detailsBox = document.getElementById('client-details');
       const checkoutBtn = document.getElementById('checkout-btn');
       const loyaltyCheck = document.getElementById('use-loyalty');
-      if(!detailsBox || !checkoutBtn) return;
-      if(client){
+      if (!detailsBox || !checkoutBtn) return;
+
+      if (client) {
         detailsBox.style.background = '#f0fdf4'; detailsBox.style.borderColor = '#bbf7d0'; detailsBox.style.color = '#166534';
         detailsBox.innerHTML = `👤 <strong>${client.name}</strong><br>📞 ${client.phone} | 📍 ${client.address}<br>⭐ <strong>Loyalty Balance:</strong> ${client.points} PTS
           <button onclick="logoutClient()" style="background:#b91c1c;color:#fff;border:none;margin-top:.6rem;font-size:.75rem;font-weight:700;padding:.35rem .75rem;border-radius:6px;cursor:pointer">🔒 Logout Account</button>`;
@@ -556,22 +624,21 @@
         document.getElementById('registration-panel').style.display = 'none';
         document.getElementById('order-history-panel').style.display = 'block';
         checkoutBtn.disabled = false; checkoutBtn.innerText = 'Complete Order';
-        if(loyaltyCheck) loyaltyCheck.disabled = client.points < parseInt(getComputedStyle(document.documentElement).getPropertyValue('--loyalty-points-required') || 1000);
+        if (loyaltyCheck) loyaltyCheck.disabled = client.points < 1000;
       } else {
         detailsBox.style.background = '#fffbeb'; detailsBox.style.borderColor = '#fde68a'; detailsBox.style.color = '#78350f';
         detailsBox.innerHTML = `⚠️ <strong>Guest Mode:</strong> Login or register below to start ordering.`;
         document.getElementById('login-panel').style.display = 'block';
         document.getElementById('registration-panel').style.display = 'block';
         checkoutBtn.disabled = true; checkoutBtn.innerText = 'Login or Register to Order';
-        if(loyaltyCheck) loyaltyCheck.disabled = true;
+        if (loyaltyCheck) loyaltyCheck.disabled = true;
       }
-      updateOrderHistoryClearButton();
     }
 
-    /* ---------- catalog rendering ---------- */
-    function renderCatalog(){
+    /* ---------- CATALOG RENDERING ---------- */
+    function renderCatalog() {
       const container = document.getElementById('catalog-dropdowns-container');
-      if(!container) return;
+      if (!container) return;
       const search = (document.getElementById('search-input') || {}).value || '';
       const q = search.toLowerCase();
 
@@ -584,7 +651,7 @@
 
       container.innerHTML = categories.map(cat => {
         const catItems = catalog.filter(item => item.category === cat.key && item.name.toLowerCase().includes(q));
-        if(catItems.length === 0 && q) return '';
+        if (catItems.length === 0 && q) return '';
         return `<details class="menu-category-dropdown">
           <summary><span>${cat.name}</span><span style="font-size:.8rem;font-weight:600;color:var(--muted)">${catItems.length} items</span></summary>
           <div class="dropdown-content-grid">${catItems.map(item => {
@@ -633,8 +700,7 @@
     function submitReview() {
       const stars = parseInt(document.getElementById('review-stars').value);
       const text = document.getElementById('review-text').value.trim();
-
-      if (!text) { alert('Please write a short comment.'); return; }
+      if (!text) return alert('Please write a short comment.');
 
       const item = catalog.find(i => i.id === activeReviewItemId);
       item.reviews.push({ stars, comment: text });
@@ -667,6 +733,7 @@
       }, 3500);
     }
 
+    /* ---------- CART FUNCTIONS ---------- */
     function addToCart(itemId) {
       const item = catalog.find(i => i.id === itemId);
       const existing = cart.find(c => c.id === itemId);
@@ -762,6 +829,7 @@
       `;
     }
 
+    /* ---------- FAVORITES ---------- */
     function saveCurrentCartAsFavorite() {
       if (cart.length === 0) return alert('Cart is empty.');
       const favName = prompt('Enter a label for this favorite order (e.g. Weekend Family Pack):');
@@ -775,6 +843,7 @@
 
     function renderFavorites() {
       const container = document.getElementById('favorites-list');
+      if (!container) return;
       if (favorites.length === 0) {
         container.innerHTML = '<p style="font-size:0.8rem; color:var(--muted);">No saved favorite orders yet.</p>';
         return;
@@ -800,13 +869,17 @@
       }
     }
 
-    function checkoutOrder() {
+    /* ---------- CHECKOUT & ORDER SUBMISSION ---------- */
+    async function checkoutOrder() {
       if (!client) return alert('Please login or register first.');
       if (cart.length === 0) return alert('Your cart is empty.');
 
       const instructions = document.getElementById('special-instructions').value.trim();
-      const fulfillmentTiming = document.querySelector('input[name="timing"]:checked').value;
-      const payment = document.querySelector('input[name="payment"]:checked').value;
+      const timingEl = document.querySelector('input[name="timing"]:checked');
+      const paymentEl = document.querySelector('input[name="payment"]:checked');
+
+      const fulfillmentTiming = timingEl ? timingEl.value : 'Asap';
+      const payment = paymentEl ? paymentEl.value : 'Cash on Pick up';
 
       let subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
       let discount = (subtotal * appliedDiscountPercentage) / 100;
@@ -818,70 +891,66 @@
       }
 
       let total = Math.max(0, subtotal - discount);
+      client.points += Math.floor(total / 10);
 
       const newOrder = {
         id: 'DCS-' + Math.floor(100000 + Math.random() * 900000),
         date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         timestamp: Date.now(),
-        items: [...cart],
+        items: cart,
         instructions: `[Timing: ${fulfillmentTiming}] ${instructions}`,
         fulfillment: 'In-Store Collection',
-        paymentMethod: payment,
+        payment_method: payment,
         subtotal,
         discount,
         total,
         stage: 'pending',
-        clientName: client.name,
+        client_name: client.name,
         phone: client.phone,
         address: client.address
       };
 
-      client.points += Math.floor(total / 10);
-      localStorage.setItem('dcs_client', JSON.stringify(client));
-
-      let state = getSharedState();
-      if (!state.orders) state.orders = [];
-      state.orders.unshift(newOrder);
-
-      if (!state.clients) state.clients = [];
-      const cIndex = state.clients.findIndex(c => c.phone === client.phone);
-      if (cIndex >= 0) {
-        state.clients[cIndex] = { ...client, isOnline: true };
-      } else {
-        state.clients.push({ ...client, isOnline: true });
+      // 1. Insert order into Supabase
+      const { error: orderError } = await supabase.from('orders').insert([newOrder]);
+      if (orderError) {
+        console.error('Error saving order:', orderError);
+        return alert('Could not place order. Please check your internet connection and try again.');
       }
 
-      saveSharedState(state);
+      // 2. Update user's points in Supabase
+      await supabase.from('clients').update({ points: client.points }).eq('id', client.id);
+      localStorage.setItem('dcs_client', JSON.stringify(client));
 
+      // 3. Clear cart & update UI
       cart = [];
       saveCart();
       document.getElementById('special-instructions').value = '';
       toggleCartDrawer();
       renderClientProfile();
-      renderLiveOrderTrackers();
-      renderOrderHistory();
 
+      await fetchOrdersFromSupabase();
       showDigitalReceipt(newOrder);
     }
 
+    /* ---------- LIVE ORDER TRACKING & HISTORY ---------- */
     function renderOrderHistory() {
       const container = document.getElementById('order-history-list');
-      const state = getSharedState();
-      const myOrders = (state.orders || []).filter(o => client && o.phone === client.phone);
+      if (!container) return;
 
-      if (myOrders.length === 0) {
+      if (orderHistoryList.length === 0) {
         container.innerHTML = '<p style="font-size:0.8rem; color:var(--muted);">No past orders found.</p>';
-        document.getElementById('clear-order-history-btn').style.display = 'none';
+        const clearBtn = document.getElementById('clear-order-history-btn');
+        if (clearBtn) clearBtn.style.display = 'none';
         return;
       }
 
-      const completedCount = myOrders.filter(o => o.stage === 'completed').length;
+      const completedCount = orderHistoryList.filter(o => o.stage === 'completed').length;
       const clearBtn = document.getElementById('clear-order-history-btn');
       if (clearBtn) {
         clearBtn.style.display = completedCount > 0 ? 'inline-block' : 'none';
       }
 
-      container.innerHTML = myOrders.slice(0, 10).map(o => `
+      container.innerHTML = orderHistoryList.slice(0, 10).map(o => `
         <div class="fav-item-card" style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; padding:.5rem 0; border-bottom:1px dashed var(--border);">
           <div>
             <strong style="color:var(--primary);">#${o.id}</strong> (${o.date})<br>
@@ -892,43 +961,28 @@
       `).join('');
     }
 
-    function updateOrderHistoryClearButton() {
-      renderOrderHistory();
-    }
+    async function clearOrderHistory() {
+      if (!client) return alert('Please login to manage your order history.');
+      const completedOrders = orderHistoryList.filter(o => o.stage === 'completed');
+      if (completedOrders.length === 0) return alert('No completed orders to clear.');
 
-    function clearOrderHistory() {
-      if (!client) { alert('Please login to manage your order history.'); return; }
-      let state = getSharedState();
-      if (!state.orders) return;
-      const completedForClient = (state.orders || []).filter(o => o.phone === client.phone && o.stage === 'completed');
-      if (completedForClient.length === 0) { alert('No completed orders to clear.'); return; }
       if (!confirm('Are you sure you want to clear your completed order history?')) return;
-      state.orders = state.orders.filter(o => !(o.phone === client.phone && o.stage === 'completed'));
-      saveSharedState(state);
-      renderOrderHistory();
-    }
 
-    function clearActiveOrders() {
-      if (!client) { alert('Please login to manage your active orders.'); return; }
-      let state = getSharedState();
-      if (!state.orders) return;
-      const completedActive = (state.orders || []).filter(o => o.phone === client.phone && o.stage === 'completed');
-      if (completedActive.length === 0) { alert('No completed active orders to clear.'); return; }
-      if (!confirm('Clear completed active orders from your Active Orders list?')) return;
-      state.orders = state.orders.filter(o => !(o.phone === client.phone && o.stage === 'completed'));
-      saveSharedState(state);
-      renderLiveOrderTrackers();
-      renderOrderHistory();
+      const completedIds = completedOrders.map(o => o.id);
+      await supabase.from('orders').delete().in('id', completedIds);
+      await fetchOrdersFromSupabase();
     }
 
     function showDigitalReceiptFromId(orderId) {
-      const state = getSharedState();
-      const order = (state.orders || []).find(o => o.id === orderId);
+      const order = orderHistoryList.find(o => o.id === orderId);
       if (order) showDigitalReceipt(order);
     }
 
     function showDigitalReceipt(order) {
       const container = document.getElementById('receipt-details-container');
+      const payMethod = order.payment_method || order.paymentMethod || 'Cash on Pick up';
+      const cName = order.client_name || order.clientName || 'Customer';
+
       container.innerHTML = `
         <div class="receipt-box">
           <div class="receipt-header">
@@ -939,14 +993,14 @@
           </div>
           <div class="receipt-row"><span>Order ID:</span> <span>${order.id}</span></div>
           <div class="receipt-row"><span>Date:</span> <span>${order.date}</span></div>
-          <div class="receipt-row"><span>Customer:</span> <span>${order.clientName}</span></div>
-          <div class="receipt-row"><span>Payment:</span> <span>${order.paymentMethod}</span></div>
+          <div class="receipt-row"><span>Customer:</span> <span>${cName}</span></div>
+          <div class="receipt-row"><span>Payment:</span> <span>${payMethod}</span></div>
           <hr style="border: 0.5px dashed #cbd5e1; margin: 0.75rem 0;">
           ${order.items.map(i => `<div class="receipt-row"><span>${i.name} (x${i.qty})</span> <span>R${(i.price * i.qty).toFixed(2)}</span></div>`).join('')}
           <hr style="border: 0.5px dashed #cbd5e1; margin: 0.75rem 0;">
-          <div class="receipt-row"><span>Subtotal:</span> <span>R${order.subtotal.toFixed(2)}</span></div>
-          ${order.discount > 0 ? `<div class="receipt-row" style="color:#15803d;"><span>Discount:</span> <span>-R${order.discount.toFixed(2)}</span></div>` : ''}
-          <div class="receipt-row receipt-total"><span>Total Due (${order.paymentMethod}):</span> <span>R${order.total.toFixed(2)}</span></div>
+          <div class="receipt-row"><span>Subtotal:</span> <span>R${Number(order.subtotal).toFixed(2)}</span></div>
+          ${order.discount > 0 ? `<div class="receipt-row" style="color:#15803d;"><span>Discount:</span> <span>-R${Number(order.discount).toFixed(2)}</span></div>` : ''}
+          <div class="receipt-row receipt-total"><span>Total Due (${payMethod}):</span> <span>R${Number(order.total).toFixed(2)}</span></div>
           <div style="text-align:center; font-size:0.75rem; margin-top:1.25rem; color:var(--muted);">Please show this collection slip when fetching your order in-store!</div>
         </div>
       `;
@@ -961,20 +1015,15 @@
     function renderLiveOrderTrackers() {
       const container = document.getElementById('active-orders-tracker-container');
       const panel = document.getElementById('customer-tracker-panel');
-      const state = getSharedState();
+      if (!container || !panel) return;
 
-      const activeOrders = (state.orders || []).filter(o => client && o.phone === client.phone && o.stage !== 'completed');
-
-      const clearBtn = document.getElementById('clear-active-orders-btn');
-      if (clearBtn) clearBtn.style.display = activeOrders.some(o => o.stage === 'completed') ? 'inline-block' : 'none';
-
-      if (activeOrders.length === 0) {
+      if (activeOrdersList.length === 0) {
         panel.style.display = 'none';
         return;
       }
 
       panel.style.display = 'block';
-      container.innerHTML = activeOrders.map(order => {
+      container.innerHTML = activeOrdersList.map(order => {
         let stageMap = { 'pending': 0, 'received': 1, 'preparing': 2, 'ready': 3, 'completed': 4 };
         let currentStepIndex = stageMap[order.stage] !== undefined ? stageMap[order.stage] : 0;
 
@@ -993,21 +1042,7 @@
         `;
       }).join('');
     }
-
-    // ensure storefront updates when staff changes shared state
-    window.addEventListener('storage', (e) => {
-      if (e.key === SHARED_KEY) {
-        renderLiveOrderTrackers();
-        renderOrderHistory();
-        renderFavorites();
-      }
-    });
-
-    window.addEventListener('dcsStateUpdated', (e) => {
-      renderLiveOrderTrackers();
-      renderOrderHistory();
-      renderFavorites();
-    });
+</script>
   </script>
 </body>
 </html>
