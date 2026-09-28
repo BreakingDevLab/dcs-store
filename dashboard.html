@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Davidsonville Staff Dashboard — Kanban & Staff Log</title>
+  <style>
+    :root{
+      --primary:#0f172a; --brand:#d97706; --bg:#f8fafc; --card:#ffffff; --muted:#475569;
+      --border:#e2e8f0; --radius:12px; --shadow:0 12px 30px rgba(15,23,42,0.08);
+      --kanban-gap:12px;
+    }
+    *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+    body{margin:0;background:var(--bg);color:var(--primary);min-height:100vh;padding:18px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border-radius:10px;background:linear-gradient(90deg,#0f172a,#1e293b);color:#fff;box-shadow:var(--shadow)}
+    header .brand{display:flex;align-items:center;gap:12px}
+    .brand-icon{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+    .brand-title h1{font-size:1.05rem;margin:0;font-weight:800}
+    .brand-title p{margin:0;font-size:.78rem;opacity:.9;color:rgba(255,255,255,0.9)}
+    .controls{display:flex;gap:10px;align-items:center}
+    .btn{background:var(--brand);color:#fff;border:none;padding:.55rem .8rem;border-radius:8px;font-weight:700;cursor:pointer}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.08);color:#fff}
+    .layout{display:grid;grid-template-columns:320px 1fr;gap:18px;margin-top:18px}
+    .panel{background:linear-gradient(180deg,#ffffff,#fbfdff);border-radius:12px;padding:12px;border:1px solid var(--border);box-shadow:var(--shadow);color:var(--primary)}
+    .panel h3{margin:0 0 8px 0;font-size:0.95rem}
+    .staff-log-list{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow:auto;padding-top:6px}
+    .log-row{padding:8px;border-radius:8px;border:1px dashed var(--border);background:#fff;display:flex;justify-content:space-between;gap:8px;align-items:flex-start;color:var(--primary)}
+    .log-meta{font-size:.82rem;color:var(--muted)}
+    .kanban-wrap{display:flex;gap:var(--kanban-gap);align-items:flex-start;height:calc(100vh - 170px)}
+    .column{flex:1;min-width:220px;background:linear-gradient(180deg,#fff,#fbfdff);border-radius:12px;padding:12px;border:1px solid var(--border);box-shadow:var(--shadow);display:flex;flex-direction:column;max-height:100%}
+    .col-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    .col-title{font-weight:900;color:var(--primary)}
+    .col-count{font-size:.85rem;color:var(--muted);font-weight:700}
+    .dropzone{flex:1;overflow:auto;padding:6px;display:flex;flex-direction:column;gap:10px}
+    .card{background:#fff;border-radius:10px;padding:10px;border:1px solid var(--border);box-shadow:0 6px 18px rgba(15,23,42,0.04);cursor:grab;color:var(--primary)}
+    .card.dragging{opacity:.6;transform:scale(.98)}
+    .card .meta{font-size:.82rem;color:var(--muted);margin-top:6px}
+    .card .actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+    .badge{background:#eef2ff;padding:4px 8px;border-radius:999px;font-weight:800;color:var(--primary);font-size:.78rem}
+    .status-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px}
+    .muted{color:var(--muted);font-size:.9rem}
+    .center{display:flex;align-items:center;gap:8px}
+    footer{margin-top:14px;text-align:center;color:var(--muted);font-size:.85rem}
+    @media(max-width:980px){ .layout{grid-template-columns:1fr; } .kanban-wrap{flex-direction:column;height:auto} }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand-icon">🍗</div>
+      <div class="brand-title">
+        <h1>Davidsonville Staff Dashboard</h1>
+        <p>Kanban Orders • Staff Log • Live sync</p>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="center muted">Status: <span id="staff-status" style="font-weight:800;margin-left:8px">Online</span></div>
+      <button class="btn" id="refresh-btn">Refresh</button>
+      <button class="btn small" id="clear-completed">Clear Completed</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside>
+      <div class="panel">
+        <h3>Staff Log</h3>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input id="staff-name" placeholder="Your name" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);color:var(--primary)">
+          <input id="staff-action" placeholder="Action (e.g., Accepted order DCS-...)" style="flex:2;padding:8px;border-radius:8px;border:1px solid var(--border);color:var(--primary)">
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <button class="btn small" id="add-log">Add Log</button>
+          <button class="btn small" id="clear-logs" style="background:#b91c1c">Clear Logs</button>
+        </div>
+        <div class="staff-log-list" id="staff-log-list"></div>
+      </div>
+
+      <div class="panel" style="margin-top:12px">
+        <h3>Incoming Alerts</h3>
+        <div class="muted" style="margin-bottom:8px">Chime plays when a new order arrives.</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn small" id="toggle-chime">Chime: On</button>
+          <button class="btn small" id="accept-all" style="background:#16a34a">Accept All Pending</button>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:12px">
+        <h3>Filters</h3>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <select id="filter-stage" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);color:var(--primary)">
+            <option value="">All stages</option>
+            <option value="pending">Pending</option>
+            <option value="received">Received</option>
+            <option value="preparing">Preparing</option>
+            <option value="ready">Ready</option>
+            <option value="completed">Completed</option>
+          </select>
+          <input id="filter-phone" placeholder="Phone" style="padding:8px;border-radius:8px;border:1px solid var(--border);color:var(--primary)">
+        </div>
+      </div>
+    </aside>
+
+    <main>
+      <div class="kanban-wrap" id="kanban">
+        <div class="column" data-stage="pending">
+          <div class="col-header">
+            <div class="col-title">New Orders</div>
+            <div class="col-count" id="count-pending">0</div>
+          </div>
+          <div class="dropzone" id="col-pending" ondragover="event.preventDefault()"></div>
+        </div>
+
+        <div class="column" data-stage="received">
+          <div class="col-header">
+            <div class="col-title">Accepted</div>
+            <div class="col-count" id="count-received">0</div>
+          </div>
+          <div class="dropzone" id="col-received" ondragover="event.preventDefault()"></div>
+        </div>
+
+        <div class="column" data-stage="preparing">
+          <div class="col-header">
+            <div class="col-title">Kitchen Prep</div>
+            <div class="col-count" id="count-preparing">0</div>
+          </div>
+          <div class="dropzone" id="col-preparing" ondragover="event.preventDefault()"></div>
+        </div>
+
+        <div class="column" data-stage="ready">
+          <div class="col-header">
+            <div class="col-title">Ready for Pickup</div>
+            <div class="col-count" id="count-ready">0</div>
+          </div>
+          <div class="dropzone" id="col-ready" ondragover="event.preventDefault()"></div>
+        </div>
+
+        <div class="column" data-stage="completed">
+          <div class="col-header">
+            <div class="col-title">Completed</div>
+            <div class="col-count" id="count-completed">0</div>
+          </div>
+          <div class="dropzone" id="col-completed" ondragover="event.preventDefault()"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer>Staff dashboard syncs with storefront via localStorage key <code style="background:#fff;padding:4px;border-radius:6px;border:1px solid var(--border)">davidsonville_app_state_v15</code></footer>
+
+  <script>
+    const SHARED_KEY = 'davidsonville_app_state_v15';
+
+    function getSharedState() {
+      try {
+        const raw = localStorage.getItem(SHARED_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) { console.error('read shared state', e); }
+      return { clients: [], orders: [], staffLogs: [] };
+    }
+    function saveSharedState(newState) {
+      try {
+        localStorage.setItem(SHARED_KEY, JSON.stringify(newState));
+        window.dispatchEvent(new CustomEvent('dcsStateUpdated', { detail: newState }));
+      } catch (e) { console.error('save shared state', e); }
+    }
+
+    // UI helpers and chime
+    let chimeEnabled = true;
+    function playChime() {
+      if (!chimeEnabled) return;
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = 880;
+        o.connect(g); g.connect(ctx.destination);
+        const now = ctx.currentTime;
+        g.gain.setValueAtTime(0.001, now);
+        g.gain.linearRampToValueAtTime(0.12, now + 0.01);
+        o.start(now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.25); o.stop(now + 0.26);
+      } catch (e) {
+        const a = new Audio(); a.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="; a.play().catch(()=>{});
+      }
+    }
+
+    // Staff logs
+    function renderStaffLogs() {
+      const state = getSharedState();
+      const list = document.getElementById('staff-log-list');
+      list.innerHTML = '';
+      const logs = (state.staffLogs || []).slice().reverse();
+      if (logs.length === 0) { list.innerHTML = '<div class="muted">No staff logs yet.</div>'; return; }
+      logs.forEach(l => {
+        const row = document.createElement('div');
+        row.className = 'log-row';
+        row.innerHTML = `<div><div style="font-weight:800">${escapeHtml(l.staff||'Unknown')}</div><div class="log-meta">${escapeHtml(l.action)}</div></div><div style="text-align:right"><div class="log-meta">${new Date(l.timestamp).toLocaleString()}</div></div>`;
+        list.appendChild(row);
+      });
+    }
+    function addStaffLogEntry(staff, action) {
+      if (!staff || !action) return;
+      const s = getSharedState();
+      s.staffLogs = s.staffLogs || [];
+      s.staffLogs.push({ staff, action, timestamp: Date.now() });
+      saveSharedState(s);
+      renderStaffLogs();
+    }
+    document.getElementById('add-log').addEventListener('click', () => {
+      const staff = (document.getElementById('staff-name')||{}).value.trim();
+      const action = (document.getElementById('staff-action')||{}).value.trim();
+      if (!staff || !action) return alert('Please enter your name and an action.');
+      addStaffLogEntry(staff, action);
+      document.getElementById('staff-action').value = '';
+    });
+    document.getElementById('clear-logs').addEventListener('click', () => {
+      if (!confirm('Clear all staff logs?')) return;
+      const s = getSharedState(); s.staffLogs = []; saveSharedState(s); renderStaffLogs();
+    });
+
+    // Chime toggle & accept all
+    document.getElementById('toggle-chime').addEventListener('click', (e) => {
+      chimeEnabled = !chimeEnabled;
+      e.target.innerText = 'Chime: ' + (chimeEnabled ? 'On' : 'Off');
+      e.target.style.background = chimeEnabled ? '#0ea5a4' : 'var(--brand)';
+    });
+    document.getElementById('accept-all').addEventListener('click', () => {
+      const s = getSharedState(); let changed = false;
+      (s.orders||[]).forEach(o => { if (o.stage === 'pending') { o.stage = 'received'; s.staffLogs = s.staffLogs||[]; s.staffLogs.push({ staff:'System', action:`Accepted order ${o.id} (bulk)`, timestamp:Date.now() }); changed = true; }});
+      if (changed) saveSharedState(s);
+    });
+
+    // Board rendering and drag/drop
+    function escapeHtml(str){ if (str===null||str===undefined) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+    function renderBoard() {
+      const state = getSharedState();
+      const orders = (state.orders||[]).slice().sort((a,b)=> (b.timestamp||0)-(a.timestamp||0));
+      const filterStage = document.getElementById('filter-stage').value;
+      const filterPhone = (document.getElementById('filter-phone').value||'').trim();
+      const stages = ['pending','received','preparing','ready','completed'];
+      stages.forEach(s => { const col = document.getElementById('col-'+s); if (col) col.innerHTML = ''; });
+
+      const filtered = orders.filter(o => { if (filterStage && o.stage !== filterStage) return false; if (filterPhone && (!o.phone || !o.phone.includes(filterPhone))) return false; return true; });
+
+      filtered.forEach(order => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.draggable = true;
+        card.id = 'order-' + order.id;
+        card.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-weight:900">#${escapeHtml(order.id)}</div>
+            <div class="badge">${escapeHtml(order.date||'')}</div>
+          </div>
+          <div style="margin-top:6px;font-weight:800">${escapeHtml(order.clientName||'Guest')}</div>
+          <div class="meta">Phone: ${escapeHtml(order.phone||'')} • ${escapeHtml(order.paymentMethod||'')}</div>
+          <div class="meta">Items: ${order.items?order.items.length:0} • Total: R${(order.total||0).toFixed(2)}</div>
+          <div class="actions"></div>
+        `;
+        const dot = document.createElement('div'); dot.style.marginTop='8px';
+        const dotColor = order.stage==='received'?'#10b981':order.stage==='preparing'?'#f59e0b':order.stage==='ready'?'#ef4444':order.stage==='pending'?'#60a5fa':'#94a3b8';
+        dot.innerHTML = `<span class="status-dot" style="background:${dotColor}"></span><span style="font-weight:700;text-transform:capitalize">${escapeHtml(order.stage)}</span>`;
+        card.appendChild(dot);
+
+        const actions = card.querySelector('.actions');
+        if (order.stage === 'pending') {
+          const acceptBtn = document.createElement('button'); acceptBtn.className='btn small'; acceptBtn.innerText='Accept';
+          acceptBtn.addEventListener('click', ()=> acceptOrder(order.id));
+          actions.appendChild(acceptBtn);
+        }
+        const moveLeft = document.createElement('button'); moveLeft.className='btn small ghost'; moveLeft.innerText='←'; moveLeft.title='Move back'; moveLeft.addEventListener('click', ()=> changeStage(order.id,-1));
+        const moveRight = document.createElement('button'); moveRight.className='btn small ghost'; moveRight.innerText='→'; moveRight.title='Move forward'; moveRight.addEventListener('click', ()=> changeStage(order.id,1));
+        actions.appendChild(moveLeft); actions.appendChild(moveRight);
+
+        const completeBtn = document.createElement('button'); completeBtn.className='btn small'; completeBtn.style.background='#6b7280'; completeBtn.innerText='Complete'; completeBtn.addEventListener('click', ()=> setStage(order.id,'completed'));
+        actions.appendChild(completeBtn);
+
+        const slipBtn = document.createElement('button'); slipBtn.className='btn small'; slipBtn.style.background='#0ea5a4'; slipBtn.innerText='Slip'; slipBtn.addEventListener('click', ()=> showSlip(order));
+        actions.appendChild(slipBtn);
+
+        card.addEventListener('dragstart', (ev)=>{ card.classList.add('dragging'); ev.dataTransfer.setData('text/plain', order.id); });
+        card.addEventListener('dragend', ()=> card.classList.remove('dragging'));
+
+        const colEl = document.getElementById('col-'+order.stage);
+        if (colEl) colEl.appendChild(card);
+      });
+
+      stages.forEach(s => {
+        const cnt = (state.orders||[]).filter(o=>o.stage===s).length;
+        const el = document.getElementById('count-'+s); if (el) el.innerText = cnt;
+      });
+
+      // attach drop handlers
+      ['pending','received','preparing','ready','completed'].forEach(stage => {
+        const dz = document.getElementById('col-'+stage);
+        if (!dz) return;
+        dz.ondrop = (ev) => {
+          ev.preventDefault();
+          const id = ev.dataTransfer.getData('text/plain');
+          if (!id) return;
+          const s = getSharedState();
+          const idx = (s.orders||[]).findIndex(o => o.id === id);
+          if (idx >= 0) {
+            const currentStage = s.orders[idx].stage;
+            if (stage === 'received' && currentStage === 'pending') {
+              if (!confirm('Accept this pending order now?')) return;
+              s.orders[idx].stage = 'received';
+              s.staffLogs = s.staffLogs||[]; s.staffLogs.push({ staff:'Staff', action:`Accepted order ${id} (drag)`, timestamp:Date.now() });
+            } else {
+              s.orders[idx].stage = stage;
+              s.staffLogs = s.staffLogs||[]; s.staffLogs.push({ staff:'Staff', action:`Moved order ${id} to ${stage}`, timestamp:Date.now() });
+            }
+            saveSharedState(s);
+            renderBoard(); renderStaffLogs();
+          }
+        };
+      });
+    }
+
+    function acceptOrder(orderId) {
+      const s = getSharedState(); const idx = (s.orders||[]).findIndex(o=>o.id===orderId); if (idx<0) return;
+      s.orders[idx].stage = 'received'; s.staffLogs = s.staffLogs||[]; s.staffLogs.push({ staff:'Staff', action:`Accepted order ${orderId}`, timestamp:Date.now() });
+      saveSharedState(s); renderBoard(); renderStaffLogs();
+    }
+
+    function changeStage(orderId, delta) {
+      const s = getSharedState(); const idx = (s.orders||[]).findIndex(o=>o.id===orderId); if (idx<0) return;
+      const order = s.orders[idx]; const stages=['pending','received','preparing','ready','completed']; let i = stages.indexOf(order.stage); if (i===-1) i=0;
+      let ni = Math.max(0, Math.min(stages.length-1, i+delta));
+      if (stages[ni] === 'received' && order.stage === 'pending') {
+        if (!confirm('Accept this pending order before moving to Accepted?')) return;
+        s.staffLogs = s.staffLogs||[]; s.staffLogs.push({ staff:'Staff', action:`Accepted order ${orderId}`, timestamp:Date.now() });
+      } else {
+        s.staffLogs = s.staffLogs||[]; s.staffLogs.push({ staff:'Staff', action:`Moved order ${orderId} to ${stages[ni]}`, timestamp:Date.now() });
+      }
+      order.stage = stages[ni]; saveSharedState(s); renderBoard(); renderStaffLogs();
+    }
+
+    function setStage(orderId, stage) {
+      const s = getSharedState(); const idx = (s.orders||[]).findIndex(o=>o.id===orderId); if (idx<0) return;
+      s.orders[idx].stage = stage; s.staffLogs = s.staffLogs||[]; s.staffLogs.push({ staff:'Staff', action:`Set order ${orderId} to ${stage}`, timestamp:Date.now() });
+      saveSharedState(s); renderBoard(); renderStaffLogs();
+    }
+
+    function showSlip(order) {
+      const w = window.open('', '_blank', 'width=420,height=640'); if (!w) return alert('Popup blocked.');
+      const html = `<html><head><title>Slip ${order.id}</title><style>body{font-family:Arial;padding:18px;color:#0f172a} .receipt{border:1px dashed #cbd5e1;padding:12px;border-radius:8px}</style></head><body><div class="receipt"><h2>Davidsonville Community Store</h2><div>Order ID: ${escapeHtml(order.id)}</div><div>Date: ${escapeHtml(order.date||'')}</div><div>Customer: ${escapeHtml(order.clientName||'')}</div><div>Phone: ${escapeHtml(order.phone||'')}</div><hr>${order.items.map(i=>`<div>${escapeHtml(i.name)} x${i.qty} — R${(i.price*i.qty).toFixed(2)}</div>`).join('')}<hr><div>Subtotal: R${(order.subtotal||0).toFixed(2)}</div><div>Total: R${(order.total||0).toFixed(2)}</div></div></body></html>`;
+      w.document.write(html); w.document.close();
+    }
+
+    // incoming detection
+    let seenOrderIds = new Set();
+    function detectIncomingOrders() {
+      const s = getSharedState(); const orders = s.orders||[];
+      const newOrders = orders.filter(o => !seenOrderIds.has(o.id));
+      if (newOrders.length) {
+        newOrders.forEach(o => seenOrderIds.add(o.id));
+        const pendingNew = newOrders.filter(o => o.stage === 'pending');
+        if (pendingNew.length) {
+          playChime();
+          const orig = document.title; document.title = `🔔 ${pendingNew.length} New Order(s)`; setTimeout(()=>document.title = orig, 2500);
+          s.staffLogs = s.staffLogs||[]; pendingNew.forEach(o => s.staffLogs.push({ staff:'System', action:`New order arrived ${o.id}`, timestamp:Date.now() }));
+          saveSharedState(s); renderStaffLogs();
+        }
+      }
+    }
+
+    // storage and custom event listeners to keep everything in sync
+    window.addEventListener('storage', (e) => { if (e.key === SHARED_KEY) { detectIncomingOrders(); renderBoard(); renderStaffLogs(); }});
+    window.addEventListener('dcsStateUpdated', (e) => { detectIncomingOrders(); renderBoard(); renderStaffLogs(); });
+
+    // init
+    (function init(){
+      const s = getSharedState(); if (!s.orders) s.orders = []; if (!s.staffLogs) s.staffLogs = [];
+      (s.orders||[]).forEach(o => seenOrderIds.add(o.id));
+      renderStaffLogs(); renderBoard();
+      setInterval(()=>{ const prevLen = (getSharedState().orders||[]).length; detectIncomingOrders(); renderBoard(); renderStaffLogs(); }, 2500);
+    })();
+
+    // UI bindings
+    document.getElementById('refresh-btn').addEventListener('click', ()=>{ renderBoard(); renderStaffLogs(); });
+    document.getElementById('clear-completed').addEventListener('click', ()=> {
+      if (!confirm('Clear all completed orders from shared state?')) return;
+      const s = getSharedState(); s.orders = (s.orders||[]).filter(o => o.stage !== 'completed'); saveSharedState(s); renderBoard();
+    });
+    document.getElementById('filter-stage').addEventListener('change', renderBoard);
+    document.getElementById('filter-phone').addEventListener('input', ()=> setTimeout(renderBoard,120));
+  </script>
+</body>
+</html>
