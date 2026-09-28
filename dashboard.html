@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Davidsonville Staff Dashboard — Kanban & Staff Log</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root{
       --primary:#0f172a; --brand:#d97706; --bg:#f8fafc; --card:#ffffff; --muted:#475569;
@@ -12,6 +13,25 @@
     }
     *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
     body{margin:0;background:var(--bg);color:var(--primary);min-height:100vh;padding:18px}
+
+    /* Auth Modal Overlay */
+    #auth-overlay {
+      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95);
+      display: flex; align-items: center; justify-content: center; z-index: 9999;
+      backdrop-filter: blur(8px);
+    }
+    .auth-card {
+      background: #fff; padding: 32px; border-radius: 16px; width: 100%; max-width: 380px;
+      text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+    .auth-card h2 { margin: 0 0 8px 0; font-size: 1.3rem; color: var(--primary); }
+    .auth-card p { font-size: 0.88rem; color: var(--muted); margin-bottom: 20px; }
+    .auth-card input {
+      width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px;
+      font-size: 1.1rem; text-align: center; letter-spacing: 4px; margin-bottom: 16px;
+    }
+    .auth-card button { width: 100%; padding: 12px; font-size: 1rem; }
+
     header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border-radius:10px;background:linear-gradient(90deg,#0f172a,#1e293b);color:#fff;box-shadow:var(--shadow)}
     header .brand{display:flex;align-items:center;gap:12px}
     .brand-icon{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;font-size:1.2rem}
@@ -45,19 +65,33 @@
   </style>
 </head>
 <body>
+
+  <!-- Lock Screen Overlay -->
+  <div id="auth-overlay">
+    <div class="auth-card">
+      <div style="font-size:2.5rem;margin-bottom:8px">🔒</div>
+      <h2>Staff Access Only</h2>
+      <p>Enter your staff access PIN to open the order dashboard.</p>
+      <input type="password" id="pin-input" placeholder="••••" maxlength="8" autofocus />
+      <button class="btn" id="login-btn">Unlock Dashboard</button>
+      <div id="auth-error" style="color:#ef4444;font-size:0.82rem;margin-top:10px;display:none">Incorrect PIN. Try again.</div>
+    </div>
+  </div>
+
   <header>
     <div class="brand">
       <div class="brand-icon">🍗</div>
       <div class="brand-title">
         <h1>Davidsonville Staff Dashboard</h1>
-        <p>Kanban Orders • Staff Log • Live sync</p>
+        <p>Kanban Orders • Staff Log • Supabase Live Sync</p>
       </div>
     </div>
 
     <div class="controls">
-      <div class="center muted">Status: <span id="staff-status" style="font-weight:800;margin-left:8px">Online</span></div>
+      <div class="center muted">Status: <span id="staff-status" style="font-weight:800;margin-left:8px;color:#10b981">Connecting...</span></div>
       <button class="btn" id="refresh-btn">Refresh</button>
       <button class="btn small" id="clear-completed">Clear Completed</button>
+      <button class="btn small" id="logout-btn" style="background:#475569">Lock</button>
     </div>
   </header>
 
@@ -146,10 +180,51 @@
     </main>
   </div>
 
-  <footer>Staff dashboard syncs with storefront via localStorage key <code style="background:#fff;padding:4px;border-radius:6px;border:1px solid var(--border)">davidsonville_app_state_v15</code></footer>
+  <footer>Staff dashboard syncs live with Supabase & localStorage backup (<code style="background:#fff;padding:4px;border-radius:6px;border:1px solid var(--border)">davidsonville_app_state_v15</code>)</footer>
 
   <script>
+    // Staff Security Configuration (Change '2026' to your preferred PIN or password)
+    const DASHBOARD_PIN = "2026"; 
+
+    function checkAuth() {
+      if (sessionStorage.getItem('dcs_staff_authed') === 'true') {
+        document.getElementById('auth-overlay').style.display = 'none';
+      } else {
+        document.getElementById('auth-overlay').style.display = 'flex';
+      }
+    }
+
+    document.getElementById('login-btn').addEventListener('click', () => {
+      const pin = document.getElementById('pin-input').value;
+      if (pin === DASHBOARD_PIN) {
+        sessionStorage.setItem('dcs_staff_authed', 'true');
+        document.getElementById('auth-overlay').style.display = 'none';
+        document.getElementById('auth-error').style.display = 'none';
+      } else {
+        document.getElementById('auth-error').style.display = 'block';
+      }
+    });
+
+    document.getElementById('pin-input').addEventListener('keyup', (e) => {
+      if (e.key === 'Enter') document.getElementById('login-btn').click();
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      sessionStorage.removeItem('dcs_staff_authed');
+      document.getElementById('pin-input').value = '';
+      checkAuth();
+    });
+
+    checkAuth();
+
     const SHARED_KEY = 'davidsonville_app_state_v15';
+    const SUPABASE_URL = "https://qbmszgddepljxqxynyxv.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU";
+    
+    let supabase = null;
+    if (window.supabase) {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
 
     function getSharedState() {
       try {
@@ -158,6 +233,7 @@
       } catch (e) { console.error('read shared state', e); }
       return { clients: [], orders: [], staffLogs: [] };
     }
+
     function saveSharedState(newState) {
       try {
         localStorage.setItem(SHARED_KEY, JSON.stringify(newState));
@@ -165,7 +241,62 @@
       } catch (e) { console.error('save shared state', e); }
     }
 
-    // UI helpers and chime
+    async function syncFromSupabase() {
+      const statusEl = document.getElementById('staff-status');
+      if (!supabase) {
+        if (statusEl) statusEl.innerText = 'Offline (Local Only)';
+        return;
+      }
+      try {
+        const { data: ordersData, error: ordersErr } = await supabase.from('orders').select('*');
+        const { data: logsData, error: logsErr } = await supabase.from('staff_logs').select('*');
+
+        if (!ordersErr && ordersData) {
+          const s = getSharedState();
+          s.orders = ordersData.map(o => ({
+            id: o.id,
+            date: o.date || new Date(o.created_at || Date.now()).toLocaleDateString(),
+            clientName: o.client_name || o.clientName || 'Guest',
+            phone: o.phone || '',
+            paymentMethod: o.payment_method || o.paymentMethod || 'Cash',
+            items: typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []),
+            subtotal: Number(o.subtotal || 0),
+            total: Number(o.total || 0),
+            stage: o.stage || 'pending',
+            timestamp: o.timestamp || new Date(o.created_at || Date.now()).getTime()
+          }));
+          if (!logsErr && logsData) {
+            s.staffLogs = logsData.map(l => ({
+              staff: l.staff || 'Staff',
+              action: l.action || '',
+              timestamp: l.timestamp || new Date(l.created_at || Date.now()).getTime()
+            }));
+          }
+          saveSharedState(s);
+          if (statusEl) statusEl.innerText = 'Live (Supabase Sync)';
+        } else {
+          if (statusEl) statusEl.innerText = 'Connected (Local Sync)';
+        }
+      } catch (err) {
+        console.warn('Supabase fetch error:', err);
+        if (statusEl) statusEl.innerText = 'Offline (Local Only)';
+      }
+    }
+
+    async function updateOrderStageInSupabase(orderId, newStage) {
+      if (!supabase) return;
+      try {
+        await supabase.from('orders').update({ stage: newStage }).eq('id', orderId);
+      } catch (e) { console.error('Supabase order update failed:', e); }
+    }
+
+    async function addLogToSupabase(staff, action) {
+      if (!supabase) return;
+      try {
+        await supabase.from('staff_logs').insert([{ staff, action, timestamp: Date.now() }]);
+      } catch (e) { console.error('Supabase log insert failed:', e); }
+    }
+
     let chimeEnabled = true;
     function playChime() {
       if (!chimeEnabled) return;
@@ -184,7 +315,6 @@
       }
     }
 
-    // Staff logs
     function renderStaffLogs() {
       const state = getSharedState();
       const list = document.getElementById('staff-log-list');
@@ -198,14 +328,17 @@
         list.appendChild(row);
       });
     }
+
     function addStaffLogEntry(staff, action) {
       if (!staff || !action) return;
       const s = getSharedState();
       s.staffLogs = s.staffLogs || [];
       s.staffLogs.push({ staff, action, timestamp: Date.now() });
       saveSharedState(s);
+      addLogToSupabase(staff, action);
       renderStaffLogs();
     }
+
     document.getElementById('add-log').addEventListener('click', () => {
       const staff = (document.getElementById('staff-name')||{}).value.trim();
       const action = (document.getElementById('staff-action')||{}).value.trim();
@@ -213,24 +346,32 @@
       addStaffLogEntry(staff, action);
       document.getElementById('staff-action').value = '';
     });
+
     document.getElementById('clear-logs').addEventListener('click', () => {
       if (!confirm('Clear all staff logs?')) return;
       const s = getSharedState(); s.staffLogs = []; saveSharedState(s); renderStaffLogs();
     });
 
-    // Chime toggle & accept all
     document.getElementById('toggle-chime').addEventListener('click', (e) => {
       chimeEnabled = !chimeEnabled;
       e.target.innerText = 'Chime: ' + (chimeEnabled ? 'On' : 'Off');
       e.target.style.background = chimeEnabled ? '#0ea5a4' : 'var(--brand)';
     });
+
     document.getElementById('accept-all').addEventListener('click', () => {
       const s = getSharedState(); let changed = false;
-      (s.orders||[]).forEach(o => { if (o.stage === 'pending') { o.stage = 'received'; s.staffLogs = s.staffLogs||[]; s.staffLogs.push({ staff:'System', action:`Accepted order ${o.id} (bulk)`, timestamp:Date.now() }); changed = true; }});
+      (s.orders||[]).forEach(o => { 
+        if (o.stage === 'pending') { 
+          o.stage = 'received'; 
+          s.staffLogs = s.staffLogs||[]; 
+          s.staffLogs.push({ staff:'System', action:`Accepted order ${o.id} (bulk)`, timestamp:Date.now() }); 
+          updateOrderStageInSupabase(o.id, 'received');
+          changed = true; 
+        }
+      });
       if (changed) saveSharedState(s);
     });
 
-    // Board rendering and drag/drop
     function escapeHtml(str){ if (str===null||str===undefined) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
     function renderBoard() {
@@ -291,7 +432,6 @@
         const el = document.getElementById('count-'+s); if (el) el.innerText = cnt;
       });
 
-      // attach drop handlers
       ['pending','received','preparing','ready','completed'].forEach(stage => {
         const dz = document.getElementById('col-'+stage);
         if (!dz) return;
@@ -312,6 +452,7 @@
               s.staffLogs = s.staffLogs||[]; s.staffLogs.push({ staff:'Staff', action:`Moved order ${id} to ${stage}`, timestamp:Date.now() });
             }
             saveSharedState(s);
+            updateOrderStageInSupabase(id, stage);
             renderBoard(); renderStaffLogs();
           }
         };
@@ -321,7 +462,7 @@
     function acceptOrder(orderId) {
       const s = getSharedState(); const idx = (s.orders||[]).findIndex(o=>o.id===orderId); if (idx<0) return;
       s.orders[idx].stage = 'received'; s.staffLogs = s.staffLogs||[]; s.staffLogs.push({ staff:'Staff', action:`Accepted order ${orderId}`, timestamp:Date.now() });
-      saveSharedState(s); renderBoard(); renderStaffLogs();
+      saveSharedState(s); updateOrderStageInSupabase(orderId, 'received'); renderBoard(); renderStaffLogs();
     }
 
     function changeStage(orderId, delta) {
@@ -334,22 +475,24 @@
       } else {
         s.staffLogs = s.staffLogs||[]; s.staffLogs.push({ staff:'Staff', action:`Moved order ${orderId} to ${stages[ni]}`, timestamp:Date.now() });
       }
-      order.stage = stages[ni]; saveSharedState(s); renderBoard(); renderStaffLogs();
+      order.stage = stages[ni]; 
+      saveSharedState(s); 
+      updateOrderStageInSupabase(orderId, stages[ni]);
+      renderBoard(); renderStaffLogs();
     }
 
     function setStage(orderId, stage) {
       const s = getSharedState(); const idx = (s.orders||[]).findIndex(o=>o.id===orderId); if (idx<0) return;
       s.orders[idx].stage = stage; s.staffLogs = s.staffLogs||[]; s.staffLogs.push({ staff:'Staff', action:`Set order ${orderId} to ${stage}`, timestamp:Date.now() });
-      saveSharedState(s); renderBoard(); renderStaffLogs();
+      saveSharedState(s); updateOrderStageInSupabase(orderId, stage); renderBoard(); renderStaffLogs();
     }
 
     function showSlip(order) {
       const w = window.open('', '_blank', 'width=420,height=640'); if (!w) return alert('Popup blocked.');
-      const html = `<html><head><title>Slip ${order.id}</title><style>body{font-family:Arial;padding:18px;color:#0f172a} .receipt{border:1px dashed #cbd5e1;padding:12px;border-radius:8px}</style></head><body><div class="receipt"><h2>Davidsonville Community Store</h2><div>Order ID: ${escapeHtml(order.id)}</div><div>Date: ${escapeHtml(order.date||'')}</div><div>Customer: ${escapeHtml(order.clientName||'')}</div><div>Phone: ${escapeHtml(order.phone||'')}</div><hr>${order.items.map(i=>`<div>${escapeHtml(i.name)} x${i.qty} — R${(i.price*i.qty).toFixed(2)}</div>`).join('')}<hr><div>Subtotal: R${(order.subtotal||0).toFixed(2)}</div><div>Total: R${(order.total||0).toFixed(2)}</div></div></body></html>`;
+      const html = `<html><head><title>Slip ${order.id}</title><style>body{font-family:Arial;padding:18px;color:#0f172a} .receipt{border:1px dashed #cbd5e1;padding:12px;border-radius:8px}</style></head><body><div class="receipt"><h2>Davidsonville Community Store</h2><div>Order ID: ${escapeHtml(order.id)}</div><div>Date: ${escapeHtml(order.date||'')}</div><div>Customer: ${escapeHtml(order.clientName||'')}</div><div>Phone: ${escapeHtml(order.phone||'')}</div><hr>${(order.items||[]).map(i=>`<div>${escapeHtml(i.name)} x${i.qty} — R${(i.price*i.qty).toFixed(2)}</div>`).join('')}<hr><div>Subtotal: R${(order.subtotal||0).toFixed(2)}</div><div>Total: R${(order.total||0).toFixed(2)}</div></div></body></html>`;
       w.document.write(html); w.document.close();
     }
 
-    // incoming detection
     let seenOrderIds = new Set();
     function detectIncomingOrders() {
       const s = getSharedState(); const orders = s.orders||[];
@@ -366,20 +509,37 @@
       }
     }
 
-    // storage and custom event listeners to keep everything in sync
+    if (supabase) {
+      supabase.channel('dashboard_realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+          syncFromSupabase().then(() => { renderBoard(); detectIncomingOrders(); });
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_logs' }, () => {
+          syncFromSupabase().then(() => { renderStaffLogs(); });
+        })
+        .subscribe();
+    }
+
     window.addEventListener('storage', (e) => { if (e.key === SHARED_KEY) { detectIncomingOrders(); renderBoard(); renderStaffLogs(); }});
     window.addEventListener('dcsStateUpdated', (e) => { detectIncomingOrders(); renderBoard(); renderStaffLogs(); });
 
-    // init
-    (function init(){
+    (async function init(){
       const s = getSharedState(); if (!s.orders) s.orders = []; if (!s.staffLogs) s.staffLogs = [];
       (s.orders||[]).forEach(o => seenOrderIds.add(o.id));
       renderStaffLogs(); renderBoard();
-      setInterval(()=>{ const prevLen = (getSharedState().orders||[]).length; detectIncomingOrders(); renderBoard(); renderStaffLogs(); }, 2500);
+
+      await syncFromSupabase();
+      renderStaffLogs(); renderBoard();
+
+      setInterval(async () => { 
+        await syncFromSupabase(); 
+        detectIncomingOrders(); 
+        renderBoard(); 
+        renderStaffLogs(); 
+      }, 3000);
     })();
 
-    // UI bindings
-    document.getElementById('refresh-btn').addEventListener('click', ()=>{ renderBoard(); renderStaffLogs(); });
+    document.getElementById('refresh-btn').addEventListener('click', async ()=>{ await syncFromSupabase(); renderBoard(); renderStaffLogs(); });
     document.getElementById('clear-completed').addEventListener('click', ()=> {
       if (!confirm('Clear all completed orders from shared state?')) return;
       const s = getSharedState(); s.orders = (s.orders||[]).filter(o => o.stage !== 'completed'); saveSharedState(s); renderBoard();
