@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛒</text></svg>">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Davidsonville Staff Dashboard — Kanban & Staff Log</title>
+  <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root{
@@ -14,25 +14,6 @@
     }
     *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
     body{margin:0;background:var(--bg);color:var(--primary);min-height:100vh;padding:18px}
-
-    /* Auth Modal Overlay */
-    #auth-overlay {
-      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95);
-      display: flex; align-items: center; justify-content: center; z-index: 9999;
-      backdrop-filter: blur(8px);
-    }
-    .auth-card {
-      background: #fff; padding: 32px; border-radius: 16px; width: 100%; max-width: 380px;
-      text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-    }
-    .auth-card h2 { margin: 0 0 8px 0; font-size: 1.3rem; color: var(--primary); }
-    .auth-card p { font-size: 0.88rem; color: var(--muted); margin-bottom: 20px; }
-    .auth-card input {
-      width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px;
-      font-size: 1.1rem; text-align: center; letter-spacing: 4px; margin-bottom: 16px;
-    }
-    .auth-card button { width: 100%; padding: 12px; font-size: 1rem; }
-
     header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border-radius:10px;background:linear-gradient(90deg,#0f172a,#1e293b);color:#fff;box-shadow:var(--shadow)}
     header .brand{display:flex;align-items:center;gap:12px}
     .brand-icon{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;font-size:1.2rem}
@@ -41,6 +22,7 @@
     .controls{display:flex;gap:10px;align-items:center}
     .btn{background:var(--brand);color:#fff;border:none;padding:.55rem .8rem;border-radius:8px;font-weight:700;cursor:pointer}
     .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.08);color:#fff}
+    .btn.small{padding:.35rem .6rem;font-size:.8rem}
     .layout{display:grid;grid-template-columns:320px 1fr;gap:18px;margin-top:18px}
     .panel{background:linear-gradient(180deg,#ffffff,#fbfdff);border-radius:12px;padding:12px;border:1px solid var(--border);box-shadow:var(--shadow);color:var(--primary)}
     .panel h3{margin:0 0 8px 0;font-size:0.95rem}
@@ -66,27 +48,12 @@
   </style>
 </head>
 <body>
-
-  <!-- Lock Screen Overlay -->
-  <div id="auth-overlay">
-    <div class="auth-card">
-      <div style="font-size:2.5rem;margin-bottom:8px">🔒</div>
-      <h2>Staff Access Only</h2>
-      <p>Enter your staff access PIN to open the order dashboard.</p>
-      <form id="pin-form" onsubmit="event.preventDefault();">
-        <input type="password" id="pin-input" placeholder="••••" maxlength="8" autofocus />
-        <button class="btn" id="login-btn">Unlock Dashboard</button>
-      </form>
-      <div id="auth-error" style="color:#ef4444;font-size:0.82rem;margin-top:10px;display:none">Incorrect PIN. Try again.</div>
-    </div>
-  </div>
-
   <header>
     <div class="brand">
       <div class="brand-icon">🍗</div>
       <div class="brand-title">
         <h1>Davidsonville Staff Dashboard</h1>
-        <p>Kanban Orders • Staff Log • Supabase Live Sync</p>
+        <p>Kanban Orders • Staff Log • Live Supabase & Local Sync</p>
       </div>
     </div>
 
@@ -94,7 +61,6 @@
       <div class="center muted">Status: <span id="staff-status" style="font-weight:800;margin-left:8px;color:#10b981">Connecting...</span></div>
       <button class="btn" id="refresh-btn">Refresh</button>
       <button class="btn small" id="clear-completed">Clear Completed</button>
-      <button class="btn small" id="logout-btn" style="background:#475569">Lock</button>
     </div>
   </header>
 
@@ -115,9 +81,9 @@
 
       <div class="panel" style="margin-top:12px">
         <h3>Incoming Alerts</h3>
-        <div class="muted" style="margin-bottom:8px">Chime plays & desktop alert fires when a new order arrives.</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn small" id="toggle-chime" style="background:#0ea5a4">Chime: On</button>
+        <div class="muted" style="margin-bottom:8px">Chime plays when a new order arrives.</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn small" id="toggle-chime">Chime: On</button>
           <button class="btn small" id="accept-all" style="background:#16a34a">Accept All Pending</button>
         </div>
       </div>
@@ -183,73 +149,19 @@
     </main>
   </div>
 
-  <footer>Staff dashboard syncs live with Supabase & localStorage backup (<code style="background:#fff;padding:4px;border-radius:6px;border:1px solid var(--border)">davidsonville_app_state_v15</code>)</footer>
+  <footer>Staff dashboard syncs with storefront via Supabase REST & localStorage key <code style="background:#fff;padding:4px;border-radius:6px;border:1px solid var(--border)">davidsonville_app_state_v15</code></footer>
 
   <script>
-    // Staff Security Configuration
-    const DASHBOARD_PIN = "2026"; 
+    // --- SUPABASE CREDENTIALS ---
+    const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU';
 
-    // Audio Context Setup for Autoplay Compatibility
-    let audioCtx = null;
-    function unlockAudioContext() {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-    }
-    document.addEventListener('click', unlockAudioContext, { once: false });
-    document.addEventListener('keydown', unlockAudioContext, { once: false });
-
-    function requestNotificationPermission() {
-      if ("Notification" in window && Notification.permission === "default") {
-        Notification.requestPermission();
-      }
-    }
-
-    function checkAuth() {
-      if (sessionStorage.getItem('dcs_staff_authed') === 'true') {
-        document.getElementById('auth-overlay').style.display = 'none';
-        requestNotificationPermission();
-      } else {
-        document.getElementById('auth-overlay').style.display = 'flex';
-      }
-    }
-
-    document.getElementById('login-btn').addEventListener('click', () => {
-      const pin = document.getElementById('pin-input').value;
-      if (pin === DASHBOARD_PIN) {
-        sessionStorage.setItem('dcs_staff_authed', 'true');
-        document.getElementById('auth-overlay').style.display = 'none';
-        document.getElementById('auth-error').style.display = 'none';
-        unlockAudioContext();
-        requestNotificationPermission();
-      } else {
-        document.getElementById('auth-error').style.display = 'block';
-      }
-    });
-
-    document.getElementById('pin-input').addEventListener('keyup', (e) => {
-      if (e.key === 'Enter') document.getElementById('login-btn').click();
-    });
-
-    document.getElementById('logout-btn').addEventListener('click', () => {
-      sessionStorage.removeItem('dcs_staff_authed');
-      document.getElementById('pin-input').value = '';
-      checkAuth();
-    });
-
-    checkAuth();
-
-    const SHARED_KEY = 'davidsonville_app_state_v15';
-    const SUPABASE_URL = "https://qbmszgddepljxqxynyxv.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU";
-    
     let supabaseClient = null;
     if (window.supabase) {
       supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
+
+    const SHARED_KEY = 'davidsonville_app_state_v15';
 
     function getSharedState() {
       try {
@@ -266,101 +178,85 @@
       } catch (e) { console.error('save shared state', e); }
     }
 
-    // Helper to map and normalize order stages
-    function normalizeStage(rawStage, rawStatus) {
-      const stageVal = (rawStage || rawStatus || 'pending').toString().toLowerCase().trim();
-      if (stageVal === 'new' || stageVal === 'pending' || !stageVal) return 'pending';
-      if (stageVal === 'accepted' || stageVal === 'received') return 'received';
-      if (stageVal === 'preparing' || stageVal === 'kitchen') return 'preparing';
-      if (stageVal === 'ready') return 'ready';
-      if (stageVal === 'completed' || stageVal === 'done') return 'completed';
-      return 'pending';
-    }
-
+    // --- SUPABASE SYNC FUNCTIONS ---
     async function syncFromSupabase() {
-      const statusEl = document.getElementById('staff-status');
-      if (!supabaseClient) {
-        if (statusEl) statusEl.innerText = 'Offline (Local Only)';
-        return;
-      }
+      if (!supabaseClient) return;
       try {
-        const { data: ordersData, error: ordersErr } = await supabaseClient.from('orders').select('*');
-        const { data: logsData, error: logsErr } = await supabaseClient.from('staff_logs').select('*');
+        const { data: dbOrders, error: errOrders } = await supabaseClient.from('orders').select('*');
+        const { data: dbLogs, error: errLogs } = await supabaseClient.from('staff_logs').select('*');
 
-        if (!ordersErr && ordersData) {
+        if (errOrders) console.warn('Supabase fetch orders error:', errOrders);
+        if (errLogs) console.warn('Supabase fetch logs error:', errLogs);
+
+        if (dbOrders) {
           const s = getSharedState();
-          s.orders = ordersData.map(o => ({
+          s.orders = dbOrders.map(o => ({
             id: o.id,
-            date: o.date || new Date(o.created_at || Date.now()).toLocaleDateString(),
             clientName: o.client_name || o.clientName || 'Guest',
             phone: o.phone || '',
             paymentMethod: o.payment_method || o.paymentMethod || 'Cash',
             items: typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []),
             subtotal: Number(o.subtotal || 0),
             total: Number(o.total || 0),
-            stage: normalizeStage(o.stage, o.status),
-            timestamp: o.timestamp || new Date(o.created_at || Date.now()).getTime()
+            stage: o.stage || 'pending',
+            date: o.date || new Date(o.timestamp || Date.now()).toLocaleDateString(),
+            timestamp: o.timestamp || Date.now()
           }));
-          if (!logsErr && logsData) {
-            s.staffLogs = logsData.map(l => ({
+
+          if (dbLogs) {
+            s.staffLogs = dbLogs.map(l => ({
               staff: l.staff || 'Staff',
               action: l.action || '',
-              timestamp: l.timestamp || new Date(l.created_at || Date.now()).getTime()
+              timestamp: l.timestamp ? new Date(l.timestamp).getTime() : Date.now()
             }));
           }
           saveSharedState(s);
-          if (statusEl) statusEl.innerText = 'Live (Supabase Sync)';
-        } else {
-          if (statusEl) statusEl.innerText = 'Connected (Local Sync)';
+          const statusEl = document.getElementById('staff-status');
+          statusEl.innerText = 'Online (Supabase)';
+          statusEl.style.color = '#10b981';
         }
       } catch (err) {
-        console.warn('Supabase fetch error:', err);
-        if (statusEl) statusEl.innerText = 'Offline (Local Only)';
+        console.error('Supabase sync error:', err);
+        const statusEl = document.getElementById('staff-status');
+        statusEl.innerText = 'Offline (Local)';
+        statusEl.style.color = '#f59e0b';
       }
     }
 
-    async function updateOrderStageInSupabase(orderId, newStage) {
+    async function pushOrderStageToSupabase(orderId, stage) {
       if (!supabaseClient) return;
       try {
-        await supabaseClient.from('orders').update({ stage: newStage, status: newStage }).eq('id', orderId);
-      } catch (e) { console.error('Supabase order update failed:', e); }
+        await supabaseClient.from('orders').update({ stage: stage }).eq('id', orderId);
+      } catch (e) { console.error('Failed pushing stage to Supabase:', e); }
     }
 
-    async function addLogToSupabase(staff, action) {
+    async function pushStaffLogToSupabase(staff, action, timestamp) {
       if (!supabaseClient) return;
       try {
-        await supabaseClient.from('staff_logs').insert([{ staff, action, timestamp: Date.now() }]);
-      } catch (e) { console.error('Supabase log insert failed:', e); }
+        await supabaseClient.from('staff_logs').insert([{ staff, action, timestamp: new Date(timestamp).toISOString() }]);
+      } catch (e) { console.error('Failed pushing log to Supabase:', e); }
     }
 
+    // --- UI HELPERS & CHIME ---
     let chimeEnabled = true;
     function playChime() {
       if (!chimeEnabled) return;
       try {
-        unlockAudioContext();
-        const ctx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-        const now = ctx.currentTime;
-
-        // Distinct two-tone ring for order alerting (880Hz -> 1175Hz)
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const o = ctx.createOscillator();
         const g = ctx.createGain();
-        o.type = 'sine';
-        o.frequency.setValueAtTime(880, now);
-        o.frequency.setValueAtTime(1174.66, now + 0.12);
-
+        o.type = 'sine'; o.frequency.value = 880;
+        o.connect(g); g.connect(ctx.destination);
+        const now = ctx.currentTime;
         g.gain.setValueAtTime(0.001, now);
-        g.gain.linearRampToValueAtTime(0.2, now + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
-
-        o.connect(g);
-        g.connect(ctx.destination);
-        o.start(now);
-        o.stop(now + 0.46);
+        g.gain.linearRampToValueAtTime(0.12, now + 0.01);
+        o.start(now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.25); o.stop(now + 0.26);
       } catch (e) {
-        console.warn('Audio playback error:', e);
+        const a = new Audio(); a.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="; a.play().catch(()=>{});
       }
     }
 
+    // --- STAFF LOGS ---
     function renderStaffLogs() {
       const state = getSharedState();
       const list = document.getElementById('staff-log-list');
@@ -377,12 +273,13 @@
 
     function addStaffLogEntry(staff, action) {
       if (!staff || !action) return;
+      const ts = Date.now();
       const s = getSharedState();
       s.staffLogs = s.staffLogs || [];
-      s.staffLogs.push({ staff, action, timestamp: Date.now() });
+      s.staffLogs.push({ staff, action, timestamp: ts });
       saveSharedState(s);
-      addLogToSupabase(staff, action);
       renderStaffLogs();
+      pushStaffLogToSupabase(staff, action, ts);
     }
 
     document.getElementById('add-log').addEventListener('click', () => {
@@ -393,35 +290,38 @@
       document.getElementById('staff-action').value = '';
     });
 
-    document.getElementById('clear-logs').addEventListener('click', () => {
+    document.getElementById('clear-logs').addEventListener('click', async () => {
       if (!confirm('Clear all staff logs?')) return;
       const s = getSharedState(); s.staffLogs = []; saveSharedState(s); renderStaffLogs();
+      if (supabaseClient) {
+        await supabaseClient.from('staff_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      }
     });
 
+    // --- CHIME & BULK ACCEPT ---
     document.getElementById('toggle-chime').addEventListener('click', (e) => {
       chimeEnabled = !chimeEnabled;
       e.target.innerText = 'Chime: ' + (chimeEnabled ? 'On' : 'Off');
       e.target.style.background = chimeEnabled ? '#0ea5a4' : 'var(--brand)';
-      if (chimeEnabled) {
-        unlockAudioContext();
-        requestNotificationPermission();
-      }
     });
 
     document.getElementById('accept-all').addEventListener('click', () => {
       const s = getSharedState(); let changed = false;
-      (s.orders||[]).forEach(o => { 
-        if (o.stage === 'pending') { 
-          o.stage = 'received'; 
-          s.staffLogs = s.staffLogs||[]; 
-          s.staffLogs.push({ staff:'System', action:`Accepted order ${o.id} (bulk)`, timestamp:Date.now() }); 
-          updateOrderStageInSupabase(o.id, 'received');
-          changed = true; 
+      (s.orders||[]).forEach(o => {
+        if (o.stage === 'pending') {
+          o.stage = 'received';
+          const ts = Date.now();
+          s.staffLogs = s.staffLogs||[];
+          s.staffLogs.push({ staff:'System', action:`Accepted order ${o.id} (bulk)`, timestamp: ts });
+          pushOrderStageToSupabase(o.id, 'received');
+          pushStaffLogToSupabase('System', `Accepted order ${o.id} (bulk)`, ts);
+          changed = true;
         }
       });
       if (changed) saveSharedState(s);
     });
 
+    // --- BOARD RENDERING & DRAG/DROP ---
     function escapeHtml(str){ if (str===null||str===undefined) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
     function renderBoard() {
@@ -432,10 +332,10 @@
       const stages = ['pending','received','preparing','ready','completed'];
       stages.forEach(s => { const col = document.getElementById('col-'+s); if (col) col.innerHTML = ''; });
 
-      const filtered = orders.filter(o => { 
-        if (filterStage && o.stage !== filterStage) return false; 
-        if (filterPhone && (!o.phone || !o.phone.includes(filterPhone))) return false; 
-        return true; 
+      const filtered = orders.filter(o => {
+        if (filterStage && o.stage !== filterStage) return false;
+        if (filterPhone && (!o.phone || !o.phone.includes(filterPhone))) return false;
+        return true;
       });
 
       filtered.forEach(order => {
@@ -486,7 +386,7 @@
         const el = document.getElementById('count-'+s); if (el) el.innerText = cnt;
       });
 
-      ['pending','received','preparing','ready','completed'].forEach(stage => {
+      stages.forEach(stage => {
         const dz = document.getElementById('col-'+stage);
         if (!dz) return;
         dz.ondrop = (ev) => {
@@ -497,16 +397,24 @@
           const idx = (s.orders||[]).findIndex(o => o.id === id);
           if (idx >= 0) {
             const currentStage = s.orders[idx].stage;
+            const ts = Date.now();
             if (stage === 'received' && currentStage === 'pending') {
               if (!confirm('Accept this pending order now?')) return;
               s.orders[idx].stage = 'received';
-              s.staffLogs = s.staffLogs||[]; s.staffLogs.push({ staff:'Staff', action:`Accepted order ${id} (drag)`, timestamp:Date.now() });
+              s.staffLogs = s.staffLogs||[];
+              const logMsg = `Accepted order ${id} (drag)`;
+              s.staffLogs.push({ staff:'Staff', action: logMsg, timestamp: ts });
+              pushOrderStageToSupabase(id, 'received');
+              pushStaffLogToSupabase('Staff', logMsg, ts);
             } else {
               s.orders[idx].stage = stage;
-              s.staffLogs = s.staffLogs||[]; s.staffLogs.push({ staff:'Staff', action:`Moved order ${id} to ${stage}`, timestamp:Date.now() });
+              s.staffLogs = s.staffLogs||[];
+              const logMsg = `Moved order ${id} to ${stage}`;
+              s.staffLogs.push({ staff:'Staff', action: logMsg, timestamp: ts });
+              pushOrderStageToSupabase(id, stage);
+              pushStaffLogToSupabase('Staff', logMsg, ts);
             }
             saveSharedState(s);
-            updateOrderStageInSupabase(id, stage);
             renderBoard(); renderStaffLogs();
           }
         };
@@ -515,39 +423,55 @@
 
     function acceptOrder(orderId) {
       const s = getSharedState(); const idx = (s.orders||[]).findIndex(o=>o.id===orderId); if (idx<0) return;
-      s.orders[idx].stage = 'received'; s.staffLogs = s.staffLogs||[]; s.staffLogs.push({ staff:'Staff', action:`Accepted order ${orderId}`, timestamp:Date.now() });
-      saveSharedState(s); updateOrderStageInSupabase(orderId, 'received'); renderBoard(); renderStaffLogs();
+      const ts = Date.now();
+      const logMsg = `Accepted order ${orderId}`;
+      s.orders[idx].stage = 'received';
+      s.staffLogs = s.staffLogs||[];
+      s.staffLogs.push({ staff:'Staff', action: logMsg, timestamp: ts });
+      saveSharedState(s); renderBoard(); renderStaffLogs();
+      pushOrderStageToSupabase(orderId, 'received');
+      pushStaffLogToSupabase('Staff', logMsg, ts);
     }
 
     function changeStage(orderId, delta) {
       const s = getSharedState(); const idx = (s.orders||[]).findIndex(o=>o.id===orderId); if (idx<0) return;
       const order = s.orders[idx]; const stages=['pending','received','preparing','ready','completed']; let i = stages.indexOf(order.stage); if (i===-1) i=0;
       let ni = Math.max(0, Math.min(stages.length-1, i+delta));
+      const ts = Date.now();
+      let logMsg = '';
       if (stages[ni] === 'received' && order.stage === 'pending') {
         if (!confirm('Accept this pending order before moving to Accepted?')) return;
-        s.staffLogs = s.staffLogs||[]; s.staffLogs.push({ staff:'Staff', action:`Accepted order ${orderId}`, timestamp:Date.now() });
+        logMsg = `Accepted order ${orderId}`;
       } else {
-        s.staffLogs = s.staffLogs||[]; s.staffLogs.push({ staff:'Staff', action:`Moved order ${orderId} to ${stages[ni]}`, timestamp:Date.now() });
+        logMsg = `Moved order ${orderId} to ${stages[ni]}`;
       }
-      order.stage = stages[ni]; 
-      saveSharedState(s); 
-      updateOrderStageInSupabase(orderId, stages[ni]);
-      renderBoard(); renderStaffLogs();
+      order.stage = stages[ni];
+      s.staffLogs = s.staffLogs||[];
+      s.staffLogs.push({ staff:'Staff', action: logMsg, timestamp: ts });
+      saveSharedState(s); renderBoard(); renderStaffLogs();
+      pushOrderStageToSupabase(orderId, stages[ni]);
+      pushStaffLogToSupabase('Staff', logMsg, ts);
     }
 
     function setStage(orderId, stage) {
       const s = getSharedState(); const idx = (s.orders||[]).findIndex(o=>o.id===orderId); if (idx<0) return;
-      s.orders[idx].stage = stage; s.staffLogs = s.staffLogs||[]; s.staffLogs.push({ staff:'Staff', action:`Set order ${orderId} to ${stage}`, timestamp:Date.now() });
-      saveSharedState(s); updateOrderStageInSupabase(orderId, stage); renderBoard(); renderStaffLogs();
+      const ts = Date.now();
+      const logMsg = `Set order ${orderId} to ${stage}`;
+      s.orders[idx].stage = stage;
+      s.staffLogs = s.staffLogs||[];
+      s.staffLogs.push({ staff:'Staff', action: logMsg, timestamp: ts });
+      saveSharedState(s); renderBoard(); renderStaffLogs();
+      pushOrderStageToSupabase(orderId, stage);
+      pushStaffLogToSupabase('Staff', logMsg, ts);
     }
 
     function showSlip(order) {
       const w = window.open('', '_blank', 'width=420,height=640'); if (!w) return alert('Popup blocked.');
-      const html = `<html><head>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛒</text></svg>"><title>Slip ${order.id}</title><style>body{font-family:Arial;padding:18px;color:#0f172a} .receipt{border:1px dashed #cbd5e1;padding:12px;border-radius:8px}</style></head><body><div class="receipt"><h2>Davidsonville Community Store</h2><div>Order ID: ${escapeHtml(order.id)}</div><div>Date: ${escapeHtml(order.date||'')}</div><div>Customer: ${escapeHtml(order.clientName||'')}</div><div>Phone: ${escapeHtml(order.phone||'')}</div><hr>${(order.items||[]).map(i=>`<div>${escapeHtml(i.name)} x${i.qty} — R${(i.price*i.qty).toFixed(2)}</div>`).join('')}<hr><div>Subtotal: R${(order.subtotal||0).toFixed(2)}</div><div>Total: R${(order.total||0).toFixed(2)}</div></div></body></html>`;
+      const html = `<html><head><title>Slip ${order.id}</title><style>body{font-family:Arial;padding:18px;color:#0f172a} .receipt{border:1px dashed #cbd5e1;padding:12px;border-radius:8px}</style></head><body><div class="receipt"><h2>Davidsonville Community Store</h2><div>Order ID: ${escapeHtml(order.id)}</div><div>Date: ${escapeHtml(order.date||'')}</div><div>Customer: ${escapeHtml(order.clientName||'')}</div><div>Phone: ${escapeHtml(order.phone||'')}</div><hr>${order.items.map(i=>`<div>${escapeHtml(i.name)} x${i.qty} — R${(i.price*i.qty).toFixed(2)}</div>`).join('')}<hr><div>Subtotal: R${(order.subtotal||0).toFixed(2)}</div><div>Total: R${(order.total||0).toFixed(2)}</div></div></body></html>`;
       w.document.write(html); w.document.close();
     }
 
+    // --- INCOMING ORDER DETECTION ---
     let seenOrderIds = new Set();
     function detectIncomingOrders() {
       const s = getSharedState(); const orders = s.orders||[];
@@ -558,44 +482,18 @@
         if (pendingNew.length) {
           playChime();
           const orig = document.title; document.title = `🔔 ${pendingNew.length} New Order(s)`; setTimeout(()=>document.title = orig, 2500);
-          
-          // Firing Desktop Notification if permission granted
-          if ("Notification" in window && Notification.permission === "granted") {
-            pendingNew.forEach(o => {
-              new Notification("🔔 New Order Received!", {
-                body: `Order #${o.id} - ${o.clientName || 'Guest'} (Total: R${(o.total||0).toFixed(2)})`,
-                icon: "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛒</text></svg>"
-              });
-            });
-          }
-
-          s.staffLogs = s.staffLogs||[]; pendingNew.forEach(o => s.staffLogs.push({ staff:'System', action:`New order arrived ${o.id}`, timestamp:Date.now() }));
+          s.staffLogs = s.staffLogs||[];
+          const ts = Date.now();
+          pendingNew.forEach(o => s.staffLogs.push({ staff:'System', action:`New order arrived ${o.id}`, timestamp: ts }));
           saveSharedState(s); renderStaffLogs();
         }
       }
     }
 
-    if (supabaseClient) {
-      supabaseClient.channel('dashboard_realtime')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-          syncFromSupabase().then(() => { renderBoard(); detectIncomingOrders(); });
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_logs' }, () => {
-          syncFromSupabase().then(() => { renderStaffLogs(); });
-        })
-        .subscribe((status) => {
-          const statusEl = document.getElementById('staff-status');
-          if (status === 'SUBSCRIBED') {
-            if (statusEl) statusEl.innerText = 'Live (Supabase Sync)';
-          } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-            if (statusEl) statusEl.innerText = 'Reconnecting...';
-          }
-        });
-    }
-
     window.addEventListener('storage', (e) => { if (e.key === SHARED_KEY) { detectIncomingOrders(); renderBoard(); renderStaffLogs(); }});
     window.addEventListener('dcsStateUpdated', (e) => { detectIncomingOrders(); renderBoard(); renderStaffLogs(); });
 
+    // --- INITIALIZATION AND POLLING ---
     (async function init(){
       const s = getSharedState(); if (!s.orders) s.orders = []; if (!s.staffLogs) s.staffLogs = [];
       (s.orders||[]).forEach(o => seenOrderIds.add(o.id));
@@ -604,21 +502,35 @@
       await syncFromSupabase();
       renderStaffLogs(); renderBoard();
 
-      setInterval(async () => { 
-        await syncFromSupabase(); 
-        detectIncomingOrders(); 
-        renderBoard(); 
-        renderStaffLogs(); 
+      setInterval(async () => {
+        await syncFromSupabase();
+        detectIncomingOrders();
+        renderBoard();
+        renderStaffLogs();
       }, 3000);
     })();
 
-    document.getElementById('refresh-btn').addEventListener('click', async ()=>{ await syncFromSupabase(); renderBoard(); renderStaffLogs(); });
-    document.getElementById('clear-completed').addEventListener('click', ()=> {
-      if (!confirm('Clear all completed orders from shared state?')) return;
-      const s = getSharedState(); s.orders = (s.orders||[]).filter(o => o.stage !== 'completed'); saveSharedState(s); renderBoard();
+    // --- UI BINDINGS ---
+    document.getElementById('refresh-btn').addEventListener('click', async () => {
+      await syncFromSupabase();
+      renderBoard();
+      renderStaffLogs();
     });
+
+    document.getElementById('clear-completed').addEventListener('click', async () => {
+      if (!confirm('Clear all completed orders?')) return;
+      const s = getSharedState();
+      const completedIds = (s.orders||[]).filter(o => o.stage === 'completed').map(o => o.id);
+      s.orders = (s.orders||[]).filter(o => o.stage !== 'completed');
+      saveSharedState(s); renderBoard();
+
+      if (supabaseClient && completedIds.length) {
+        await supabaseClient.from('orders').delete().in('id', completedIds);
+      }
+    });
+
     document.getElementById('filter-stage').addEventListener('change', renderBoard);
-    document.getElementById('filter-phone').addEventListener('input', ()=> setTimeout(renderBoard,120));
+    document.getElementById('filter-phone').addEventListener('input', ()=> setTimeout(renderBoard, 120));
   </script>
 </body>
 </html>
