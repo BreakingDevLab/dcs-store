@@ -406,7 +406,7 @@
         card.appendChild(dot);
 
         const actions = card.querySelector('.actions');
-        if (order.stage === 'pending') {
+        if ((order.stage || order.status || 'pending').toLowerCase() === 'pending' || (order.stage || order.status || '').toLowerCase() === 'new') {
           const acceptBtn = document.createElement('button'); acceptBtn.className='btn small'; acceptBtn.innerText='Accept';
           acceptBtn.addEventListener('click', ()=> acceptOrder(order.id));
           actions.appendChild(acceptBtn);
@@ -470,7 +470,7 @@
       const s = getSharedState(); const idx = (s.orders||[]).findIndex(o=>o.id===orderId); if (idx<0) return;
       const order = s.orders[idx]; const stages=['pending','received','preparing','ready','completed']; let i = stages.indexOf(order.stage); if (i===-1) i=0;
       let ni = Math.max(0, Math.min(stages.length-1, i+delta));
-      if (stages[ni] === 'received' && order.stage === 'pending') {
+      if (stages[ni] === 'received' && (order.stage || order.status || 'pending').toLowerCase() === 'pending' || (order.stage || order.status || '').toLowerCase() === 'new') {
         if (!confirm('Accept this pending order before moving to Accepted?')) return;
         s.staffLogs = s.staffLogs||[]; s.staffLogs.push({ staff:'Staff', action:`Accepted order ${orderId}`, timestamp:Date.now() });
       } else {
