@@ -373,7 +373,7 @@
     const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co'; 
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU';
     let supabase = null;
-    if (window.supabase && SUPABASE_URL && !SUPABASE_URL.includes('https://qbmszgddepljxqxynyxv.supabase.co')) {
+    if (window.supabase && SUPABASE_URL && !SUPABASE_URL.includes('YOUR_SUPABASE_URL')) {
       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
 
