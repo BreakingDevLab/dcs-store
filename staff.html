@@ -73,10 +73,10 @@
       <div style="font-size:2.5rem;margin-bottom:8px">🔒</div>
       <h2>Staff Access Only</h2>
       <p>Enter your staff access PIN to open the order dashboard.</p>
-      <form id="pin-form" onsubmit="event.preventDefault(); unlockDashboard();">
-      <input type="password" id="pin-input" placeholder="••••" maxlength="8" autofocus />
-      <button class="btn" id="login-btn">Unlock Dashboard</button>
-    </form>
+      <form id="pin-form" onsubmit="event.preventDefault();">
+        <input type="password" id="pin-input" placeholder="••••" maxlength="8" autofocus />
+        <button class="btn" id="login-btn">Unlock Dashboard</button>
+      </form>
       <div id="auth-error" style="color:#ef4444;font-size:0.82rem;margin-top:10px;display:none">Incorrect PIN. Try again.</div>
     </div>
   </div>
@@ -115,9 +115,9 @@
 
       <div class="panel" style="margin-top:12px">
         <h3>Incoming Alerts</h3>
-        <div class="muted" style="margin-bottom:8px">Chime plays when a new order arrives.</div>
-        <div style="display:flex;gap:8px">
-          <button class="btn small" id="toggle-chime">Chime: On</button>
+        <div class="muted" style="margin-bottom:8px">Chime plays & desktop alert fires when a new order arrives.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn small" id="toggle-chime" style="background:#0ea5a4">Chime: On</button>
           <button class="btn small" id="accept-all" style="background:#16a34a">Accept All Pending</button>
         </div>
       </div>
@@ -186,12 +186,32 @@
   <footer>Staff dashboard syncs live with Supabase & localStorage backup (<code style="background:#fff;padding:4px;border-radius:6px;border:1px solid var(--border)">davidsonville_app_state_v15</code>)</footer>
 
   <script>
-    // Staff Security Configuration (Change '2026' to your preferred PIN or password)
+    // Staff Security Configuration
     const DASHBOARD_PIN = "2026"; 
+
+    // Audio Context Setup for Autoplay Compatibility
+    let audioCtx = null;
+    function unlockAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+    document.addEventListener('click', unlockAudioContext, { once: false });
+    document.addEventListener('keydown', unlockAudioContext, { once: false });
+
+    function requestNotificationPermission() {
+      if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission();
+      }
+    }
 
     function checkAuth() {
       if (sessionStorage.getItem('dcs_staff_authed') === 'true') {
         document.getElementById('auth-overlay').style.display = 'none';
+        requestNotificationPermission();
       } else {
         document.getElementById('auth-overlay').style.display = 'flex';
       }
@@ -203,6 +223,8 @@
         sessionStorage.setItem('dcs_staff_authed', 'true');
         document.getElementById('auth-overlay').style.display = 'none';
         document.getElementById('auth-error').style.display = 'none';
+        unlockAudioContext();
+        requestNotificationPermission();
       } else {
         document.getElementById('auth-error').style.display = 'block';
       }
@@ -244,6 +266,17 @@
       } catch (e) { console.error('save shared state', e); }
     }
 
+    // Helper to map and normalize order stages
+    function normalizeStage(rawStage, rawStatus) {
+      const stageVal = (rawStage || rawStatus || 'pending').toString().toLowerCase().trim();
+      if (stageVal === 'new' || stageVal === 'pending' || !stageVal) return 'pending';
+      if (stageVal === 'accepted' || stageVal === 'received') return 'received';
+      if (stageVal === 'preparing' || stageVal === 'kitchen') return 'preparing';
+      if (stageVal === 'ready') return 'ready';
+      if (stageVal === 'completed' || stageVal === 'done') return 'completed';
+      return 'pending';
+    }
+
     async function syncFromSupabase() {
       const statusEl = document.getElementById('staff-status');
       if (!supabaseClient) {
@@ -265,7 +298,7 @@
             items: typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []),
             subtotal: Number(o.subtotal || 0),
             total: Number(o.total || 0),
-            stage: o.stage || 'pending',
+            stage: normalizeStage(o.stage, o.status),
             timestamp: o.timestamp || new Date(o.created_at || Date.now()).getTime()
           }));
           if (!logsErr && logsData) {
@@ -289,7 +322,7 @@
     async function updateOrderStageInSupabase(orderId, newStage) {
       if (!supabaseClient) return;
       try {
-        await supabaseClient.from('orders').update({ stage: newStage }).eq('id', orderId);
+        await supabaseClient.from('orders').update({ stage: newStage, status: newStage }).eq('id', orderId);
       } catch (e) { console.error('Supabase order update failed:', e); }
     }
 
@@ -304,17 +337,27 @@
     function playChime() {
       if (!chimeEnabled) return;
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        unlockAudioContext();
+        const ctx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        const now = ctx.currentTime;
+
+        // Distinct two-tone ring for order alerting (880Hz -> 1175Hz)
         const o = ctx.createOscillator();
         const g = ctx.createGain();
-        o.type = 'sine'; o.frequency.value = 880;
-        o.connect(g); g.connect(ctx.destination);
-        const now = ctx.currentTime;
+        o.type = 'sine';
+        o.frequency.setValueAtTime(880, now);
+        o.frequency.setValueAtTime(1174.66, now + 0.12);
+
         g.gain.setValueAtTime(0.001, now);
-        g.gain.linearRampToValueAtTime(0.12, now + 0.01);
-        o.start(now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.25); o.stop(now + 0.26);
+        g.gain.linearRampToValueAtTime(0.2, now + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start(now);
+        o.stop(now + 0.46);
       } catch (e) {
-        const a = new Audio(); a.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="; a.play().catch(()=>{});
+        console.warn('Audio playback error:', e);
       }
     }
 
@@ -359,6 +402,10 @@
       chimeEnabled = !chimeEnabled;
       e.target.innerText = 'Chime: ' + (chimeEnabled ? 'On' : 'Off');
       e.target.style.background = chimeEnabled ? '#0ea5a4' : 'var(--brand)';
+      if (chimeEnabled) {
+        unlockAudioContext();
+        requestNotificationPermission();
+      }
     });
 
     document.getElementById('accept-all').addEventListener('click', () => {
@@ -385,7 +432,11 @@
       const stages = ['pending','received','preparing','ready','completed'];
       stages.forEach(s => { const col = document.getElementById('col-'+s); if (col) col.innerHTML = ''; });
 
-      const filtered = orders.filter(o => { if (filterStage && o.stage !== filterStage) return false; if (filterPhone && (!o.phone || !o.phone.includes(filterPhone))) return false; return true; });
+      const filtered = orders.filter(o => { 
+        if (filterStage && o.stage !== filterStage) return false; 
+        if (filterPhone && (!o.phone || !o.phone.includes(filterPhone))) return false; 
+        return true; 
+      });
 
       filtered.forEach(order => {
         const card = document.createElement('div');
@@ -408,7 +459,7 @@
         card.appendChild(dot);
 
         const actions = card.querySelector('.actions');
-        if ((order.stage || order.status || 'pending').toLowerCase() === 'pending' || (order.stage || order.status || '').toLowerCase() === 'new') {
+        if (order.stage === 'pending') {
           const acceptBtn = document.createElement('button'); acceptBtn.className='btn small'; acceptBtn.innerText='Accept';
           acceptBtn.addEventListener('click', ()=> acceptOrder(order.id));
           actions.appendChild(acceptBtn);
@@ -472,7 +523,7 @@
       const s = getSharedState(); const idx = (s.orders||[]).findIndex(o=>o.id===orderId); if (idx<0) return;
       const order = s.orders[idx]; const stages=['pending','received','preparing','ready','completed']; let i = stages.indexOf(order.stage); if (i===-1) i=0;
       let ni = Math.max(0, Math.min(stages.length-1, i+delta));
-      if (stages[ni] === 'received' && (order.stage || order.status || 'pending').toLowerCase() === 'pending' || (order.stage || order.status || '').toLowerCase() === 'new') {
+      if (stages[ni] === 'received' && order.stage === 'pending') {
         if (!confirm('Accept this pending order before moving to Accepted?')) return;
         s.staffLogs = s.staffLogs||[]; s.staffLogs.push({ staff:'Staff', action:`Accepted order ${orderId}`, timestamp:Date.now() });
       } else {
@@ -507,6 +558,17 @@
         if (pendingNew.length) {
           playChime();
           const orig = document.title; document.title = `🔔 ${pendingNew.length} New Order(s)`; setTimeout(()=>document.title = orig, 2500);
+          
+          // Firing Desktop Notification if permission granted
+          if ("Notification" in window && Notification.permission === "granted") {
+            pendingNew.forEach(o => {
+              new Notification("🔔 New Order Received!", {
+                body: `Order #${o.id} - ${o.clientName || 'Guest'} (Total: R${(o.total||0).toFixed(2)})`,
+                icon: "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛒</text></svg>"
+              });
+            });
+          }
+
           s.staffLogs = s.staffLogs||[]; pendingNew.forEach(o => s.staffLogs.push({ staff:'System', action:`New order arrived ${o.id}`, timestamp:Date.now() }));
           saveSharedState(s); renderStaffLogs();
         }
@@ -521,7 +583,14 @@
         .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_logs' }, () => {
           syncFromSupabase().then(() => { renderStaffLogs(); });
         })
-        .subscribe();
+        .subscribe((status) => {
+          const statusEl = document.getElementById('staff-status');
+          if (status === 'SUBSCRIBED') {
+            if (statusEl) statusEl.innerText = 'Live (Supabase Sync)';
+          } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+            if (statusEl) statusEl.innerText = 'Reconnecting...';
+          }
+        });
     }
 
     window.addEventListener('storage', (e) => { if (e.key === SHARED_KEY) { detectIncomingOrders(); renderBoard(); renderStaffLogs(); }});
