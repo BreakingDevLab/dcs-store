@@ -73,8 +73,10 @@
       <div style="font-size:2.5rem;margin-bottom:8px">🔒</div>
       <h2>Staff Access Only</h2>
       <p>Enter your staff access PIN to open the order dashboard.</p>
+      <form id="pin-form" onsubmit="event.preventDefault(); unlockDashboard();">
       <input type="password" id="pin-input" placeholder="••••" maxlength="8" autofocus />
       <button class="btn" id="login-btn">Unlock Dashboard</button>
+    </form>
       <div id="auth-error" style="color:#ef4444;font-size:0.82rem;margin-top:10px;display:none">Incorrect PIN. Try again.</div>
     </div>
   </div>
