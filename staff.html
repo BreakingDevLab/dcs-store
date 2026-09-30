@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛒</text></svg>">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Davidsonville Staff Dashboard — Kanban & Staff Log</title>
@@ -489,7 +490,8 @@
 
     function showSlip(order) {
       const w = window.open('', '_blank', 'width=420,height=640'); if (!w) return alert('Popup blocked.');
-      const html = `<html><head><title>Slip ${order.id}</title><style>body{font-family:Arial;padding:18px;color:#0f172a} .receipt{border:1px dashed #cbd5e1;padding:12px;border-radius:8px}</style></head><body><div class="receipt"><h2>Davidsonville Community Store</h2><div>Order ID: ${escapeHtml(order.id)}</div><div>Date: ${escapeHtml(order.date||'')}</div><div>Customer: ${escapeHtml(order.clientName||'')}</div><div>Phone: ${escapeHtml(order.phone||'')}</div><hr>${(order.items||[]).map(i=>`<div>${escapeHtml(i.name)} x${i.qty} — R${(i.price*i.qty).toFixed(2)}</div>`).join('')}<hr><div>Subtotal: R${(order.subtotal||0).toFixed(2)}</div><div>Total: R${(order.total||0).toFixed(2)}</div></div></body></html>`;
+      const html = `<html><head>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛒</text></svg>"><title>Slip ${order.id}</title><style>body{font-family:Arial;padding:18px;color:#0f172a} .receipt{border:1px dashed #cbd5e1;padding:12px;border-radius:8px}</style></head><body><div class="receipt"><h2>Davidsonville Community Store</h2><div>Order ID: ${escapeHtml(order.id)}</div><div>Date: ${escapeHtml(order.date||'')}</div><div>Customer: ${escapeHtml(order.clientName||'')}</div><div>Phone: ${escapeHtml(order.phone||'')}</div><hr>${(order.items||[]).map(i=>`<div>${escapeHtml(i.name)} x${i.qty} — R${(i.price*i.qty).toFixed(2)}</div>`).join('')}<hr><div>Subtotal: R${(order.subtotal||0).toFixed(2)}</div><div>Total: R${(order.total||0).toFixed(2)}</div></div></body></html>`;
       w.document.write(html); w.document.close();
     }
 
