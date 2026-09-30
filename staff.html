@@ -4,6 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Davidsonville Staff Dashboard — Kanban & Staff Log</title>
+  <!-- Favicon to prevent 404 -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍗</text></svg>">
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -171,11 +173,22 @@
       return { clients: [], orders: [], staffLogs: [] };
     }
 
-    function saveSharedState(newState) {
+    function saveSharedState(newState, skipEvent = false) {
       try {
         localStorage.setItem(SHARED_KEY, JSON.stringify(newState));
-        window.dispatchEvent(new CustomEvent('dcsStateUpdated', { detail: newState }));
+        if (!skipEvent) {
+          window.dispatchEvent(new CustomEvent('dcsStateUpdated', { detail: newState }));
+        }
       } catch (e) { console.error('save shared state', e); }
+    }
+
+    function parseItems(items) {
+      if (!items) return [];
+      if (Array.isArray(items)) return items;
+      if (typeof items === 'string') {
+        try { return JSON.parse(items); } catch(e) { return []; }
+      }
+      return [];
     }
 
     // --- SUPABASE SYNC FUNCTIONS ---
@@ -190,18 +203,22 @@
 
         if (dbOrders) {
           const s = getSharedState();
-          s.orders = dbOrders.map(o => ({
-            id: o.id,
-            clientName: o.client_name || o.clientName || 'Guest',
-            phone: o.phone || '',
-            paymentMethod: o.payment_method || o.paymentMethod || 'Cash',
-            items: typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []),
-            subtotal: Number(o.subtotal || 0),
-            total: Number(o.total || 0),
-            stage: o.stage || 'pending',
-            date: o.date || new Date(o.timestamp || Date.now()).toLocaleDateString(),
-            timestamp: o.timestamp || Date.now()
-          }));
+          s.orders = dbOrders.map(o => {
+            const rawStage = String(o.stage || 'pending').toLowerCase().trim();
+            const timestamp = o.timestamp ? new Date(o.timestamp).getTime() : (o.created_at ? new Date(o.created_at).getTime() : Date.now());
+            return {
+              id: String(o.id || ''),
+              clientName: o.client_name || o.clientName || o.name || 'Guest',
+              phone: o.phone || '',
+              paymentMethod: o.payment_method || o.paymentMethod || 'Cash',
+              items: parseItems(o.items),
+              subtotal: Number(o.subtotal || 0),
+              total: Number(o.total || 0),
+              stage: rawStage,
+              date: o.date || new Date(timestamp).toLocaleDateString(),
+              timestamp: timestamp
+            };
+          });
 
           if (dbLogs) {
             s.staffLogs = dbLogs.map(l => ({
@@ -210,9 +227,9 @@
               timestamp: l.timestamp ? new Date(l.timestamp).getTime() : Date.now()
             }));
           }
-          saveSharedState(s);
+          saveSharedState(s, true);
           const statusEl = document.getElementById('staff-status');
-          statusEl.innerText = 'Online (Supabase)';
+          statusEl.innerText = `Online (${dbOrders.length} orders)`;
           statusEl.style.color = '#10b981';
         }
       } catch (err) {
@@ -237,22 +254,40 @@
       } catch (e) { console.error('Failed pushing log to Supabase:', e); }
     }
 
-    // --- UI HELPERS & CHIME ---
+    // --- AUDIO & CHIME (AUDIO CONTEXT UNLOCK) ---
+    let audioCtx = null;
     let chimeEnabled = true;
+
+    function unlockAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+    document.addEventListener('click', unlockAudio, { once: true });
+    document.addEventListener('keydown', unlockAudio, { once: true });
+
     function playChime() {
       if (!chimeEnabled) return;
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
         o.type = 'sine'; o.frequency.value = 880;
-        o.connect(g); g.connect(ctx.destination);
-        const now = ctx.currentTime;
+        o.connect(g); g.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
         g.gain.setValueAtTime(0.001, now);
         g.gain.linearRampToValueAtTime(0.12, now + 0.01);
         o.start(now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.25); o.stop(now + 0.26);
       } catch (e) {
-        const a = new Audio(); a.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="; a.play().catch(()=>{});
+        console.warn('Chime audio blocked or not supported:', e);
       }
     }
 
@@ -326,19 +361,21 @@
 
     function renderBoard() {
       const state = getSharedState();
-      const orders = (state.orders||[]).slice().sort((a,b)=> (b.timestamp||0)-(a.timestamp||0));
+      const orders = (state.orders||[]).slice().sort((a,b)=> (Number(b.timestamp)||0)-(Number(a.timestamp)||0));
       const filterStage = document.getElementById('filter-stage').value;
       const filterPhone = (document.getElementById('filter-phone').value||'').trim();
       const stages = ['pending','received','preparing','ready','completed'];
       stages.forEach(s => { const col = document.getElementById('col-'+s); if (col) col.innerHTML = ''; });
 
       const filtered = orders.filter(o => {
-        if (filterStage && o.stage !== filterStage) return false;
+        const stage = String(o.stage||'pending').toLowerCase().trim();
+        if (filterStage && stage !== filterStage) return false;
         if (filterPhone && (!o.phone || !o.phone.includes(filterPhone))) return false;
         return true;
       });
 
       filtered.forEach(order => {
+        const stageKey = String(order.stage||'pending').toLowerCase().trim();
         const card = document.createElement('div');
         card.className = 'card';
         card.draggable = true;
@@ -350,16 +387,16 @@
           </div>
           <div style="margin-top:6px;font-weight:800">${escapeHtml(order.clientName||'Guest')}</div>
           <div class="meta">Phone: ${escapeHtml(order.phone||'')} • ${escapeHtml(order.paymentMethod||'')}</div>
-          <div class="meta">Items: ${order.items?order.items.length:0} • Total: R${(order.total||0).toFixed(2)}</div>
+          <div class="meta">Items: ${Array.isArray(order.items)?order.items.length:0} • Total: R${(Number(order.total)||0).toFixed(2)}</div>
           <div class="actions"></div>
         `;
         const dot = document.createElement('div'); dot.style.marginTop='8px';
-        const dotColor = order.stage==='received'?'#10b981':order.stage==='preparing'?'#f59e0b':order.stage==='ready'?'#ef4444':order.stage==='pending'?'#60a5fa':'#94a3b8';
-        dot.innerHTML = `<span class="status-dot" style="background:${dotColor}"></span><span style="font-weight:700;text-transform:capitalize">${escapeHtml(order.stage)}</span>`;
+        const dotColor = stageKey==='received'?'#10b981':stageKey==='preparing'?'#f59e0b':stageKey==='ready'?'#ef4444':stageKey==='pending'?'#60a5fa':'#94a3b8';
+        dot.innerHTML = `<span class="status-dot" style="background:${dotColor}"></span><span style="font-weight:700;text-transform:capitalize">${escapeHtml(stageKey)}</span>`;
         card.appendChild(dot);
 
         const actions = card.querySelector('.actions');
-        if (order.stage === 'pending') {
+        if (stageKey === 'pending') {
           const acceptBtn = document.createElement('button'); acceptBtn.className='btn small'; acceptBtn.innerText='Accept';
           acceptBtn.addEventListener('click', ()=> acceptOrder(order.id));
           actions.appendChild(acceptBtn);
@@ -377,12 +414,12 @@
         card.addEventListener('dragstart', (ev)=>{ card.classList.add('dragging'); ev.dataTransfer.setData('text/plain', order.id); });
         card.addEventListener('dragend', ()=> card.classList.remove('dragging'));
 
-        const colEl = document.getElementById('col-'+order.stage);
+        const colEl = document.getElementById('col-' + stageKey) || document.getElementById('col-pending');
         if (colEl) colEl.appendChild(card);
       });
 
       stages.forEach(s => {
-        const cnt = (state.orders||[]).filter(o=>o.stage===s).length;
+        const cnt = (state.orders||[]).filter(o => String(o.stage||'pending').toLowerCase().trim() === s).length;
         const el = document.getElementById('count-'+s); if (el) el.innerText = cnt;
       });
 
@@ -394,9 +431,9 @@
           const id = ev.dataTransfer.getData('text/plain');
           if (!id) return;
           const s = getSharedState();
-          const idx = (s.orders||[]).findIndex(o => o.id === id);
+          const idx = (s.orders||[]).findIndex(o => String(o.id) === String(id));
           if (idx >= 0) {
-            const currentStage = s.orders[idx].stage;
+            const currentStage = String(s.orders[idx].stage||'pending').toLowerCase().trim();
             const ts = Date.now();
             if (stage === 'received' && currentStage === 'pending') {
               if (!confirm('Accept this pending order now?')) return;
@@ -422,7 +459,7 @@
     }
 
     function acceptOrder(orderId) {
-      const s = getSharedState(); const idx = (s.orders||[]).findIndex(o=>o.id===orderId); if (idx<0) return;
+      const s = getSharedState(); const idx = (s.orders||[]).findIndex(o=>String(o.id)===String(orderId)); if (idx<0) return;
       const ts = Date.now();
       const logMsg = `Accepted order ${orderId}`;
       s.orders[idx].stage = 'received';
@@ -434,8 +471,9 @@
     }
 
     function changeStage(orderId, delta) {
-      const s = getSharedState(); const idx = (s.orders||[]).findIndex(o=>o.id===orderId); if (idx<0) return;
-      const order = s.orders[idx]; const stages=['pending','received','preparing','ready','completed']; let i = stages.indexOf(order.stage); if (i===-1) i=0;
+      const s = getSharedState(); const idx = (s.orders||[]).findIndex(o=>String(o.id)===String(orderId)); if (idx<0) return;
+      const order = s.orders[idx]; const stages=['pending','received','preparing','ready','completed'];
+      let i = stages.indexOf(String(order.stage||'pending').toLowerCase().trim()); if (i===-1) i=0;
       let ni = Math.max(0, Math.min(stages.length-1, i+delta));
       const ts = Date.now();
       let logMsg = '';
@@ -454,7 +492,7 @@
     }
 
     function setStage(orderId, stage) {
-      const s = getSharedState(); const idx = (s.orders||[]).findIndex(o=>o.id===orderId); if (idx<0) return;
+      const s = getSharedState(); const idx = (s.orders||[]).findIndex(o=>String(o.id)===String(orderId)); if (idx<0) return;
       const ts = Date.now();
       const logMsg = `Set order ${orderId} to ${stage}`;
       s.orders[idx].stage = stage;
@@ -467,7 +505,8 @@
 
     function showSlip(order) {
       const w = window.open('', '_blank', 'width=420,height=640'); if (!w) return alert('Popup blocked.');
-      const html = `<html><head><title>Slip ${order.id}</title><style>body{font-family:Arial;padding:18px;color:#0f172a} .receipt{border:1px dashed #cbd5e1;padding:12px;border-radius:8px}</style></head><body><div class="receipt"><h2>Davidsonville Community Store</h2><div>Order ID: ${escapeHtml(order.id)}</div><div>Date: ${escapeHtml(order.date||'')}</div><div>Customer: ${escapeHtml(order.clientName||'')}</div><div>Phone: ${escapeHtml(order.phone||'')}</div><hr>${order.items.map(i=>`<div>${escapeHtml(i.name)} x${i.qty} — R${(i.price*i.qty).toFixed(2)}</div>`).join('')}<hr><div>Subtotal: R${(order.subtotal||0).toFixed(2)}</div><div>Total: R${(order.total||0).toFixed(2)}</div></div></body></html>`;
+      const items = parseItems(order.items);
+      const html = `<html><head><title>Slip ${order.id}</title><style>body{font-family:Arial;padding:18px;color:#0f172a} .receipt{border:1px dashed #cbd5e1;padding:12px;border-radius:8px}</style></head><body><div class="receipt"><h2>Davidsonville Community Store</h2><div>Order ID: ${escapeHtml(order.id)}</div><div>Date: ${escapeHtml(order.date||'')}</div><div>Customer: ${escapeHtml(order.clientName||'')}</div><div>Phone: ${escapeHtml(order.phone||'')}</div><hr>${items.map(i=>`<div>${escapeHtml(i.name||'Item')} x${i.qty\vert{}\vert{}1} — R${((i.price||0)*(i.qty||1)).toFixed(2)}</div>`).join('')}<hr><div>Subtotal: R${(Number(order.subtotal)||0).toFixed(2)}</div><div>Total: R${(Number(order.total)||0).toFixed(2)}</div></div></body></html>`;
       w.document.write(html); w.document.close();
     }
 
@@ -475,17 +514,18 @@
     let seenOrderIds = new Set();
     function detectIncomingOrders() {
       const s = getSharedState(); const orders = s.orders||[];
-      const newOrders = orders.filter(o => !seenOrderIds.has(o.id));
+      const newOrders = orders.filter(o => !seenOrderIds.has(String(o.id)));
       if (newOrders.length) {
-        newOrders.forEach(o => seenOrderIds.add(o.id));
-        const pendingNew = newOrders.filter(o => o.stage === 'pending');
+        newOrders.forEach(o => seenOrderIds.add(String(o.id)));
+        const pendingNew = newOrders.filter(o => String(o.stage||'pending').toLowerCase().trim() === 'pending');
         if (pendingNew.length) {
           playChime();
           const orig = document.title; document.title = `🔔 ${pendingNew.length} New Order(s)`; setTimeout(()=>document.title = orig, 2500);
           s.staffLogs = s.staffLogs||[];
           const ts = Date.now();
           pendingNew.forEach(o => s.staffLogs.push({ staff:'System', action:`New order arrived ${o.id}`, timestamp: ts }));
-          saveSharedState(s); renderStaffLogs();
+          saveSharedState(s, true);
+          renderStaffLogs();
         }
       }
     }
@@ -496,7 +536,7 @@
     // --- INITIALIZATION AND POLLING ---
     (async function init(){
       const s = getSharedState(); if (!s.orders) s.orders = []; if (!s.staffLogs) s.staffLogs = [];
-      (s.orders||[]).forEach(o => seenOrderIds.add(o.id));
+      (s.orders||[]).forEach(o => seenOrderIds.add(String(o.id)));
       renderStaffLogs(); renderBoard();
 
       await syncFromSupabase();
@@ -507,7 +547,7 @@
         detectIncomingOrders();
         renderBoard();
         renderStaffLogs();
-      }, 3000);
+      }, 4000);
     })();
 
     // --- UI BINDINGS ---
@@ -520,8 +560,8 @@
     document.getElementById('clear-completed').addEventListener('click', async () => {
       if (!confirm('Clear all completed orders?')) return;
       const s = getSharedState();
-      const completedIds = (s.orders||[]).filter(o => o.stage === 'completed').map(o => o.id);
-      s.orders = (s.orders||[]).filter(o => o.stage !== 'completed');
+      const completedIds = (s.orders||[]).filter(o => String(o.stage||'').toLowerCase().trim() === 'completed').map(o => o.id);
+      s.orders = (s.orders||[]).filter(o => String(o.stage||'').toLowerCase().trim() !== 'completed');
       saveSharedState(s); renderBoard();
 
       if (supabaseClient && completedIds.length) {
