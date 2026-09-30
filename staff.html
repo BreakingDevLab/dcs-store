@@ -221,9 +221,9 @@
     const SUPABASE_URL = "https://qbmszgddepljxqxynyxv.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU";
     
-    let supabase = null;
+    let supabaseClient = null;
     if (window.supabase) {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
 
     function getSharedState() {
@@ -243,13 +243,13 @@
 
     async function syncFromSupabase() {
       const statusEl = document.getElementById('staff-status');
-      if (!supabase) {
+      if (!supabaseClient) {
         if (statusEl) statusEl.innerText = 'Offline (Local Only)';
         return;
       }
       try {
-        const { data: ordersData, error: ordersErr } = await supabase.from('orders').select('*');
-        const { data: logsData, error: logsErr } = await supabase.from('staff_logs').select('*');
+        const { data: ordersData, error: ordersErr } = await supabaseClient.from('orders').select('*');
+        const { data: logsData, error: logsErr } = await supabaseClient.from('staff_logs').select('*');
 
         if (!ordersErr && ordersData) {
           const s = getSharedState();
@@ -284,16 +284,16 @@
     }
 
     async function updateOrderStageInSupabase(orderId, newStage) {
-      if (!supabase) return;
+      if (!supabaseClient) return;
       try {
-        await supabase.from('orders').update({ stage: newStage }).eq('id', orderId);
+        await supabaseClient.from('orders').update({ stage: newStage }).eq('id', orderId);
       } catch (e) { console.error('Supabase order update failed:', e); }
     }
 
     async function addLogToSupabase(staff, action) {
-      if (!supabase) return;
+      if (!supabaseClient) return;
       try {
-        await supabase.from('staff_logs').insert([{ staff, action, timestamp: Date.now() }]);
+        await supabaseClient.from('staff_logs').insert([{ staff, action, timestamp: Date.now() }]);
       } catch (e) { console.error('Supabase log insert failed:', e); }
     }
 
@@ -509,8 +509,8 @@
       }
     }
 
-    if (supabase) {
-      supabase.channel('dashboard_realtime')
+    if (supabaseClient) {
+      supabaseClient.channel('dashboard_realtime')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
           syncFromSupabase().then(() => { renderBoard(); detectIncomingOrders(); });
         })
