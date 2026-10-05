@@ -3,49 +3,56 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Davidsonville Staff Dashboard — Kanban & Kitchen Management</title>
+  <title>Davidsonville Staff Dashboard — Kitchen Management</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍗</text></svg>">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    :root{
-      --primary:#0f172a; --brand:#d97706; --bg:#f8fafc; --card:#ffffff; --muted:#475569;
-      --border:#e2e8f0; --radius:12px; --shadow:0 12px 30px rgba(15,23,42,0.08);
-      --kanban-gap:12px;
+    :root {
+      --primary: #0f172a;
+      --brand: #d97706;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --muted: #475569;
+      --border: #e2e8f0;
+      --radius: 12px;
+      --shadow: 0 12px 30px rgba(15,23,42,0.08);
+      --kanban-gap: 12px;
     }
-    *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-    body{margin:0;background:var(--bg);color:var(--primary);min-height:100vh;padding:18px}
-    header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border-radius:10px;background:linear-gradient(90deg,#0f172a,#1e293b);color:#fff;box-shadow:var(--shadow)}
-    header .brand{display:flex;align-items:center;gap:12px}
-    .brand-icon{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;font-size:1.2rem}
-    .brand-title h1{font-size:1.05rem;margin:0;font-weight:800}
-    .brand-title p{margin:0;font-size:.78rem;opacity:.9;color:rgba(255,255,255,0.9)}
-    .controls{display:flex;gap:10px;align-items:center}
-    .btn{background:var(--brand);color:#fff;border:none;padding:.55rem .8rem;border-radius:8px;font-weight:700;cursor:pointer}
-    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.15);color:#fff}
-    .btn.small{padding:.35rem .6rem;font-size:.8rem}
-    .layout{display:grid;grid-template-columns:320px 1fr;gap:18px;margin-top:18px}
-    .panel{background:linear-gradient(180deg,#ffffff,#fbfdff);border-radius:12px;padding:12px;border:1px solid var(--border);box-shadow:var(--shadow);color:var(--primary)}
-    .panel h3{margin:0 0 8px 0;font-size:0.95rem}
-    .staff-log-list{display:flex;flex-direction:column;gap:8px;max-height:280px;overflow:auto;padding-top:6px}
-    .log-row{padding:8px;border-radius:8px;border:1px dashed var(--border);background:#fff;display:flex;justify-content:space-between;gap:8px;align-items:flex-start;color:var(--primary)}
-    .log-meta{font-size:.82rem;color:var(--muted)}
-    .kanban-wrap{display:flex;gap:var(--kanban-gap);align-items:flex-start;height:calc(100vh - 170px);overflow-x:auto}
-    .column{flex:1;min-width:210px;background:linear-gradient(180deg,#fff,#fbfdff);border-radius:12px;padding:12px;border:1px solid var(--border);box-shadow:var(--shadow);display:flex;flex-direction:column;max-height:100%}
-    .col-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-    .col-title{font-weight:900;color:var(--primary)}
-    .col-count{font-size:.85rem;color:var(--muted);font-weight:700}
-    .dropzone{flex:1;overflow:auto;padding:6px;display:flex;flex-direction:column;gap:10px;min-height:150px;border:2px dashed transparent;border-radius:8px;transition:border-color 0.2s}
-    .dropzone.drag-over{border-color:var(--brand);background:rgba(217,119,6,0.04)}
-    .card{background:#fff;border-radius:10px;padding:10px;border:1px solid var(--border);box-shadow:0 6px 18px rgba(15,23,42,0.04);cursor:grab;color:var(--primary)}
-    .card.dragging{opacity:.5}
-    .card .meta{font-size:.82rem;color:var(--muted);margin-top:4px}
-    .card .actions{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
-    .badge{background:#eef2ff;padding:4px 8px;border-radius:999px;font-weight:800;color:var(--primary);font-size:.78rem}
-    .status-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px}
-    .modal-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.7);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:300;padding:1rem}
-    .modal-content{background:#fff;border-radius:12px;max-width:480px;width:100%;padding:1.25rem;box-shadow:0 20px 40px rgba(0,0,0,0.2)}
-    footer{margin-top:14px;text-align:center;color:var(--muted);font-size:.85rem}
-    @media(max-width:980px){ .layout{grid-template-columns:1fr;} .kanban-wrap{flex-direction:column;height:auto} }
+    * { box-sizing: border-box; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--primary); min-height: 100vh; padding: 18px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border-radius: 10px; background: linear-gradient(90deg, #0f172a, #1e293b); color: #fff; box-shadow: var(--shadow); }
+    header .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-icon { width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg, #f59e0b, #d97706); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+    .brand-title h1 { font-size: 1.05rem; margin: 0; font-weight: 800; }
+    .brand-title p { margin: 0; font-size: .78rem; opacity: .9; color: rgba(255,255,255,0.9); }
+    .controls { display: flex; gap: 10px; align-items: center; }
+    .btn { background: var(--brand); color: #fff; border: none; padding: .55rem .8rem; border-radius: 8px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
+    .btn:hover { opacity: 0.9; }
+    .btn.ghost { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #fff; }
+    .btn.small { padding: .35rem .6rem; font-size: .8rem; }
+    .layout { display: grid; grid-template-columns: 300px 1fr; gap: 18px; margin-top: 18px; }
+    .panel { background: #fff; border-radius: 12px; padding: 14px; border: 1px solid var(--border); box-shadow: var(--shadow); color: var(--primary); }
+    .panel h3 { margin: 0 0 10px 0; font-size: 0.95rem; }
+    .staff-log-list { display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; padding-top: 6px; }
+    .log-row { padding: 8px; border-radius: 8px; border: 1px dashed var(--border); background: #f8fafc; display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+    .log-meta { font-size: .75rem; color: var(--muted); }
+    .kanban-wrap { display: flex; gap: var(--kanban-gap); align-items: flex-start; height: calc(100vh - 170px); overflow-x: auto; }
+    .column { flex: 1; min-width: 220px; background: #ffffff; border-radius: 12px; padding: 12px; border: 1px solid var(--border); box-shadow: var(--shadow); display: flex; flex-direction: column; max-height: 100%; }
+    .col-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid var(--bg); }
+    .col-title { font-weight: 800; color: var(--primary); font-size: 0.9rem; }
+    .col-count { font-size: .8rem; color: #fff; font-weight: 800; background: var(--brand); padding: 2px 8px; border-radius: 999px; }
+    .dropzone { flex: 1; overflow-y: auto; padding: 4px; display: flex; flex-direction: column; gap: 10px; min-height: 150px; border: 2px dashed transparent; border-radius: 8px; transition: background 0.2s; }
+    .dropzone.drag-over { border-color: var(--brand); background: rgba(217,119,6,0.05); }
+    .card { background: #fff; border-radius: 10px; padding: 12px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(15,23,42,0.05); cursor: grab; color: var(--primary); transition: transform 0.15s ease; }
+    .card:hover { transform: translateY(-2px); }
+    .card.dragging { opacity: .4; }
+    .card .meta { font-size: .8rem; color: var(--muted); margin-top: 6px; }
+    .card .actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .badge { background: #e2e8f0; padding: 4px 8px; border-radius: 999px; font-weight: 800; color: var(--primary); font-size: .78rem; }
+    .modal-overlay { position: fixed; top:0; left:0; width:100vw; height:100vh; background: rgba(15,23,42,0.7); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 300; padding: 1rem; }
+    .modal-content { background: #fff; border-radius: 12px; max-width: 480px; width: 100%; padding: 1.25rem; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+    footer { margin-top: 14px; text-align: center; color: var(--muted); font-size: .8rem; }
+    @media(max-width: 980px) { .layout { grid-template-columns: 1fr; } .kanban-wrap { flex-direction: column; height: auto; } }
   </style>
 </head>
 <body>
@@ -54,34 +61,34 @@
       <div class="brand-icon">🍗</div>
       <div class="brand-title">
         <h1>Davidsonville Staff Dashboard</h1>
-        <p>Live Kitchen Orders & Supabase Sync</p>
+        <p>Live Realtime Orders Sync</p>
       </div>
     </div>
 
     <div class="controls">
       <div style="font-size:0.85rem">Status: <span id="staff-status" style="font-weight:800;color:#10b981">Connecting...</span></div>
-      <button class="btn" id="refresh-btn">Refresh</button>
-      <button class="btn small" id="clear-completed">Clear Completed</button>
+      <button class="btn" id="refresh-btn">Sync Now</button>
+      <button class="btn small ghost" id="clear-completed">Clear Done</button>
     </div>
   </header>
 
   <div class="layout">
     <aside>
       <div class="panel">
-        <h3>Staff Log</h3>
+        <h3>Staff Activity Log</h3>
         <div style="display:flex;gap:8px;margin-bottom:8px">
           <input id="staff-name" placeholder="Staff Name" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border)">
           <input id="staff-action" placeholder="Action" style="flex:2;padding:8px;border-radius:8px;border:1px solid var(--border)">
         </div>
         <div style="display:flex;gap:8px;margin-bottom:8px">
           <button class="btn small" id="add-log">Add Log</button>
-          <button class="btn small" id="clear-logs" style="background:#b91c1c">Clear Logs</button>
+          <button class="btn small" id="clear-logs" style="background:#b91c1c">Clear</button>
         </div>
         <div class="staff-log-list" id="staff-log-list"></div>
       </div>
 
       <div class="panel" style="margin-top:12px">
-        <h3>Incoming Order Audio Alert</h3>
+        <h3>Order Controls & Chime</h3>
         <div style="display:flex;gap:8px;margin-top:8px">
           <button class="btn small" id="toggle-chime">Chime: On</button>
           <button class="btn small" id="accept-all" style="background:#16a34a">Accept All Pending</button>
@@ -89,9 +96,9 @@
       </div>
 
       <div class="panel" style="margin-top:12px">
-        <h3>Filters</h3>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <select id="filter-stage" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border)">
+        <h3>Filter Orders</h3>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+          <select id="filter-stage" style="padding:8px;border-radius:8px;border:1px solid var(--border)">
             <option value="">All Stages</option>
             <option value="pending">Pending</option>
             <option value="received">Received</option>
@@ -99,7 +106,7 @@
             <option value="ready">Ready</option>
             <option value="completed">Completed</option>
           </select>
-          <input id="filter-phone" placeholder="Phone Search" style="padding:8px;border-radius:8px;border:1px solid var(--border)">
+          <input id="filter-phone" placeholder="Search by phone or name..." style="padding:8px;border-radius:8px;border:1px solid var(--border)">
         </div>
       </div>
     </aside>
@@ -149,18 +156,18 @@
     </main>
   </div>
 
-  <!-- Slip Modal -->
+  <!-- Kitchen Slip Modal -->
   <div id="slip-modal" class="modal-overlay">
     <div class="modal-content">
       <div id="slip-body"></div>
       <div style="display:flex; gap:8px; margin-top:12px;">
-        <button onclick="window.print()" class="btn" style="flex:1;">🖨️ Print Kitchen Slip</button>
+        <button onclick="window.print()" class="btn" style="flex:1;">🖨️ Print Slip</button>
         <button onclick="closeSlipModal()" class="btn ghost" style="flex:1; background:#64748b; color:#fff;">Close</button>
       </div>
     </div>
   </div>
 
-  <footer>Synced via Supabase REST & Local Storage Key: <code style="background:#fff;padding:2px 6px;border-radius:4px;border:1px solid var(--border)">davidsonville_app_state_v15</code></footer>
+  <footer>Connected via Supabase API • Local Backup Key: <code>davidsonville_app_state_v15</code></footer>
 
   <script>
     const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co';
@@ -180,15 +187,14 @@
       try {
         const raw = localStorage.getItem(SHARED_KEY);
         if (raw) return JSON.parse(raw);
-      } catch (e) { console.error('Read shared state error:', e); }
+      } catch (e) { console.error('Error reading localStorage state:', e); }
       return { clients: [], orders: [], staffLogs: [] };
     }
 
     function saveSharedState(state) {
       try {
         localStorage.setItem(SHARED_KEY, JSON.stringify(state));
-        window.dispatchEvent(new CustomEvent('dcsStateUpdated', { detail: state }));
-      } catch (e) { console.error('Save shared state error:', e); }
+      } catch (e) { console.error('Error saving localStorage state:', e); }
     }
 
     function parseItems(items) {
@@ -203,13 +209,20 @@
     async function syncFromSupabase() {
       if (!supabaseClient) return;
       try {
-        const { data: dbOrders, error: errOrders } = await supabaseClient.from('orders').select('*');
+        const { data: dbOrders, error: errOrders } = await supabaseClient.from('orders').select('*').order('created_at', { ascending: false });
         const { data: dbLogs } = await supabaseClient.from('staff_logs').select('*');
 
-        if (!errOrders && dbOrders) {
+        if (errOrders) {
+          console.error('Supabase Error:', errOrders);
+          const statusEl = document.getElementById('staff-status');
+          statusEl.innerText = `Error: ${errOrders.message || 'Access Blocked'}`;
+          statusEl.style.color = '#ef4444';
+          return;
+        }
+
+        if (dbOrders) {
           const s = getSharedState();
           
-          // Check if new pending order arrived
           const currentPending = dbOrders.filter(o => String(o.stage || '').toLowerCase() === 'pending').length;
           if (currentPending > lastPendingCount) playChime();
           lastPendingCount = currentPending;
@@ -217,14 +230,14 @@
           s.orders = dbOrders.map(o => ({
             id: String(o.id || ''),
             clientName: o.client_name || o.clientName || 'Guest',
-            phone: o.phone || '',
+            phone: o.phone || 'N/A',
             paymentMethod: o.payment_method || o.paymentMethod || 'Cash',
             items: parseItems(o.items),
             subtotal: Number(o.subtotal || 0),
             total: Number(o.total || 0),
             stage: String(o.stage || 'pending').toLowerCase().trim(),
-            date: o.date || new Date().toLocaleDateString(),
-            timestamp: o.timestamp ? new Date(o.timestamp).getTime() : Date.now(),
+            date: o.created_at ? new Date(o.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : new Date().toLocaleTimeString(),
+            timestamp: o.created_at ? new Date(o.created_at).getTime() : Date.now(),
             instructions: o.instructions || ''
           }));
 
@@ -245,14 +258,16 @@
           statusEl.style.color = '#10b981';
         }
       } catch (err) {
-        document.getElementById('staff-status').innerText = 'Offline (Local)';
-        document.getElementById('staff-status').style.color = '#f59e0b';
+        console.error('Sync error:', err);
+        const statusEl = document.getElementById('staff-status');
+        statusEl.innerText = 'Offline (Local Backup)';
+        statusEl.style.color = '#f59e0b';
       }
     }
 
     function subscribeSupabaseRealtime() {
       if (!supabaseClient) return;
-      supabaseClient.channel('staff_orders_channel')
+      supabaseClient.channel('realtime_staff_orders')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => syncFromSupabase())
         .subscribe();
     }
@@ -260,13 +275,13 @@
     async function pushOrderStageToSupabase(orderId, stage) {
       if (!supabaseClient) return;
       try { await supabaseClient.from('orders').update({ stage: stage }).eq('id', orderId); }
-      catch (e) { console.error('Failed pushing stage:', e); }
+      catch (e) { console.error('Failed pushing stage update:', e); }
     }
 
     async function pushStaffLogToSupabase(staff, action, timestamp) {
       if (!supabaseClient) return;
       try { await supabaseClient.from('staff_logs').insert([{ staff, action, timestamp: new Date(timestamp).toISOString() }]); }
-      catch (e) { console.error('Failed pushing log:', e); }
+      catch (e) { console.error('Failed pushing staff log:', e); }
     }
 
     function unlockAudio() {
@@ -285,14 +300,14 @@
         o.connect(g); g.connect(audioCtx.destination);
         const now = audioCtx.currentTime;
         g.gain.setValueAtTime(0.001, now);
-        g.gain.linearRampToValueAtTime(0.15, now + 0.01);
-        o.start(now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.3); o.stop(now + 0.31);
+        g.gain.linearRampToValueAtTime(0.2, now + 0.01);
+        o.start(now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.35); o.stop(now + 0.36);
       } catch (e) { console.warn('Chime audio blocked:', e); }
     }
 
     function setStage(orderId, newStage) {
       const s = getSharedState();
-      const idx = (s.orders || []).findIndex(o => o.id === orderId);
+      const idx = (s.orders || []).findIndex(o => String(o.id) === String(orderId));
       if (idx !== -1) {
         s.orders[idx].stage = newStage;
         const staff = (document.getElementById('staff-name').value.trim()) || 'Staff';
@@ -310,166 +325,240 @@
     function changeStage(orderId, delta) {
       const stages = ['pending', 'received', 'preparing', 'ready', 'completed'];
       const s = getSharedState();
-      const order = (s.orders || []).find(o => o.id === orderId);
-      if (order) {
-        let currentIdx = stages.indexOf(order.stage);
-        if (currentIdx === -1) currentIdx = 0;
-        let newIdx = Math.max(0, Math.min(stages.length - 1, currentIdx + delta));
-        setStage(orderId, stages[newIdx]);
+      const order = (s.orders || []).find(o => String(o.id) === String(orderId));
+      if (!order) return;
+      const currentIdx = stages.indexOf(order.stage);
+      const nextIdx = currentIdx + delta;
+      if (nextIdx >= 0 && nextIdx < stages.length) {
+        setStage(orderId, stages[nextIdx]);
       }
     }
 
     function renderBoard() {
-      const state = getSharedState();
-      const orders = (state.orders || []).slice().sort((a,b) => b.timestamp - a.timestamp);
-      const filterStage = document.getElementById('filter-stage').value;
-      const filterPhone = document.getElementById('filter-phone').value.trim();
-      const stages = ['pending', 'received', 'preparing', 'ready', 'completed'];
+      const s = getSharedState();
+      const orders = s.orders || [];
 
-      stages.forEach(s => {
-        const col = document.getElementById('col-' + s);
-        if (col) col.innerHTML = '';
+      const filterStage = document.getElementById('filter-stage').value;
+      const filterPhone = document.getElementById('filter-phone').value.trim().toLowerCase();
+
+      const stages = ['pending', 'received', 'preparing', 'ready', 'completed'];
+      const counts = { pending: 0, received: 0, preparing: 0, ready: 0, completed: 0 };
+
+      stages.forEach(stage => {
+        const dropzone = document.getElementById(`col-${stage}`);
+        if (dropzone) dropzone.innerHTML = '';
       });
 
-      orders.filter(o => {
-        if (filterStage && o.stage !== filterStage) return false;
-        if (filterPhone && (!o.phone || !o.phone.includes(filterPhone))) return false;
-        return true;
-      }).forEach(order => {
-        const stageKey = order.stage || 'pending';
-        const card = document.createElement('div');
-        card.className = 'card'; card.draggable = true; card.id = 'order-' + order.id;
+      orders.forEach(o => {
+        const stage = (o.stage || 'pending').toLowerCase();
+        if (counts[stage] !== undefined) counts[stage]++;
 
-        const itemsCount = Array.isArray(order.items) ? order.items.reduce((acc, i) => acc + (i.qty || 1), 0) : 0;
+        if (filterStage && stage !== filterStage) return;
+        if (filterPhone && !String(o.phone || '').toLowerCase().includes(filterPhone) && !String(o.clientName || '').toLowerCase().includes(filterPhone)) return;
+
+        const dropzone = document.getElementById(`col-${stage}`);
+        if (!dropzone) return;
+
+        const items = parseItems(o.items);
+        const itemsSummary = items.map(i => `${i.qty || 1}x ${i.name || i.title || 'Item'}`).join(', ');
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.draggable = true;
+        card.dataset.id = o.id;
+
+        const stageIdx = stages.indexOf(stage);
+        const prevBtn = stageIdx > 0 ? `<button class="btn small ghost" style="background:#64748b;padding:2px 6px;font-size:0.75rem;" onclick="changeStage('${o.id}', -1)">←</button>` : '';
+        const nextBtn = stageIdx < stages.length - 1 ? `<button class="btn small" style="padding:2px 6px;font-size:0.75rem;" onclick="changeStage('${o.id}', 1)">Next →</button>` : '';
 
         card.innerHTML = `
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <strong style="font-size:0.95rem">#${order.id}</strong>
-            <span class="badge">${order.date || ''}</span>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <strong style="font-size:0.9rem">#${o.id}</strong>
+            <span class="badge">R${Number(o.total || 0).toFixed(2)}</span>
           </div>
-          <div style="margin-top:4px;font-weight:800">${order.clientName || 'Guest'}</div>
-          <div class="meta">📞 ${order.phone || 'N/A'} • ${order.paymentMethod || 'Cash'}</div>
-          <div class="meta">📦 Items: ${itemsCount} • Total: R${Number(order.total || 0).toFixed(2)}</div>
-          ${order.instructions ? `<div class="meta" style="color:#d97706">📝 ${order.instructions}</div>` : ''}
-          <div class="actions" style="margin-top:8px">
-            ${stageKey === 'pending' ? `<button class="btn small" onclick="setStage('${order.id}', 'received')">Accept</button>` : ''}
-            <button class="btn small ghost" style="background:#475569" onclick="changeStage('${order.id}', -1)">←</button>
-            <button class="btn small ghost" style="background:#475569" onclick="changeStage('${order.id}', 1)">→</button>
-            <button class="btn small" style="background:#0ea5e9" onclick="showSlipFromId('${order.id}')">Slip</button>
-            <button class="btn small" style="background:#16a34a" onclick="setStage('${order.id}', 'completed')">✓</button>
-          </div>`;
+          <div style="font-size:0.85rem;font-weight:700;margin-top:4px">${o.clientName || 'Guest'} (${o.phone || 'N/A'})</div>
+          <div class="meta">${itemsSummary || 'No items listed'}</div>
+          ${o.instructions ? `<div style="font-size:0.75rem;color:#b91c1c;background:#fef2f2;padding:4px;border-radius:4px;margin-top:6px"><strong>Note:</strong> ${o.instructions}</div>` : ''}
+          <div style="font-size:0.75rem;color:var(--muted);margin-top:6px">${o.date || ''} • ${o.paymentMethod || 'Cash'}</div>
+          <div class="actions">
+            ${prevBtn}
+            ${nextBtn}
+            <button class="btn small ghost" style="background:#0f172a;color:#fff;padding:2px 6px;font-size:0.75rem" onclick="showKitchenSlip('${o.id}')">Slip</button>
+          </div>
+        `;
 
-        card.addEventListener('dragstart', ev => ev.dataTransfer.setData('text/plain', order.id));
+        card.addEventListener('dragstart', (e) => {
+          card.classList.add('dragging');
+          e.dataTransfer.setData('text/plain', o.id);
+        });
 
-        const colEl = document.getElementById('col-' + stageKey) || document.getElementById('col-pending');
-        if (colEl) colEl.appendChild(card);
+        card.addEventListener('dragend', () => card.classList.remove('dragging'));
+        dropzone.appendChild(card);
       });
 
-      stages.forEach(s => {
-        const count = orders.filter(o => o.stage === s).length;
-        document.getElementById('count-' + s).innerText = count;
+      stages.forEach(stage => {
+        const countEl = document.getElementById(`count-${stage}`);
+        if (countEl) countEl.innerText = counts[stage] || 0;
       });
     }
 
-    function initDragAndDrop() {
+    function setupDragAndDrop() {
       const dropzones = document.querySelectorAll('.dropzone');
       dropzones.forEach(dz => {
-        dz.addEventListener('dragover', e => {
-          e.preventDefault(); dz.classList.add('drag-over');
+        dz.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          dz.classList.add('drag-over');
         });
+
         dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-        dz.addEventListener('drop', e => {
-          e.preventDefault(); dz.classList.remove('drag-over');
+
+        dz.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dz.classList.remove('drag-over');
           const orderId = e.dataTransfer.getData('text/plain');
-          const targetStage = dz.parentElement.getAttribute('data-stage');
-          if (orderId && targetStage) setStage(orderId, targetStage);
+          const newStage = dz.parentElement.dataset.stage;
+          if (orderId && newStage) setStage(orderId, newStage);
         });
       });
     }
 
     function renderStaffLogs() {
       const s = getSharedState();
-      const list = document.getElementById('staff-log-list');
-      const logs = (s.staffLogs || []).slice().reverse();
-      if (logs.length === 0) { list.innerHTML = '<div style="font-size:0.8rem;color:var(--muted)">No staff logs.</div>'; return; }
-      list.innerHTML = logs.map(l => `
+      const logs = s.staffLogs || [];
+      const container = document.getElementById('staff-log-list');
+      if (!container) return;
+
+      if (logs.length === 0) {
+        container.innerHTML = '<div style="font-size:0.8rem;color:var(--muted);text-align:center;padding:8px">No logs recorded.</div>';
+        return;
+      }
+
+      container.innerHTML = logs.slice().reverse().map(l => `
         <div class="log-row">
-          <div><strong>${l.staff}</strong><br><span class="log-meta">${l.action}</span></div>
-          <div class="log-meta">${new Date(l.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
-        </div>`).join('');
+          <div>
+            <strong style="font-size:0.8rem;color:var(--primary)">${l.staff}</strong>
+            <div style="font-size:0.75rem">${l.action}</div>
+          </div>
+          <div class="log-meta">${new Date(l.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+        </div>
+      `).join('');
     }
 
-    function showSlipFromId(orderId) {
+    function showKitchenSlip(orderId) {
       const s = getSharedState();
-      const order = (s.orders || []).find(o => o.id === orderId);
+      const order = (s.orders || []).find(o => String(o.id) === String(orderId));
       if (!order) return;
-      document.getElementById('slip-body').innerHTML = `
-        <div style="font-family:'Courier New',monospace; border:1px dashed #cbd5e1; padding:12px; border-radius:8px;">
-          <strong style="font-size:1.1rem">Davidsonville Kitchen Slip</strong><br>
-          Order ID: #${order.id}<br>
-          Client: ${order.clientName} (${order.phone})<br>
-          Payment: ${order.paymentMethod}<br>
-          <hr style="border:0.5px dashed #000; margin:8px 0;">
-          ${(order.items || []).map(i => `<div>${i.qty}x ${i.name} - R${(i.price * i.qty).toFixed(2)}</div>`).join('')}
-          <hr style="border:0.5px dashed #000; margin:8px 0;">
-          <strong>Total: R${Number(order.total || 0).toFixed(2)}</strong><br>
-          ${order.instructions ? `Instructions: ${order.instructions}` : ''}
-        </div>`;
+
+      const items = parseItems(order.items);
+      const itemsHTML = items.map(i => `
+        <tr style="border-bottom:1px dashed #cbd5e1">
+          <td style="padding:4px 0"><strong>${i.qty || 1}x</strong> ${i.name || i.title || 'Item'}</td>
+          <td style="padding:4px 0;text-align:right">R${Number((i.price || 0) * (i.qty || 1)).toFixed(2)}</td>
+        </tr>
+      `).join('');
+
+      const body = document.getElementById('slip-body');
+      body.innerHTML = `
+        <div style="font-family:'Courier New',Courier,monospace;background:#fffdfa;padding:12px;border:1px dashed #cbd5e1;border-radius:8px">
+          <div style="text-align:center;margin-bottom:8px">
+            <h3 style="margin:0;font-size:1.1rem">KITCHEN PREP SLIP</h3>
+            <div style="font-size:0.8rem">Davidsonville Store</div>
+          </div>
+          <div style="font-size:0.82rem;margin-bottom:8px">
+            <div><strong>Order ID:</strong> #${order.id}</div>
+            <div><strong>Customer:</strong> ${order.clientName} (${order.phone})</div>
+            <div><strong>Time:</strong> ${order.date || ''}</div>
+            <div><strong>Payment:</strong> ${order.paymentMethod}</div>
+          </div>
+          ${order.instructions ? `<div style="font-size:0.8rem;background:#fff8f0;border-left:3px solid var(--brand);padding:4px 6px;margin-bottom:8px"><strong>Note:</strong> ${order.instructions}</div>` : ''}
+          <table style="width:100%;font-size:0.82rem;border-collapse:collapse;margin-bottom:8px">
+            <thead>
+              <tr style="border-bottom:1px solid #000;text-align:left">
+                <th>Item</th>
+                <th style="text-align:right">Total</th>
+              </tr>
+            </thead>
+            <tbody>${itemsHTML}</tbody>
+          </table>
+          <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:0.9rem;border-top:1px solid #000;padding-top:4px">
+            <span>TOTAL:</span>
+            <span>R${Number(order.total || 0).toFixed(2)}</span>
+          </div>
+        </div>
+      `;
+
       document.getElementById('slip-modal').style.display = 'flex';
     }
 
-    function closeSlipModal() { document.getElementById('slip-modal').style.display = 'none'; }
-
-    document.getElementById('refresh-btn').addEventListener('click', () => syncFromSupabase());
-    document.getElementById('clear-completed').addEventListener('click', async () => {
-      if (!confirm('Clear completed orders?')) return;
-      let s = getSharedState();
-      s.orders = (s.orders || []).filter(o => o.stage !== 'completed');
-      saveSharedState(s); renderBoard();
-      if (supabaseClient) await supabaseClient.from('orders').delete().eq('stage', 'completed');
-    });
-
-    document.getElementById('add-log').addEventListener('click', () => {
-      const name = document.getElementById('staff-name').value.trim();
-      const action = document.getElementById('staff-action').value.trim();
-      if (!name || !action) return alert('Enter name and action.');
-      const ts = Date.now();
-      let s = getSharedState();
-      s.staffLogs = s.staffLogs || [];
-      s.staffLogs.push({ staff: name, action, timestamp: ts });
-      saveSharedState(s); renderStaffLogs(); pushStaffLogToSupabase(name, action, ts);
-      document.getElementById('staff-action').value = '';
-    });
-
-    document.getElementById('clear-logs').addEventListener('click', async () => {
-      let s = getSharedState(); s.staffLogs = []; saveSharedState(s); renderStaffLogs();
-      if (supabaseClient) await supabaseClient.from('staff_logs').delete().neq('staff', '');
-    });
-
-    document.getElementById('toggle-chime').addEventListener('click', e => {
-      chimeEnabled = !chimeEnabled;
-      e.target.innerText = `Chime: ${chimeEnabled ? 'On' : 'Off'}`;
-    });
-
-    document.getElementById('accept-all').addEventListener('click', () => {
-      let s = getSharedState();
-      (s.orders || []).forEach(o => {
-        if (o.stage === 'pending') {
-          o.stage = 'received';
-          pushOrderStageToSupabase(o.id, 'received');
-        }
-      });
-      saveSharedState(s); renderBoard();
-    });
-
-    document.getElementById('filter-stage').addEventListener('change', () => renderBoard());
-    document.getElementById('filter-phone').addEventListener('input', () => renderBoard());
+    function closeSlipModal() {
+      document.getElementById('slip-modal').style.display = 'none';
+    }
 
     window.addEventListener('DOMContentLoaded', () => {
-      initDragAndDrop();
+      setupDragAndDrop();
       syncFromSupabase();
+      renderBoard();
+      renderStaffLogs();
+
       subscribeSupabaseRealtime();
-      setInterval(syncFromSupabase, 4000);
+      setInterval(syncFromSupabase, 5000);
+
+      document.getElementById('refresh-btn').addEventListener('click', () => {
+        syncFromSupabase();
+      });
+
+      document.getElementById('clear-completed').addEventListener('click', async () => {
+        if (!confirm('Are you sure you want to clear completed orders?')) return;
+        const s = getSharedState();
+        s.orders = (s.orders || []).filter(o => o.stage !== 'completed');
+        saveSharedState(s);
+        if (supabaseClient) {
+          try { await supabaseClient.from('orders').delete().eq('stage', 'completed'); } catch(e){}
+        }
+        renderBoard();
+      });
+
+      document.getElementById('add-log').addEventListener('click', () => {
+        const staff = document.getElementById('staff-name').value.trim() || 'Staff';
+        const action = document.getElementById('staff-action').value.trim();
+        if (!action) return alert('Enter an action.');
+        const s = getSharedState();
+        s.staffLogs = s.staffLogs || [];
+        const ts = Date.now();
+        s.staffLogs.push({ staff, action, timestamp: ts });
+        saveSharedState(s);
+        pushStaffLogToSupabase(staff, action, ts);
+        document.getElementById('staff-action').value = '';
+        renderStaffLogs();
+      });
+
+      document.getElementById('clear-logs').addEventListener('click', async () => {
+        if (!confirm('Clear all logs?')) return;
+        const s = getSharedState();
+        s.staffLogs = [];
+        saveSharedState(s);
+        if (supabaseClient) {
+          try { await supabaseClient.from('staff_logs').delete().neq('id', 0); } catch(e){}
+        }
+        renderStaffLogs();
+      });
+
+      document.getElementById('toggle-chime').addEventListener('click', () => {
+        chimeEnabled = !chimeEnabled;
+        const btn = document.getElementById('toggle-chime');
+        btn.innerText = `Chime: ${chimeEnabled ? 'On' : 'Off'}`;
+        btn.style.background = chimeEnabled ? 'var(--brand)' : '#64748b';
+      });
+
+      document.getElementById('accept-all').addEventListener('click', () => {
+        const s = getSharedState();
+        const pendingOrders = (s.orders || []).filter(o => o.stage === 'pending');
+        if (pendingOrders.length === 0) return alert('No pending orders.');
+        pendingOrders.forEach(o => setStage(o.id, 'received'));
+      });
+
+      document.getElementById('filter-stage').addEventListener('change', renderBoard);
+      document.getElementById('filter-phone').addEventListener('input', renderBoard);
     });
   </script>
 </body>
