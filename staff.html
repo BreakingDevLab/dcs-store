@@ -17,6 +17,9 @@
         <p class="text-xs text-gray-400">Staff Dashboard & Kanban Order Flow</p>
       </div>
       <div class="flex items-center gap-3">
+        <span id="realtimeStatus" class="text-[10px] bg-emerald-900/80 text-emerald-300 border border-emerald-700 px-2 py-1 rounded-full flex items-center gap-1">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Live Sync Active
+        </span>
         <button 
           onclick="playChime()" 
           class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-2.5 py-2 rounded-lg border border-gray-700 transition"
@@ -107,14 +110,21 @@
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4">
         <div>
           <h2 class="text-xl font-bold text-gray-800">Order Audit Log</h2>
-          <p class="text-xs text-gray-500">Search historical orders, filter by date range & stage, or export reports to CSV</p>
+          <p class="text-xs text-gray-500">Search historical orders, filter by date range & stage, or clear logs</p>
         </div>
         <div class="flex items-center gap-2">
           <button 
             onclick="exportAuditLogToCSV()" 
-            class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-1.5"
+            class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs md:text-sm px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-1.5"
           >
             <span>📥</span> Export CSV
+          </button>
+          <button 
+            onclick="clearAuditLog()" 
+            class="bg-red-600 hover:bg-red-700 text-white text-xs md:text-sm px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-1.5"
+            title="Clear all currently displayed/filtered log entries"
+          >
+            <span>🗑️</span> Clear Audit Log
           </button>
         </div>
       </div>
@@ -168,7 +178,7 @@
               <th class="p-3">Phone</th>
               <th class="p-3">Total</th>
               <th class="p-3">Status</th>
-              <th class="p-3">Actions</th>
+              <th class="p-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody id="auditLogTableBody">
@@ -268,46 +278,58 @@
     }
 
     // --- NOTIFICATION CHIME (Web Audio API) ---
+    let audioCtx = null;
+
+    function initAudioOnUserInteraction() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) audioCtx = new AudioContext();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+    document.addEventListener('click', initAudioOnUserInteraction, { once: true });
+
     function playChime() {
       try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
-        const ctx = new AudioContext();
+        initAudioOnUserInteraction();
+        if (!audioCtx) return;
 
         // Note 1
-        const osc1 = ctx.createOscillator();
-        const gain1 = ctx.createGain();
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
         osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-        gain1.gain.setValueAtTime(0.2, ctx.currentTime);
-        gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        osc1.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+        gain1.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
         osc1.connect(gain1);
-        gain1.connect(ctx.destination);
+        gain1.connect(audioCtx.destination);
 
         // Note 2
-        const osc2 = ctx.createOscillator();
-        const gain2 = ctx.createGain();
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
         osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(880, ctx.currentTime + 0.12); // A5
-        gain2.gain.setValueAtTime(0.25, ctx.currentTime + 0.12);
-        gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        osc2.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15); // A5
+        gain2.gain.setValueAtTime(0.35, audioCtx.currentTime + 0.15);
+        gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
         osc2.connect(gain2);
-        gain2.connect(ctx.destination);
+        gain2.connect(audioCtx.destination);
 
-        osc1.start(ctx.currentTime);
-        osc1.stop(ctx.currentTime + 0.3);
-        osc2.start(ctx.currentTime + 0.12);
-        osc2.stop(ctx.currentTime + 0.5);
+        osc1.start(audioCtx.currentTime);
+        osc1.stop(audioCtx.currentTime + 0.35);
+        osc2.start(audioCtx.currentTime + 0.15);
+        osc2.stop(audioCtx.currentTime + 0.6);
       } catch (e) {
-        console.warn('Audio chime notice:', e);
+        console.warn('Audio chime error:', e);
       }
     }
 
     let allOrdersCache = [];
-    let previousPendingCount = null;
+    let previousPendingIds = new Set();
 
     // --- MAIN DATA LOADER ---
-    async function loadAllData(isManualRefresh = false) {
+    async function loadAllData(isManualTrigger = false) {
       const client = getSupabaseClient();
       if (!client) {
         console.error("Supabase client failed to initialize.");
@@ -326,21 +348,63 @@
         return;
       }
 
-      allOrdersCache = data || [];
-      
-      const currentPendingCount = allOrdersCache.filter(o => {
-        const st = (o.stage || o.status || 'pending').toLowerCase();
-        return st === 'pending';
-      }).length;
+      const newOrders = data || [];
+      const currentPendingIds = new Set();
 
-      // Play chime if new pending orders came in or on explicit refresh button click
-      if (isManualRefresh || (previousPendingCount !== null && currentPendingCount > previousPendingCount)) {
+      newOrders.forEach(o => {
+        const stage = (o.stage || o.status || 'pending').toLowerCase();
+        if (stage === 'pending') {
+          currentPendingIds.add(String(o.order_id || o.id));
+        }
+      });
+
+      // Check if any brand new pending order arrived
+      let hasNewPending = false;
+      for (let id of currentPendingIds) {
+        if (!previousPendingIds.has(id)) {
+          hasNewPending = true;
+          break;
+        }
+      }
+
+      // Play chime immediately if new pending order detected or user manually refreshed
+      if (isManualTrigger || (previousPendingIds.size > 0 && hasNewPending)) {
         playChime();
       }
-      previousPendingCount = currentPendingCount;
+
+      previousPendingIds = currentPendingIds;
+      allOrdersCache = newOrders;
 
       renderKanbanBoard();
       filterAuditLog();
+    }
+
+    // --- REALTIME AUTOMATIC LISTENER ---
+    function setupRealtimeListener() {
+      const client = getSupabaseClient();
+      if (!client) return;
+
+      // Subscribe to live database changes
+      client
+        .channel('schema-db-changes')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
+          const newOrder = payload.new;
+          const stage = (newOrder.stage || newOrder.status || 'pending').toLowerCase();
+          
+          if (stage === 'pending') {
+            playChime(); // Play sound immediately on real-time order arrival
+          }
+          loadAllData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+          loadAllData();
+        })
+        .subscribe();
+
+      // High-frequency 4-second background polling fallback
+      setInterval(() => {
+        loadAllData();
+      }, 4000);
     }
 
     // --- KANBAN BOARD RENDERER ---
@@ -558,6 +622,7 @@
 
       tbody.innerHTML = orders.map(order => {
         const orderId = order.order_id || order.id || 'N/A';
+        const rawId = order.id || order.order_id;
         const name = order.customer_name || order.client_name || order.name || 'Guest';
         const phone = order.phone || '-';
         const total = order.total ? `R${Number(order.total).toFixed(2)}` : 'R0.00';
@@ -576,17 +641,92 @@
                 ${stage.toUpperCase()}
               </span>
             </td>
-            <td class="p-3">
-              <button 
-                onclick="openOrderDetailModal('${orderId}')" 
-                class="bg-gray-100 hover:bg-blue-50 text-blue-600 text-xs px-2.5 py-1.5 rounded-lg font-medium border border-gray-200 transition flex items-center gap-1"
-              >
-                <span>👁️</span> Details
-              </button>
+            <td class="p-3 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <button 
+                  onclick="openOrderDetailModal('${orderId}')" 
+                  class="bg-gray-100 hover:bg-blue-50 text-blue-600 text-xs px-2.5 py-1.5 rounded-lg font-medium border border-gray-200 transition"
+                  title="View details"
+                >
+                  👁️ Details
+                </button>
+                <button 
+                  onclick="deleteSingleOrder('${rawId}')" 
+                  class="bg-red-50 hover:bg-red-100 text-red-600 text-xs px-2 py-1.5 rounded-lg font-medium border border-red-200 transition"
+                  title="Delete from log"
+                >
+                  🗑️
+                </button>
+              </div>
             </td>
           </tr>
         `;
       }).join('');
+    }
+
+    // --- DELETE / CLEAR AUDIT LOG LOGIC ---
+    async function deleteSingleOrder(rawId) {
+      if (!confirm(`Are you sure you want to permanently delete order record #${rawId}?`)) {
+        return;
+      }
+
+      const client = getSupabaseClient();
+      if (!client) return;
+
+      const { error } = await client
+        .from('orders')
+        .delete()
+        .or(`id.eq.${rawId},order_id.eq.${rawId}`);
+
+      if (error) {
+        console.error('Error deleting order:', error);
+        alert('Failed to delete order: ' + error.message);
+        return;
+      }
+
+      loadAllData();
+    }
+
+    async function clearAuditLog() {
+      const filtered = getFilteredOrders();
+
+      if (!filtered || filtered.length === 0) {
+        alert('There are no orders in the log to clear.');
+        return;
+      }
+
+      const isFilteredView = filtered.length < allOrdersCache.length;
+      const confirmMessage = isFilteredView 
+        ? `Are you sure you want to permanently delete the ${filtered.length} currently filtered/displayed order(s) from the database?`
+        : `Are you sure you want to permanently CLEAR ALL ${filtered.length} orders from the Audit Log and Database?`;
+
+      if (!confirm(confirmMessage)) return;
+
+      const client = getSupabaseClient();
+      if (!client) return;
+
+      // Extract raw IDs to delete
+      const idsToDelete = filtered.map(o => o.id).filter(Boolean);
+
+      let error = null;
+      if (idsToDelete.length > 0) {
+        const res = await client.from('orders').delete().in('id', idsToDelete);
+        error = res.error;
+      } else {
+        // Fallback delete by order_id
+        const orderIdsToDelete = filtered.map(o => o.order_id).filter(Boolean);
+        const res = await client.from('orders').delete().in('order_id', orderIdsToDelete);
+        error = res.error;
+      }
+
+      if (error) {
+        console.error('Error clearing audit log:', error);
+        alert('Failed to clear log: ' + error.message);
+        return;
+      }
+
+      alert('Order Audit Log cleared successfully!');
+      loadAllData();
     }
 
     // --- CSV EXPORT LOGIC ---
@@ -755,7 +895,10 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', loadAllData);
+    document.addEventListener('DOMContentLoaded', () => {
+      loadAllData();
+      setupRealtimeListener();
+    });
   </script>
 </body>
 </html>
