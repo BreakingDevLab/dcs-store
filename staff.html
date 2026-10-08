@@ -419,6 +419,233 @@ function getStageBadgeStyle(stage) {
 }
 
 document.addEventListener('DOMContentLoaded', loadAuditLog);
+
+// --- ORDER DETAIL MODAL & PRINTABLE RECEIPT LOGIC ---
+
+function openOrderDetailModal(orderIdRef) {
+  const order = allOrdersCache.find(o => (o.order_id === orderIdRef || o.id === orderIdRef));
+  if (!order) {
+    alert('Order details not found.');
+    return;
+  }
+
+  const orderId = order.order_id || order.id || 'N/A';
+  const name = order.customer_name || order.client_name || order.name || 'Guest';
+  const phone = order.phone || '-';
+  const payment = order.payment_method || 'Cash';
+  const fulfillment = order.fulfillment || 'pickup';
+  const stage = (order.stage || order.status || 'pending').toUpperCase();
+  const total = order.total ? `R${Number(order.total).toFixed(2)}` : 'R0.00';
+  const date = order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A';
+
+  document.getElementById('modalOrderId').innerText = `Order #${orderId}`;
+  document.getElementById('modalOrderDate').innerText = date;
+  document.getElementById('modalCustomer').innerText = name;
+  document.getElementById('modalPhone').innerText = phone;
+  document.getElementById('modalPayment').innerText = payment;
+  document.getElementById('modalFulfillment').innerText = fulfillment;
+  document.getElementById('modalStatus').innerText = stage;
+  document.getElementById('modalGrandTotal').innerText = total;
+
+  // Parse items list (handles JSON array or stringified JSON)
+  let items = [];
+  try {
+    if (typeof order.items === 'string') {
+      items = JSON.parse(order.items);
+    } else if (Array.isArray(order.items)) {
+      items = order.items;
+    }
+  } catch (e) {
+    console.warn('Could not parse items array:', e);
+  }
+
+  const itemsTbody = document.getElementById('modalItemsTableBody');
+  if (items && items.length > 0) {
+    itemsTbody.innerHTML = items.map(item => {
+      const itemName = item.name || item.title || 'Item';
+      const qty = item.qty || item.quantity || 1;
+      const price = item.price ? Number(item.price).toFixed(2) : '0.00';
+      const lineTotal = (qty * parseFloat(price)).toFixed(2);
+
+      return `
+        <tr class="border-b">
+          <td class="p-2 font-medium text-gray-800">${itemName}</td>
+          <td class="p-2 text-center text-gray-600">${qty}</td>
+          <td class="p-2 text-right text-gray-600">R${price}</td>
+          <td class="p-2 text-right font-semibold text-gray-800">R${lineTotal}</td>
+        </tr>
+      `;
+    }).join('');
+  } else {
+    itemsTbody.innerHTML = `<tr><td colspan="4" class="p-3 text-center text-gray-400">No item breakdown available.</td></tr>`;
+  }
+
+  const modal = document.getElementById('orderDetailModal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeOrderDetailModal() {
+  const modal = document.getElementById('orderDetailModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function printOrderReceipt() {
+  const printContents = document.getElementById('printableArea').innerHTML;
+  const printWindow = window.open('', '_blank', 'width=500,height=700');
+
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Receipt</title>
+        <style>
+          body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; color: #111; line-height: 1.4; }
+          h2 { text-align: center; margin-bottom: 2px; font-size: 18px; }
+          .text-center { text-align: center; }
+          .text-xs { font-size: 11px; color: #555; }
+          .font-semibold { font-weight: 600; }
+          .font-bold { font-weight: bold; }
+          .border-b { border-bottom: 1px dashed #ccc; }
+          .border-t { border-top: 1px dashed #ccc; }
+          .pb-3 { padding-bottom: 10px; }
+          .pt-3 { padding-top: 10px; }
+          .mb-2 { margin-bottom: 8px; }
+          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: #f9f9f9; padding: 10px; border-radius: 4px; margin-bottom: 12px; font-size: 12px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+          th, td { padding: 6px 4px; text-align: left; }
+          th { border-bottom: 1px solid #333; }
+          .text-center { text-align: center; }
+          .text-right { text-align: right; }
+          .flex { display: flex; justify-content: space-between; align-items: center; font-size: 15px; }
+        </style>
+      </head>
+      <body>
+
+<!-- Order Detail & Printable Receipt Modal -->
+<div id="orderDetailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden flex flex-col max-h-[90vh]">
+    
+    <!-- Modal Header -->
+    <div class="bg-gray-900 text-white p-4 flex justify-between items-center">
+      <div>
+        <h3 class="font-bold text-lg" id="modalOrderId">Order Receipt</h3>
+        <p class="text-xs text-gray-300" id="modalOrderDate"></p>
+      </div>
+      <button onclick="closeOrderDetailModal()" class="text-gray-400 hover:text-white text-2xl font-bold p-1 leading-none">&times;</button>
+    </div>
+
+    <!-- Modal Body / Printable Receipt Content -->
+    <div id="printableArea" class="p-5 overflow-y-auto space-y-4 text-sm text-gray-700">
+      <div class="text-center border-b pb-3">
+        <h2 class="text-xl font-bold text-gray-900">Davidsonville Community Store</h2>
+        <p class="text-xs text-gray-500">Official Customer Order Receipt</p>
+      </div>
+
+      <!-- Customer Summary -->
+      <div class="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-3 rounded-lg border border-gray-100">
+        <div><span class="font-semibold text-gray-600">Customer:</span> <span id="modalCustomer" class="font-medium text-gray-900"></span></div>
+        <div><span class="font-semibold text-gray-600">Phone:</span> <span id="modalPhone" class="font-medium text-gray-900"></span></div>
+        <div><span class="font-semibold text-gray-600">Payment:</span> <span id="modalPayment" class="font-medium text-gray-900"></span></div>
+        <div><span class="font-semibold text-gray-600">Fulfillment:</span> <span id="modalFulfillment" class="font-medium text-gray-900"></span></div>
+        <div class="col-span-2"><span class="font-semibold text-gray-600">Status:</span> <span id="modalStatus" class="font-bold"></span></div>
+      </div>
+
+      <!-- Itemized Table -->
+      <div>
+        <h4 class="font-bold text-gray-800 mb-2 border-b pb-1 text-xs uppercase tracking-wider">Items Ordered</h4>
+        <table class="w-full text-left text-xs">
+          <thead class="bg-gray-100 text-gray-600 border-b">
+            <tr>
+              <th class="p-2">Item</th>
+              <th class="p-2 text-center">Qty</th>
+              <th class="p-2 text-right">Price</th>
+              <th class="p-2 text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody id="modalItemsTableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Grand Total -->
+      <div class="border-t pt-3 flex justify-between items-center font-bold text-base text-gray-900">
+        <span>Grand Total:</span>
+        <span id="modalGrandTotal" class="text-blue-600 text-lg"></span>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="bg-gray-50 p-4 border-t flex justify-end gap-2">
+      <button 
+        onclick="printOrderReceipt()" 
+        class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-lg font-medium transition flex items-center gap-1.5"
+      >
+        <span>🖨️</span> Print Receipt
+      </button>
+      <button 
+        onclick="closeOrderDetailModal()" 
+        class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm px-4 py-2 rounded-lg font-medium transition"
+      >
+        Close
+      </button>
+    </div>
+
+  </div>
+</div>
+        ${printContents}
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.close();
+  }, 300);
+}
+
+// Ensure Audit Table includes the "View" action button
+const originalRenderAuditTable = renderAuditTable;
+renderAuditTable = function(orders) {
+  const tbody = document.getElementById('auditLogTableBody');
+  if (!tbody) return;
+
+  if (!orders || orders.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">No matching orders found.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = orders.map(order => {
+    const orderId = order.order_id || order.id || 'N/A';
+    const name = order.customer_name || order.client_name || order.name || 'Guest';
+    const phone = order.phone || '-';
+    const total = order.total ? `R${Number(order.total).toFixed(2)}` : 'R0.00';
+    const stage = order.stage || order.status || 'pending';
+    const date = order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A';
+
+    return `
+      <tr class="border-b hover:bg-gray-50 transition">
+        <td class="p-3 whitespace-nowrap text-xs text-gray-500">${date}</td>
+        <td class="p-3 font-mono font-bold text-blue-600">${orderId}</td>
+        <td class="p-3 font-medium text-gray-800">${name}</td>
+        <td class="p-3 text-gray-600">${phone}</td>
+        <td class="p-3 font-semibold text-gray-800">${total}</td>
+        <td class="p-3">
+          <span class="px-2.5 py-1 text-xs rounded-full font-semibold ${getStageBadgeStyle(stage)}">
+            ${stage.toUpperCase()}
+          </span>
+        </td>
+        <td class="p-3">
+          <button 
+            onclick="openOrderDetailModal('${orderId}')" 
+            class="bg-gray-100 hover:bg-blue-50 text-blue-600 text-xs px-2.5 py-1.5 rounded-lg font-medium border border-gray-200 transition flex items-center gap-1"
+          >
+            <span>👁️</span> Details
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+};
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
