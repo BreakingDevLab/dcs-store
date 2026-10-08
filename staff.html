@@ -236,6 +236,189 @@ function getStageBadgeStyle(stage) {
 }
 
 document.addEventListener('DOMContentLoaded', loadAuditLog);
+
+// --- AUDIT LOG, DATE & STAGE FILTERING & CSV EXPORT LOGIC ---
+let allOrdersCache = [];
+
+async function loadAuditLog() {
+  const tbody = document.getElementById('auditLogTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">Fetching records...</td></tr>`;
+
+  const { data, error } = await supabaseClient
+    .from('orders')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching audit log:', error);
+    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-500">Failed to load order history.</td></tr>`;
+    return;
+  }
+
+  allOrdersCache = data || [];
+  filterAuditLog();
+}
+
+function renderAuditTable(orders) {
+  const tbody = document.getElementById('auditLogTableBody');
+  if (!tbody) return;
+
+  if (!orders || orders.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">No matching orders found.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = orders.map(order => {
+    const orderId = order.order_id || order.id || 'N/A';
+    const name = order.customer_name || order.client_name || order.name || 'Guest';
+    const phone = order.phone || '-';
+    const total = order.total ? `R${Number(order.total).toFixed(2)}` : 'R0.00';
+    const stage = order.stage || order.status || 'pending';
+    const date = order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A';
+
+    return `
+      <tr class="border-b hover:bg-gray-50 transition">
+        <td class="p-3 whitespace-nowrap text-xs text-gray-500">${date}</td>
+        <td class="p-3 font-mono font-bold text-blue-600">${orderId}</td>
+        <td class="p-3 font-medium text-gray-800">${name}</td>
+        <td class="p-3 text-gray-600">${phone}</td>
+        <td class="p-3 font-semibold text-gray-800">${total}</td>
+        <td class="p-3">
+          <span class="px-2.5 py-1 text-xs rounded-full font-semibold ${getStageBadgeStyle(stage)}">
+            ${stage.toUpperCase()}
+          </span>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function isSameDay(d1, d2) {
+  return d1.getFullYear() === d2.getFullYear() &&
+         d1.getMonth() === d2.getMonth() &&
+         d1.getDate() === d2.getDate();
+}
+
+function matchesDateRange(orderCreatedAt, range) {
+  if (range === 'all' || !orderCreatedAt) return true;
+  const date = new Date(orderCreatedAt);
+  if (isNaN(date.getTime())) return true;
+
+  const now = new Date();
+
+  if (range === 'today') {
+    return isSameDay(date, now);
+  }
+
+  if (range === 'yesterday') {
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    return isSameDay(date, yesterday);
+  }
+
+  if (range === 'this-week') {
+    const startOfWeek = new Date(now);
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    startOfWeek.setDate(diff);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    return date >= startOfWeek && date <= endOfWeek;
+  }
+
+  if (range === 'this-month') {
+    return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+  }
+
+  return true;
+}
+
+function getFilteredOrders() {
+  const query = document.getElementById('auditSearchInput')?.value.toLowerCase().trim() || '';
+  const dateFilter = document.getElementById('auditDateFilter')?.value || 'all';
+  const stageFilter = document.getElementById('auditStageFilter')?.value || 'all';
+
+  return allOrdersCache.filter(order => {
+    const orderId = (order.order_id || order.id || '').toLowerCase();
+    const name = (order.customer_name || order.client_name || order.name || '').toLowerCase();
+    const phone = (order.phone || '').toLowerCase();
+    const stage = (order.stage || order.status || 'pending').toLowerCase();
+
+    const matchesQuery = !query || orderId.includes(query) || name.includes(query) || phone.includes(query);
+    const matchesStage = stageFilter === 'all' || stage === stageFilter || 
+                         (stageFilter === 'in-progress' && stage === 'processing');
+    const matchesDate = matchesDateRange(order.created_at, dateFilter);
+
+    return matchesQuery && matchesStage && matchesDate;
+  });
+}
+
+function filterAuditLog() {
+  const filtered = getFilteredOrders();
+  renderAuditTable(filtered);
+}
+
+function exportAuditLogToCSV() {
+  const filtered = getFilteredOrders();
+
+  if (!filtered || filtered.length === 0) {
+    alert('No matching orders found to export.');
+    return;
+  }
+
+  const headers = ['Date & Time', 'Order ID', 'Customer', 'Phone', 'Total (ZAR)', 'Stage', 'Payment Method', 'Fulfillment'];
+  const csvRows = [headers.join(',')];
+
+  filtered.forEach(order => {
+    const date = order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A';
+    const orderId = order.order_id || order.id || 'N/A';
+    const name = order.customer_name || order.client_name || order.name || 'Guest';
+    const phone = order.phone || '-';
+    const total = order.total ? Number(order.total).toFixed(2) : '0.00';
+    const stage = order.stage || order.status || 'pending';
+    const payment = order.payment_method || 'Cash';
+    const fulfillment = order.fulfillment || 'pickup';
+
+    const row = [
+      `"${date.replace(/"/g, '""')}"`,
+      `"${orderId.replace(/"/g, '""')}"`,
+      `"${name.replace(/"/g, '""')}"`,
+      `"${phone.replace(/"/g, '""')}"`,
+      `"${total}"`,
+      `"${stage.toUpperCase()}"`,
+      `"${payment.replace(/"/g, '""')}"`,
+      `"${fulfillment.replace(/"/g, '""')}"`
+    ];
+    csvRows.push(row.join(','));
+  });
+
+  const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `dcs_audit_log_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function getStageBadgeStyle(stage) {
+  switch ((stage || '').toLowerCase()) {
+    case 'completed': return 'bg-green-100 text-green-800';
+    case 'in-progress':
+    case 'processing': return 'bg-yellow-100 text-yellow-800';
+    case 'cancelled': return 'bg-red-100 text-red-800';
+    default: return 'bg-blue-100 text-blue-800';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadAuditLog);
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -244,6 +427,89 @@ document.addEventListener('DOMContentLoaded', loadAuditLog);
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen">
+
+<!-- Audit Log & Search Section -->
+<div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 mb-6 m-4">
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4">
+    <div>
+      <h2 class="text-xl font-bold text-gray-800">Order Audit Log</h2>
+      <p class="text-xs text-gray-500">Search historical orders, filter by date range & stage, or export reports to CSV</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button 
+        onclick="exportAuditLogToCSV()" 
+        class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-1.5"
+      >
+        <span>📥</span> Export CSV
+      </button>
+      <button 
+        onclick="loadAuditLog()" 
+        class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3.5 py-2 rounded-lg font-medium transition"
+      >
+        Refresh Log
+      </button>
+    </div>
+  </div>
+
+  <!-- Search, Date Range & Stage Filter Bar -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+    <div class="md:col-span-2">
+      <input 
+        type="text" 
+        id="auditSearchInput" 
+        placeholder="Search by Order ID, Customer Name, or Phone..." 
+        class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+        onkeyup="filterAuditLog()"
+      />
+    </div>
+    <div>
+      <select 
+        id="auditDateFilter" 
+        onchange="filterAuditLog()" 
+        class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+      >
+        <option value="all">All Time</option>
+        <option value="today">Today</option>
+        <option value="yesterday">Yesterday</option>
+        <option value="this-week">This Week</option>
+        <option value="this-month">This Month</option>
+      </select>
+    </div>
+    <div>
+      <select 
+        id="auditStageFilter" 
+        onchange="filterAuditLog()" 
+        class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+      >
+        <option value="all">All Stages</option>
+        <option value="pending">Pending</option>
+        <option value="in-progress">In-Progress / Processing</option>
+        <option value="completed">Completed</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto rounded-lg border border-gray-100">
+    <table class="w-full text-left text-sm text-gray-600">
+      <thead class="bg-gray-50 text-xs font-semibold text-gray-500 uppercase border-b">
+        <tr>
+          <th class="p-3">Date & Time</th>
+          <th class="p-3">Order ID</th>
+          <th class="p-3">Customer</th>
+          <th class="p-3">Phone</th>
+          <th class="p-3">Total</th>
+          <th class="p-3">Status</th>
+        </tr>
+      </thead>
+      <tbody id="auditLogTableBody">
+        <tr>
+          <td colspan="6" class="p-4 text-center text-gray-400">Loading order history...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
 <!-- Audit Log & Search Section -->
 <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 mb-6 m-4">
