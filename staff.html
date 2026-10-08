@@ -1,1189 +1,490 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Staff Dashboard - Store Management</title>
-
-// --- AUDIT LOG & SEARCH LOGIC ---
-let allOrdersCache = [];
-
-async function loadAuditLog() {
-  const tbody = document.getElementById('auditLogTableBody');
-  if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">Fetching records...</td></tr>`;
-
-  const { data, error } = await supabaseClient
-    .from('orders')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching audit log:', error);
-    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-500">Failed to load order history.</td></tr>`;
-    return;
-  }
-
-  allOrdersCache = data || [];
-  renderAuditTable(allOrdersCache);
-}
-
-function renderAuditTable(orders) {
-  const tbody = document.getElementById('auditLogTableBody');
-  if (!tbody) return;
-
-  if (!orders || orders.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">No matching orders found.</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = orders.map(order => {
-    const orderId = order.order_id || order.id || 'N/A';
-    const name = order.customer_name || order.client_name || order.name || 'Guest';
-    const phone = order.phone || '-';
-    const total = order.total ? `R${Number(order.total).toFixed(2)}` : 'R0.00';
-    const stage = order.stage || order.status || 'pending';
-    const date = order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A';
-
-    return `
-      <tr class="border-b hover:bg-gray-50 transition">
-        <td class="p-3 whitespace-nowrap text-xs text-gray-500">${date}</td>
-        <td class="p-3 font-mono font-bold text-blue-600">${orderId}</td>
-        <td class="p-3 font-medium text-gray-800">${name}</td>
-        <td class="p-3 text-gray-600">${phone}</td>
-        <td class="p-3 font-semibold text-gray-800">${total}</td>
-        <td class="p-3">
-          <span class="px-2.5 py-1 text-xs rounded-full font-semibold ${getStageBadgeStyle(stage)}">
-            ${stage.toUpperCase()}
-          </span>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
-
-function filterAuditLog() {
-  const query = document.getElementById('auditSearchInput').value.toLowerCase().trim();
-  if (!query) {
-    renderAuditTable(allOrdersCache);
-    return;
-  }
-  const filtered = allOrdersCache.filter(order => {
-    const orderId = (order.order_id || order.id || '').toLowerCase();
-    const name = (order.customer_name || order.client_name || order.name || '').toLowerCase();
-    const phone = (order.phone || '').toLowerCase();
-    return orderId.includes(query) || name.includes(query) || phone.includes(query);
-  });
-  renderAuditTable(filtered);
-}
-
-function getStageBadgeStyle(stage) {
-  switch ((stage || '').toLowerCase()) {
-    case 'completed': return 'bg-green-100 text-green-800';
-    case 'in-progress':
-    case 'processing': return 'bg-yellow-100 text-yellow-800';
-    case 'cancelled': return 'bg-red-100 text-red-800';
-    default: return 'bg-blue-100 text-blue-800';
-  }
-}
-
-document.addEventListener('DOMContentLoaded', loadAuditLog);
-
-// --- AUDIT LOG, FILTERING & CSV EXPORT LOGIC ---
-let allOrdersCache = [];
-
-async function loadAuditLog() {
-  const tbody = document.getElementById('auditLogTableBody');
-  if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">Fetching records...</td></tr>`;
-
-  const { data, error } = await supabaseClient
-    .from('orders')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching audit log:', error);
-    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-500">Failed to load order history.</td></tr>`;
-    return;
-  }
-
-  allOrdersCache = data || [];
-  filterAuditLog();
-}
-
-function renderAuditTable(orders) {
-  const tbody = document.getElementById('auditLogTableBody');
-  if (!tbody) return;
-
-  if (!orders || orders.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">No matching orders found.</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = orders.map(order => {
-    const orderId = order.order_id || order.id || 'N/A';
-    const name = order.customer_name || order.client_name || order.name || 'Guest';
-    const phone = order.phone || '-';
-    const total = order.total ? `R${Number(order.total).toFixed(2)}` : 'R0.00';
-    const stage = order.stage || order.status || 'pending';
-    const date = order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A';
-
-    return `
-      <tr class="border-b hover:bg-gray-50 transition">
-        <td class="p-3 whitespace-nowrap text-xs text-gray-500">${date}</td>
-        <td class="p-3 font-mono font-bold text-blue-600">${orderId}</td>
-        <td class="p-3 font-medium text-gray-800">${name}</td>
-        <td class="p-3 text-gray-600">${phone}</td>
-        <td class="p-3 font-semibold text-gray-800">${total}</td>
-        <td class="p-3">
-          <span class="px-2.5 py-1 text-xs rounded-full font-semibold ${getStageBadgeStyle(stage)}">
-            ${stage.toUpperCase()}
-          </span>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
-
-function filterAuditLog() {
-  const query = document.getElementById('auditSearchInput')?.value.toLowerCase().trim() || '';
-  const stageFilter = document.getElementById('auditStageFilter')?.value || 'all';
-
-  const filtered = allOrdersCache.filter(order => {
-    const orderId = (order.order_id || order.id || '').toLowerCase();
-    const name = (order.customer_name || order.client_name || order.name || '').toLowerCase();
-    const phone = (order.phone || '').toLowerCase();
-    const stage = (order.stage || order.status || 'pending').toLowerCase();
-
-    const matchesQuery = !query || orderId.includes(query) || name.includes(query) || phone.includes(query);
-    const matchesStage = stageFilter === 'all' || stage === stageFilter || 
-                         (stageFilter === 'in-progress' && stage === 'processing');
-
-    return matchesQuery && matchesStage;
-  });
-
-  renderAuditTable(filtered);
-}
-
-function exportAuditLogToCSV() {
-  const query = document.getElementById('auditSearchInput')?.value.toLowerCase().trim() || '';
-  const stageFilter = document.getElementById('auditStageFilter')?.value || 'all';
-
-  const filtered = allOrdersCache.filter(order => {
-    const orderId = (order.order_id || order.id || '').toLowerCase();
-    const name = (order.customer_name || order.client_name || order.name || '').toLowerCase();
-    const phone = (order.phone || '').toLowerCase();
-    const stage = (order.stage || order.status || 'pending').toLowerCase();
-
-    const matchesQuery = !query || orderId.includes(query) || name.includes(query) || phone.includes(query);
-    const matchesStage = stageFilter === 'all' || stage === stageFilter || 
-                         (stageFilter === 'in-progress' && stage === 'processing');
-
-    return matchesQuery && matchesStage;
-  });
-
-  if (!filtered || filtered.length === 0) {
-    alert('No matching orders found to export.');
-    return;
-  }
-
-  const headers = ['Date & Time', 'Order ID', 'Customer', 'Phone', 'Total (ZAR)', 'Stage', 'Payment Method', 'Fulfillment'];
-  const csvRows = [headers.join(',')];
-
-  filtered.forEach(order => {
-    const date = order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A';
-    const orderId = order.order_id || order.id || 'N/A';
-    const name = order.customer_name || order.client_name || order.name || 'Guest';
-    const phone = order.phone || '-';
-    const total = order.total ? Number(order.total).toFixed(2) : '0.00';
-    const stage = order.stage || order.status || 'pending';
-    const payment = order.payment_method || 'Cash';
-    const fulfillment = order.fulfillment || 'pickup';
-
-    const row = [
-      `"${date.replace(/"/g, '""')}"`,
-      `"${orderId.replace(/"/g, '""')}"`,
-      `"${name.replace(/"/g, '""')}"`,
-      `"${phone.replace(/"/g, '""')}"`,
-      `"${total}"`,
-      `"${stage.toUpperCase()}"`,
-      `"${payment.replace(/"/g, '""')}"`,
-      `"${fulfillment.replace(/"/g, '""')}"`
-    ];
-    csvRows.push(row.join(','));
-  });
-
-  const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `dcs_audit_log_${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-
-function getStageBadgeStyle(stage) {
-  switch ((stage || '').toLowerCase()) {
-    case 'completed': return 'bg-green-100 text-green-800';
-    case 'in-progress':
-    case 'processing': return 'bg-yellow-100 text-yellow-800';
-    case 'cancelled': return 'bg-red-100 text-red-800';
-    default: return 'bg-blue-100 text-blue-800';
-  }
-}
-
-document.addEventListener('DOMContentLoaded', loadAuditLog);
-
-// --- AUDIT LOG, DATE & STAGE FILTERING & CSV EXPORT LOGIC ---
-let allOrdersCache = [];
-
-async function loadAuditLog() {
-  const tbody = document.getElementById('auditLogTableBody');
-  if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">Fetching records...</td></tr>`;
-
-  const { data, error } = await supabaseClient
-    .from('orders')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching audit log:', error);
-    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-500">Failed to load order history.</td></tr>`;
-    return;
-  }
-
-  allOrdersCache = data || [];
-  filterAuditLog();
-}
-
-function renderAuditTable(orders) {
-  const tbody = document.getElementById('auditLogTableBody');
-  if (!tbody) return;
-
-  if (!orders || orders.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">No matching orders found.</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = orders.map(order => {
-    const orderId = order.order_id || order.id || 'N/A';
-    const name = order.customer_name || order.client_name || order.name || 'Guest';
-    const phone = order.phone || '-';
-    const total = order.total ? `R${Number(order.total).toFixed(2)}` : 'R0.00';
-    const stage = order.stage || order.status || 'pending';
-    const date = order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A';
-
-    return `
-      <tr class="border-b hover:bg-gray-50 transition">
-        <td class="p-3 whitespace-nowrap text-xs text-gray-500">${date}</td>
-        <td class="p-3 font-mono font-bold text-blue-600">${orderId}</td>
-        <td class="p-3 font-medium text-gray-800">${name}</td>
-        <td class="p-3 text-gray-600">${phone}</td>
-        <td class="p-3 font-semibold text-gray-800">${total}</td>
-        <td class="p-3">
-          <span class="px-2.5 py-1 text-xs rounded-full font-semibold ${getStageBadgeStyle(stage)}">
-            ${stage.toUpperCase()}
-          </span>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
-
-function isSameDay(d1, d2) {
-  return d1.getFullYear() === d2.getFullYear() &&
-         d1.getMonth() === d2.getMonth() &&
-         d1.getDate() === d2.getDate();
-}
-
-function matchesDateRange(orderCreatedAt, range) {
-  if (range === 'all' || !orderCreatedAt) return true;
-  const date = new Date(orderCreatedAt);
-  if (isNaN(date.getTime())) return true;
-
-  const now = new Date();
-
-  if (range === 'today') {
-    return isSameDay(date, now);
-  }
-
-  if (range === 'yesterday') {
-    const yesterday = new Date(now);
-    yesterday.setDate(now.getDate() - 1);
-    return isSameDay(date, yesterday);
-  }
-
-  if (range === 'this-week') {
-    const startOfWeek = new Date(now);
-    const day = now.getDay();
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-    startOfWeek.setDate(diff);
-    startOfWeek.setHours(0, 0, 0, 0);
-
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
-    endOfWeek.setHours(23, 59, 59, 999);
-
-    return date >= startOfWeek && date <= endOfWeek;
-  }
-
-  if (range === 'this-month') {
-    return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
-  }
-
-  return true;
-}
-
-function getFilteredOrders() {
-  const query = document.getElementById('auditSearchInput')?.value.toLowerCase().trim() || '';
-  const dateFilter = document.getElementById('auditDateFilter')?.value || 'all';
-  const stageFilter = document.getElementById('auditStageFilter')?.value || 'all';
-
-  return allOrdersCache.filter(order => {
-    const orderId = (order.order_id || order.id || '').toLowerCase();
-    const name = (order.customer_name || order.client_name || order.name || '').toLowerCase();
-    const phone = (order.phone || '').toLowerCase();
-    const stage = (order.stage || order.status || 'pending').toLowerCase();
-
-    const matchesQuery = !query || orderId.includes(query) || name.includes(query) || phone.includes(query);
-    const matchesStage = stageFilter === 'all' || stage === stageFilter || 
-                         (stageFilter === 'in-progress' && stage === 'processing');
-    const matchesDate = matchesDateRange(order.created_at, dateFilter);
-
-    return matchesQuery && matchesStage && matchesDate;
-  });
-}
-
-function filterAuditLog() {
-  const filtered = getFilteredOrders();
-  renderAuditTable(filtered);
-}
-
-function exportAuditLogToCSV() {
-  const filtered = getFilteredOrders();
-
-  if (!filtered || filtered.length === 0) {
-    alert('No matching orders found to export.');
-    return;
-  }
-
-  const headers = ['Date & Time', 'Order ID', 'Customer', 'Phone', 'Total (ZAR)', 'Stage', 'Payment Method', 'Fulfillment'];
-  const csvRows = [headers.join(',')];
-
-  filtered.forEach(order => {
-    const date = order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A';
-    const orderId = order.order_id || order.id || 'N/A';
-    const name = order.customer_name || order.client_name || order.name || 'Guest';
-    const phone = order.phone || '-';
-    const total = order.total ? Number(order.total).toFixed(2) : '0.00';
-    const stage = order.stage || order.status || 'pending';
-    const payment = order.payment_method || 'Cash';
-    const fulfillment = order.fulfillment || 'pickup';
-
-    const row = [
-      `"${date.replace(/"/g, '""')}"`,
-      `"${orderId.replace(/"/g, '""')}"`,
-      `"${name.replace(/"/g, '""')}"`,
-      `"${phone.replace(/"/g, '""')}"`,
-      `"${total}"`,
-      `"${stage.toUpperCase()}"`,
-      `"${payment.replace(/"/g, '""')}"`,
-      `"${fulfillment.replace(/"/g, '""')}"`
-    ];
-    csvRows.push(row.join(','));
-  });
-
-  const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `dcs_audit_log_${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-
-function getStageBadgeStyle(stage) {
-  switch ((stage || '').toLowerCase()) {
-    case 'completed': return 'bg-green-100 text-green-800';
-    case 'in-progress':
-    case 'processing': return 'bg-yellow-100 text-yellow-800';
-    case 'cancelled': return 'bg-red-100 text-red-800';
-    default: return 'bg-blue-100 text-blue-800';
-  }
-}
-
-document.addEventListener('DOMContentLoaded', loadAuditLog);
-
-// --- ORDER DETAIL MODAL & PRINTABLE RECEIPT LOGIC ---
-
-function openOrderDetailModal(orderIdRef) {
-  const order = allOrdersCache.find(o => (o.order_id === orderIdRef || o.id === orderIdRef));
-  if (!order) {
-    alert('Order details not found.');
-    return;
-  }
-
-  const orderId = order.order_id || order.id || 'N/A';
-  const name = order.customer_name || order.client_name || order.name || 'Guest';
-  const phone = order.phone || '-';
-  const payment = order.payment_method || 'Cash';
-  const fulfillment = order.fulfillment || 'pickup';
-  const stage = (order.stage || order.status || 'pending').toUpperCase();
-  const total = order.total ? `R${Number(order.total).toFixed(2)}` : 'R0.00';
-  const date = order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A';
-
-  document.getElementById('modalOrderId').innerText = `Order #${orderId}`;
-  document.getElementById('modalOrderDate').innerText = date;
-  document.getElementById('modalCustomer').innerText = name;
-  document.getElementById('modalPhone').innerText = phone;
-  document.getElementById('modalPayment').innerText = payment;
-  document.getElementById('modalFulfillment').innerText = fulfillment;
-  document.getElementById('modalStatus').innerText = stage;
-  document.getElementById('modalGrandTotal').innerText = total;
-
-  // Parse items list (handles JSON array or stringified JSON)
-  let items = [];
-  try {
-    if (typeof order.items === 'string') {
-      items = JSON.parse(order.items);
-    } else if (Array.isArray(order.items)) {
-      items = order.items;
-    }
-  } catch (e) {
-    console.warn('Could not parse items array:', e);
-  }
-
-  const itemsTbody = document.getElementById('modalItemsTableBody');
-  if (items && items.length > 0) {
-    itemsTbody.innerHTML = items.map(item => {
-      const itemName = item.name || item.title || 'Item';
-      const qty = item.qty || item.quantity || 1;
-      const price = item.price ? Number(item.price).toFixed(2) : '0.00';
-      const lineTotal = (qty * parseFloat(price)).toFixed(2);
-
-      return `
-        <tr class="border-b">
-          <td class="p-2 font-medium text-gray-800">${itemName}</td>
-          <td class="p-2 text-center text-gray-600">${qty}</td>
-          <td class="p-2 text-right text-gray-600">R${price}</td>
-          <td class="p-2 text-right font-semibold text-gray-800">R${lineTotal}</td>
-        </tr>
-      `;
-    }).join('');
-  } else {
-    itemsTbody.innerHTML = `<tr><td colspan="4" class="p-3 text-center text-gray-400">No item breakdown available.</td></tr>`;
-  }
-
-  const modal = document.getElementById('orderDetailModal');
-  if (modal) modal.classList.remove('hidden');
-}
-
-function closeOrderDetailModal() {
-  const modal = document.getElementById('orderDetailModal');
-  if (modal) modal.classList.add('hidden');
-}
-
-function printOrderReceipt() {
-  const printContents = document.getElementById('printableArea').innerHTML;
-  const printWindow = window.open('', '_blank', 'width=500,height=700');
-
-  printWindow.document.write(`
-    <html>
-      <head>
-        <title>Receipt</title>
-        <style>
-          body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; color: #111; line-height: 1.4; }
-          h2 { text-align: center; margin-bottom: 2px; font-size: 18px; }
-          .text-center { text-align: center; }
-          .text-xs { font-size: 11px; color: #555; }
-          .font-semibold { font-weight: 600; }
-          .font-bold { font-weight: bold; }
-          .border-b { border-bottom: 1px dashed #ccc; }
-          .border-t { border-top: 1px dashed #ccc; }
-          .pb-3 { padding-bottom: 10px; }
-          .pt-3 { padding-top: 10px; }
-          .mb-2 { margin-bottom: 8px; }
-          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: #f9f9f9; padding: 10px; border-radius: 4px; margin-bottom: 12px; font-size: 12px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
-          th, td { padding: 6px 4px; text-align: left; }
-          th { border-bottom: 1px solid #333; }
-          .text-center { text-align: center; }
-          .text-right { text-align: right; }
-          .flex { display: flex; justify-content: space-between; align-items: center; font-size: 15px; }
-        </style>
-      </head>
-      <body>
-
-<!-- Order Detail & Printable Receipt Modal -->
-<div id="orderDetailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-  <div class="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden flex flex-col max-h-[90vh]">
-    
-    <!-- Modal Header -->
-    <div class="bg-gray-900 text-white p-4 flex justify-between items-center">
-      <div>
-        <h3 class="font-bold text-lg" id="modalOrderId">Order Receipt</h3>
-        <p class="text-xs text-gray-300" id="modalOrderDate"></p>
-      </div>
-      <button onclick="closeOrderDetailModal()" class="text-gray-400 hover:text-white text-2xl font-bold p-1 leading-none">&times;</button>
-    </div>
-
-    <!-- Modal Body / Printable Receipt Content -->
-    <div id="printableArea" class="p-5 overflow-y-auto space-y-4 text-sm text-gray-700">
-      <div class="text-center border-b pb-3">
-        <h2 class="text-xl font-bold text-gray-900">Davidsonville Community Store</h2>
-        <p class="text-xs text-gray-500">Official Customer Order Receipt</p>
-      </div>
-
-      <!-- Customer Summary -->
-      <div class="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-3 rounded-lg border border-gray-100">
-        <div><span class="font-semibold text-gray-600">Customer:</span> <span id="modalCustomer" class="font-medium text-gray-900"></span></div>
-        <div><span class="font-semibold text-gray-600">Phone:</span> <span id="modalPhone" class="font-medium text-gray-900"></span></div>
-        <div><span class="font-semibold text-gray-600">Payment:</span> <span id="modalPayment" class="font-medium text-gray-900"></span></div>
-        <div><span class="font-semibold text-gray-600">Fulfillment:</span> <span id="modalFulfillment" class="font-medium text-gray-900"></span></div>
-        <div class="col-span-2"><span class="font-semibold text-gray-600">Status:</span> <span id="modalStatus" class="font-bold"></span></div>
-      </div>
-
-      <!-- Itemized Table -->
-      <div>
-        <h4 class="font-bold text-gray-800 mb-2 border-b pb-1 text-xs uppercase tracking-wider">Items Ordered</h4>
-        <table class="w-full text-left text-xs">
-          <thead class="bg-gray-100 text-gray-600 border-b">
-            <tr>
-              <th class="p-2">Item</th>
-              <th class="p-2 text-center">Qty</th>
-              <th class="p-2 text-right">Price</th>
-              <th class="p-2 text-right">Total</th>
-            </tr>
-          </thead>
-          <tbody id="modalItemsTableBody"></tbody>
-        </table>
-      </div>
-
-      <!-- Grand Total -->
-      <div class="border-t pt-3 flex justify-between items-center font-bold text-base text-gray-900">
-        <span>Grand Total:</span>
-        <span id="modalGrandTotal" class="text-blue-600 text-lg"></span>
-      </div>
-    </div>
-
-    <!-- Modal Footer -->
-    <div class="bg-gray-50 p-4 border-t flex justify-end gap-2">
-      <button 
-        onclick="printOrderReceipt()" 
-        class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-lg font-medium transition flex items-center gap-1.5"
-      >
-        <span>🖨️</span> Print Receipt
-      </button>
-      <button 
-        onclick="closeOrderDetailModal()" 
-        class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm px-4 py-2 rounded-lg font-medium transition"
-      >
-        Close
-      </button>
-    </div>
-
-  </div>
-</div>
-        ${printContents}
-      </body>
-    </html>
-  `);
-
-  printWindow.document.close();
-  printWindow.focus();
-  setTimeout(() => {
-    printWindow.print();
-    printWindow.close();
-  }, 300);
-}
-
-// Ensure Audit Table includes the "View" action button
-const originalRenderAuditTable = renderAuditTable;
-renderAuditTable = function(orders) {
-  const tbody = document.getElementById('auditLogTableBody');
-  if (!tbody) return;
-
-  if (!orders || orders.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">No matching orders found.</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = orders.map(order => {
-    const orderId = order.order_id || order.id || 'N/A';
-    const name = order.customer_name || order.client_name || order.name || 'Guest';
-    const phone = order.phone || '-';
-    const total = order.total ? `R${Number(order.total).toFixed(2)}` : 'R0.00';
-    const stage = order.stage || order.status || 'pending';
-    const date = order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A';
-
-    return `
-      <tr class="border-b hover:bg-gray-50 transition">
-        <td class="p-3 whitespace-nowrap text-xs text-gray-500">${date}</td>
-        <td class="p-3 font-mono font-bold text-blue-600">${orderId}</td>
-        <td class="p-3 font-medium text-gray-800">${name}</td>
-        <td class="p-3 text-gray-600">${phone}</td>
-        <td class="p-3 font-semibold text-gray-800">${total}</td>
-        <td class="p-3">
-          <span class="px-2.5 py-1 text-xs rounded-full font-semibold ${getStageBadgeStyle(stage)}">
-            ${stage.toUpperCase()}
-          </span>
-        </td>
-        <td class="p-3">
-          <button 
-            onclick="openOrderDetailModal('${orderId}')" 
-            class="bg-gray-100 hover:bg-blue-50 text-blue-600 text-xs px-2.5 py-1.5 rounded-lg font-medium border border-gray-200 transition flex items-center gap-1"
-          >
-            <span>👁️</span> Details
-          </button>
-        </td>
-      </tr>
-    `;
-  }).join('');
-};
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Dashboard - DCS Store</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    .order-card { transition: all 0.2s ease-in-out; }
-    .order-card:hover { transform: translateY(-2px); }
-  </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen">
+<body class="bg-gray-100 min-h-screen font-sans text-gray-800">
 
-<!-- Audit Log & Search Section -->
-<div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 mb-6 m-4">
-  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4">
-    <div>
-      <h2 class="text-xl font-bold text-gray-800">Order Audit Log</h2>
-      <p class="text-xs text-gray-500">Search historical orders, filter by date range & stage, or export reports to CSV</p>
+  <!-- Header -->
+  <header class="bg-gray-900 text-white p-4 shadow-md">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+      <h1 class="text-xl font-bold">Davidsonville Community Store — Staff Dashboard</h1>
+      <a href="index.html" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-1.5 rounded border border-gray-700 transition">Storefront</a>
     </div>
-    <div class="flex items-center gap-2">
-      <button 
-        onclick="exportAuditLogToCSV()" 
-        class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-1.5"
-      >
-        <span>📥</span> Export CSV
-      </button>
-      <button 
-        onclick="loadAuditLog()" 
-        class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3.5 py-2 rounded-lg font-medium transition"
-      >
-        Refresh Log
-      </button>
-    </div>
-  </div>
+  </header>
 
-  <!-- Search, Date Range & Stage Filter Bar -->
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-    <div class="md:col-span-2">
-      <input 
-        type="text" 
-        id="auditSearchInput" 
-        placeholder="Search by Order ID, Customer Name, or Phone..." 
-        class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
-        onkeyup="filterAuditLog()"
-      />
-    </div>
-    <div>
-      <select 
-        id="auditDateFilter" 
-        onchange="filterAuditLog()" 
-        class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-      >
-        <option value="all">All Time</option>
-        <option value="today">Today</option>
-        <option value="yesterday">Yesterday</option>
-        <option value="this-week">This Week</option>
-        <option value="this-month">This Month</option>
-      </select>
-    </div>
-    <div>
-      <select 
-        id="auditStageFilter" 
-        onchange="filterAuditLog()" 
-        class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-      >
-        <option value="all">All Stages</option>
-        <option value="pending">Pending</option>
-        <option value="in-progress">In-Progress / Processing</option>
-        <option value="completed">Completed</option>
-        <option value="cancelled">Cancelled</option>
-      </select>
-    </div>
-  </div>
+  <main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
 
-  <div class="overflow-x-auto rounded-lg border border-gray-100">
-    <table class="w-full text-left text-sm text-gray-600">
-      <thead class="bg-gray-50 text-xs font-semibold text-gray-500 uppercase border-b">
-        <tr>
-          <th class="p-3">Date & Time</th>
-          <th class="p-3">Order ID</th>
-          <th class="p-3">Customer</th>
-          <th class="p-3">Phone</th>
-          <th class="p-3">Total</th>
-          <th class="p-3">Status</th>
-        </tr>
-      </thead>
-      <tbody id="auditLogTableBody">
-        <tr>
-          <td colspan="6" class="p-4 text-center text-gray-400">Loading order history...</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<!-- Audit Log & Search Section -->
-<div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 mb-6 m-4">
-  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4">
-    <div>
-      <h2 class="text-xl font-bold text-gray-800">Order Audit Log</h2>
-      <p class="text-xs text-gray-500">Search historical orders, filter stages, or export reports to CSV</p>
-    </div>
-    <div class="flex items-center gap-2">
-      <button 
-        onclick="exportAuditLogToCSV()" 
-        class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-1.5"
-      >
-        <span>📥</span> Export CSV
-      </button>
-      <button 
-        onclick="loadAuditLog()" 
-        class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3.5 py-2 rounded-lg font-medium transition"
-      >
-        Refresh Log
-      </button>
-    </div>
-  </div>
-
-  <!-- Search and Stage Filter Bar -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-    <div class="md:col-span-2">
-      <input 
-        type="text" 
-        id="auditSearchInput" 
-        placeholder="Search by Order ID, Customer Name, or Phone..." 
-        class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
-        onkeyup="filterAuditLog()"
-      />
-    </div>
-    <div>
-      <select 
-        id="auditStageFilter" 
-        onchange="filterAuditLog()" 
-        class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-      >
-        <option value="all">All Stages</option>
-        <option value="pending">Pending</option>
-        <option value="in-progress">In-Progress / Processing</option>
-        <option value="completed">Completed</option>
-        <option value="cancelled">Cancelled</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="overflow-x-auto rounded-lg border border-gray-100">
-    <table class="w-full text-left text-sm text-gray-600">
-      <thead class="bg-gray-50 text-xs font-semibold text-gray-500 uppercase border-b">
-        <tr>
-          <th class="p-3">Date & Time</th>
-          <th class="p-3">Order ID</th>
-          <th class="p-3">Customer</th>
-          <th class="p-3">Phone</th>
-          <th class="p-3">Total</th>
-          <th class="p-3">Status</th>
-        </tr>
-      </thead>
-      <tbody id="auditLogTableBody">
-        <tr>
-          <td colspan="6" class="p-4 text-center text-gray-400">Loading order history...</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<!-- Audit Log & Search Section -->
-<div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 mb-6 m-4">
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-    <div>
-      <h2 class="text-xl font-bold text-gray-800">Order Audit Log</h2>
-      <p class="text-xs text-gray-500">Search historical orders or verify misplaced receipts</p>
-    </div>
-    <button 
-      onclick="loadAuditLog()" 
-      class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg font-medium transition"
-    >
-      Refresh Log
-    </button>
-  </div>
-
-  <div class="mb-4">
-    <input 
-      type="text" 
-      id="auditSearchInput" 
-      placeholder="Type Order ID, Customer Name, or Phone Number..." 
-      class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
-      onkeyup="filterAuditLog()"
-    />
-  </div>
-
-  <div class="overflow-x-auto rounded-lg border border-gray-100">
-    <table class="w-full text-left text-sm text-gray-600">
-      <thead class="bg-gray-50 text-xs font-semibold text-gray-500 uppercase border-b">
-        <tr>
-          <th class="p-3">Date & Time</th>
-          <th class="p-3">Order ID</th>
-          <th class="p-3">Customer</th>
-          <th class="p-3">Phone</th>
-          <th class="p-3">Total</th>
-          <th class="p-3">Status</th>
-        </tr>
-      </thead>
-      <tbody id="auditLogTableBody">
-        <tr>
-          <td colspan="6" class="p-4 text-center text-gray-400">Loading order history...</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-  <div id="dashboard" class="min-h-screen flex flex-col">
-    
-    <!-- TOP NAVIGATION BAR -->
-    <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-          <div class="h-3 w-3 rounded-full bg-emerald-500 animate-pulse" id="status-indicator"></div>
-          <h1 class="text-xl font-bold tracking-tight">Store Ops <span class="text-indigo-400">Dashboard</span></h1>
+    <!-- Audit Log & Search Section -->
+    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4">
+        <div>
+          <h2 class="text-xl font-bold text-gray-800">Order Audit Log</h2>
+          <p class="text-xs text-gray-500">Search historical orders, filter by date range & stage, or export reports to CSV</p>
         </div>
-
-        <div class="flex items-center space-x-4">
-          <button id="audio-toggle" onclick="toggleAudio()" 
-            class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-lg border border-slate-700 flex items-center space-x-2 transition-colors">
-            <span id="audio-icon">🔔</span>
-            <span id="audio-label">Chime Enabled</span>
+        <div class="flex items-center gap-2">
+          <button 
+            onclick="exportAuditLogToCSV()" 
+            class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-1.5"
+          >
+            <span>📥</span> Export CSV
           </button>
-
-          <button onclick="fetchOrders()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">
-            ↻ Refresh
+          <button 
+            onclick="loadAuditLog()" 
+            class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3.5 py-2 rounded-lg font-medium transition"
+          >
+            Refresh Log
           </button>
         </div>
       </div>
-    </header>
 
-    <!-- METRICS OVERVIEW BAR -->
-    <div class="bg-white border-b border-slate-200">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-        <div class="p-3 bg-amber-50 rounded-xl border border-amber-100">
-          <p class="text-xs text-amber-700 font-semibold uppercase">Pending</p>
-          <p id="count-pending" class="text-2xl font-black text-amber-900">0</p>
+      <!-- Search, Date Range & Stage Filter Bar -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+        <div class="md:col-span-2">
+          <input 
+            type="text" 
+            id="auditSearchInput" 
+            placeholder="Search by Order ID, Customer Name, or Phone..." 
+            class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+            onkeyup="filterAuditLog()"
+          />
         </div>
-        <div class="p-3 bg-blue-50 rounded-xl border border-blue-100">
-          <p class="text-xs text-blue-700 font-semibold uppercase">Preparing</p>
-          <p id="count-preparing" class="text-2xl font-black text-blue-900">0</p>
+        <div>
+          <select 
+            id="auditDateFilter" 
+            onchange="filterAuditLog()" 
+            class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          >
+            <option value="all">All Time</option>
+            <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
+            <option value="this-week">This Week</option>
+            <option value="this-month">This Month</option>
+          </select>
         </div>
-        <div class="p-3 bg-indigo-50 rounded-xl border border-indigo-100">
-          <p class="text-xs text-indigo-700 font-semibold uppercase">Ready</p>
-          <p id="count-ready" class="text-2xl font-black text-indigo-900">0</p>
+        <div>
+          <select 
+            id="auditStageFilter" 
+            onchange="filterAuditLog()" 
+            class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          >
+            <option value="all">All Stages</option>
+            <option value="pending">Pending</option>
+            <option value="in-progress">In-Progress / Processing</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
         </div>
-        <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-          <p class="text-xs text-emerald-700 font-semibold uppercase">Completed Today</p>
-          <p id="count-completed" class="text-2xl font-black text-emerald-900">0</p>
-        </div>
+      </div>
+
+      <div class="overflow-x-auto rounded-lg border border-gray-100">
+        <table class="w-full text-left text-sm text-gray-600">
+          <thead class="bg-gray-50 text-xs font-semibold text-gray-500 uppercase border-b">
+            <tr>
+              <th class="p-3">Date & Time</th>
+              <th class="p-3">Order ID</th>
+              <th class="p-3">Customer</th>
+              <th class="p-3">Phone</th>
+              <th class="p-3">Total</th>
+              <th class="p-3">Status</th>
+              <th class="p-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="auditLogTableBody">
+            <tr>
+              <td colspan="7" class="p-4 text-center text-gray-400">Loading order history...</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <!-- KANBAN BOARD / ORDER STAGES -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+  </main>
 
-        <!-- STAGE: PENDING -->
-        <section class="flex flex-col bg-slate-200/60 p-4 rounded-2xl min-h-[500px]">
-          <h2 class="font-bold text-slate-700 text-sm uppercase tracking-wide mb-4 flex items-center justify-between">
-            <span>New Orders</span>
-            <span id="badge-pending" class="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">0</span>
-          </h2>
-          <div id="col-pending" class="space-y-4 flex-1"></div>
-        </section>
-
-        <!-- STAGE: PREPARING -->
-        <section class="flex flex-col bg-slate-200/60 p-4 rounded-2xl min-h-[500px]">
-          <h2 class="font-bold text-slate-700 text-sm uppercase tracking-wide mb-4 flex items-center justify-between">
-            <span>In Preparation</span>
-            <span id="badge-preparing" class="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">0</span>
-          </h2>
-          <div id="col-preparing" class="space-y-4 flex-1"></div>
-        </section>
-
-        <!-- STAGE: READY -->
-        <section class="flex flex-col bg-slate-200/60 p-4 rounded-2xl min-h-[500px]">
-          <h2 class="font-bold text-slate-700 text-sm uppercase tracking-wide mb-4 flex items-center justify-between">
-            <span>Ready for Pickup</span>
-            <span id="badge-ready" class="bg-indigo-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">0</span>
-          </h2>
-          <div id="col-ready" class="space-y-4 flex-1"></div>
-        </section>
-
-        <!-- STAGE: COMPLETED -->
-        <section class="flex flex-col bg-slate-200/60 p-4 rounded-2xl min-h-[500px]">
-          <h2 class="font-bold text-slate-700 text-sm uppercase tracking-wide mb-4 flex items-center justify-between">
-            <span>Completed</span>
-            <span id="badge-completed" class="bg-emerald-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">0</span>
-          </h2>
-          <div id="col-completed" class="space-y-4 flex-1"></div>
-        </section>
-
+  <!-- Order Detail & Printable Receipt Modal -->
+  <div id="orderDetailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden flex flex-col max-h-[90vh]">
+      
+      <!-- Modal Header -->
+      <div class="bg-gray-900 text-white p-4 flex justify-between items-center">
+        <div>
+          <h3 class="font-bold text-lg" id="modalOrderId">Order Receipt</h3>
+          <p class="text-xs text-gray-300" id="modalOrderDate"></p>
+        </div>
+        <button onclick="closeOrderDetailModal()" class="text-gray-400 hover:text-white text-2xl font-bold p-1 leading-none">&times;</button>
       </div>
-    </main>
+
+      <!-- Modal Body / Printable Receipt Content -->
+      <div id="printableArea" class="p-5 overflow-y-auto space-y-4 text-sm text-gray-700">
+        <div class="text-center border-b pb-3">
+          <h2 class="text-xl font-bold text-gray-900">Davidsonville Community Store</h2>
+          <p class="text-xs text-gray-500">Official Customer Order Receipt</p>
+        </div>
+
+        <!-- Customer Summary -->
+        <div class="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-3 rounded-lg border border-gray-100">
+          <div><span class="font-semibold text-gray-600">Customer:</span> <span id="modalCustomer" class="font-medium text-gray-900"></span></div>
+          <div><span class="font-semibold text-gray-600">Phone:</span> <span id="modalPhone" class="font-medium text-gray-900"></span></div>
+          <div><span class="font-semibold text-gray-600">Payment:</span> <span id="modalPayment" class="font-medium text-gray-900"></span></div>
+          <div><span class="font-semibold text-gray-600">Fulfillment:</span> <span id="modalFulfillment" class="font-medium text-gray-900"></span></div>
+          <div class="col-span-2"><span class="font-semibold text-gray-600">Status:</span> <span id="modalStatus" class="font-bold"></span></div>
+        </div>
+
+        <!-- Itemized Table -->
+        <div>
+          <h4 class="font-bold text-gray-800 mb-2 border-b pb-1 text-xs uppercase tracking-wider">Items Ordered</h4>
+          <table class="w-full text-left text-xs">
+            <thead class="bg-gray-100 text-gray-600 border-b">
+              <tr>
+                <th class="p-2">Item</th>
+                <th class="p-2 text-center">Qty</th>
+                <th class="p-2 text-right">Price</th>
+                <th class="p-2 text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody id="modalItemsTableBody"></tbody>
+          </table>
+        </div>
+
+        <!-- Grand Total -->
+        <div class="border-t pt-3 flex justify-between items-center font-bold text-base text-gray-900">
+          <span>Grand Total:</span>
+          <span id="modalGrandTotal" class="text-blue-600 text-lg"></span>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="bg-gray-50 p-4 border-t flex justify-end gap-2">
+        <button 
+          onclick="printOrderReceipt()" 
+          class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-lg font-medium transition flex items-center gap-1.5"
+        >
+          <span>🖨️</span> Print Receipt
+        </button>
+        <button 
+          onclick="closeOrderDetailModal()" 
+          class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm px-4 py-2 rounded-lg font-medium transition"
+        >
+          Close
+        </button>
+      </div>
+
+    </div>
   </div>
 
   <script>
-    const SUPABASE_URL = "https://qbmszgddepljxqxynyxv.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU";
+    const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsaXhxeG55eHYiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTcwMDA0OTIwMCwiZXhwIjoyMDE1NjI1MjAwfQ.xxxx';
 
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let supabaseClient = window.supabaseClient;
+    if (!supabaseClient && window.supabase) {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
 
-    let audioEnabled = true;
-    let audioCtx = null;
-    let ordersCache = [];
+    let allOrdersCache = [];
 
-    document.addEventListener('DOMContentLoaded', () => {
-      fetchOrders();
-      subscribeToRealtime();
-    });
+    async function loadAuditLog() {
+      const tbody = document.getElementById('auditLogTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">Fetching records...</td></tr>`;
 
-    function playChime() {
-      if (!audioEnabled) return;
-      try {
-        if (!audioCtx) {
-          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (audioCtx.state === 'suspended') {
-          audioCtx.resume();
-        }
-        
-        const now = audioCtx.currentTime;
-        
-        const osc1 = audioCtx.createOscillator();
-        const gain1 = audioCtx.createGain();
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(587.33, now);
-        gain1.gain.setValueAtTime(0.3, now);
-        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-        osc1.connect(gain1);
-        gain1.connect(audioCtx.destination);
-        osc1.start(now);
-        osc1.stop(now + 0.3);
-
-        const osc2 = audioCtx.createOscillator();
-        const gain2 = audioCtx.createGain();
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(880.00, now + 0.15);
-        gain2.gain.setValueAtTime(0.4, now + 0.15);
-        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
-        osc2.connect(gain2);
-        gain2.connect(audioCtx.destination);
-        osc2.start(now + 0.15);
-        osc2.stop(now + 0.7);
-      } catch (err) {
-        console.warn("Audio playback issue:", err);
+      if (!supabaseClient && window.supabase) {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       }
-    }
 
-    function toggleAudio() {
-      audioEnabled = !audioEnabled;
-      document.getElementById('audio-icon').textContent = audioEnabled ? '🔔' : '🔕';
-      document.getElementById('audio-label').textContent = audioEnabled ? 'Chime Enabled' : 'Muted';
-      if (audioEnabled) playChime();
-    }
-
-    function subscribeToRealtime() {
-      supabaseClient
-        .channel('dashboard-orders')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'orders' },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              playChime();
-            }
-            fetchOrders();
-          }
-        )
-        .subscribe((status) => {
-          const indicator = document.getElementById('status-indicator');
-          if (status === 'SUBSCRIBED') {
-            indicator.className = 'h-3 w-3 rounded-full bg-emerald-500 animate-pulse';
-          } else {
-            indicator.className = 'h-3 w-3 rounded-full bg-amber-500';
-          }
-        });
-    }
-
-    async function fetchOrders() {
-      const { data: orders, error } = await supabaseClient
+      const { data, error } = await supabaseClient
         .from('orders')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error("Error fetching orders:", error.message);
+        console.error('Error fetching audit log:', error);
+        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500">Failed to load order history.</td></tr>`;
         return;
       }
 
-      ordersCache = orders || [];
-      renderOrders();
+      allOrdersCache = data || [];
+      filterAuditLog();
     }
 
-    async function updateOrderStatus(dbId, newStage) {
-      const { error } = await supabaseClient
-        .from('orders')
-        .update({ stage: newStage, updated_at: new Date().toISOString() })
-        .eq('id', dbId);
+    function isSameDay(d1, d2) {
+      return d1.getFullYear() === d2.getFullYear() &&
+             d1.getMonth() === d2.getMonth() &&
+             d1.getDate() === d2.getDate();
+    }
 
-      if (error) {
-        const { error: errorAlt } = await supabaseClient
-          .from('orders')
-          .update({ stage: newStage })
-          .eq('order_id', dbId);
-        
-        if (errorAlt) {
-          alert(`Failed to update status: ${error.message}`);
-          return;
-        }
+    function matchesDateRange(orderCreatedAt, range) {
+      if (range === 'all' || !orderCreatedAt) return true;
+      const date = new Date(orderCreatedAt);
+      if (isNaN(date.getTime())) return true;
+
+      const now = new Date();
+
+      if (range === 'today') return isSameDay(date, now);
+
+      if (range === 'yesterday') {
+        const yesterday = new Date(now);
+        yesterday.setDate(now.getDate() - 1);
+        return isSameDay(date, yesterday);
       }
-      fetchOrders();
-    }
 
-    function parseItems(itemsData) {
-      if (!itemsData) return [];
-      if (Array.isArray(itemsData)) return itemsData;
-      if (typeof itemsData === 'string') {
-        try {
-          const parsed = JSON.parse(itemsData);
-          if (Array.isArray(parsed)) return parsed;
-          return [parsed];
-        } catch (e) {
-          return [{ name: itemsData, qty: 1, price: 0 }];
-        }
+      if (range === 'this-week') {
+        const startOfWeek = new Date(now);
+        const day = now.getDay();
+        const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+        startOfWeek.setDate(diff);
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+
+        return date >= startOfWeek && date <= endOfWeek;
       }
-      return [itemsData];
+
+      if (range === 'this-month') {
+        return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+      }
+
+      return true;
     }
 
-    function renderOrders() {
-      const columns = {
-        pending: document.getElementById('col-pending'),
-        preparing: document.getElementById('col-preparing'),
-        ready: document.getElementById('col-ready'),
-        completed: document.getElementById('col-completed')
-      };
+    function getFilteredOrders() {
+      const query = document.getElementById('auditSearchInput')?.value.toLowerCase().trim() || '';
+      const dateFilter = document.getElementById('auditDateFilter')?.value || 'all';
+      const stageFilter = document.getElementById('auditStageFilter')?.value || 'all';
 
-      Object.values(columns).forEach(col => col.innerHTML = '');
+      return allOrdersCache.filter(order => {
+        const orderId = (order.order_id || order.id || '').toLowerCase();
+        const name = (order.customer_name || order.client_name || order.name || '').toLowerCase();
+        const phone = (order.phone || '').toLowerCase();
+        const stage = (order.stage || order.status || 'pending').toLowerCase();
 
-      const counts = { pending: 0, preparing: 0, ready: 0, completed: 0 };
+        const matchesQuery = !query || orderId.includes(query) || name.includes(query) || phone.includes(query);
+        const matchesStage = stageFilter === 'all' || stage === stageFilter || 
+                             (stageFilter === 'in-progress' && stage === 'processing');
+        const matchesDate = matchesDateRange(order.created_at, dateFilter);
 
-      ordersCache.forEach(order => {
-        const rawStage = (order.stage || order.status || 'pending').toLowerCase();
-        let normalizedStage = 'pending';
-        if (rawStage.includes('prep') || rawStage === 'preparing') normalizedStage = 'preparing';
-        else if (rawStage.includes('ready')) normalizedStage = 'ready';
-        else if (rawStage.includes('complete') || rawStage === 'completed') normalizedStage = 'completed';
-        else normalizedStage = 'pending';
+        return matchesQuery && matchesStage && matchesDate;
+      });
+    }
 
-        counts[normalizedStage] = (counts[normalizedStage] || 0) + 1;
+    function filterAuditLog() {
+      const filtered = getFilteredOrders();
+      renderAuditTable(filtered);
+    }
 
-        const itemsList = parseItems(order.items);
-        const orderIdDisplay = order.order_id || order.id;
-        const dbId = order.id;
+    function renderAuditTable(orders) {
+      const tbody = document.getElementById('auditLogTableBody');
+      if (!tbody) return;
 
-        const itemsHtml = itemsList.map(item => `
-          <div class="flex justify-between items-center text-xs py-1 border-b border-slate-100">
-            <span class="font-medium text-slate-700"><span class="font-bold text-amber-600">${item.qty || 1}x</span> ${item.name || item.title || 'Item'}</span>
-            <span class="font-bold text-slate-900">${item.price ? 'R' + Number(item.price * (item.qty || 1)).toFixed(2) : ''}</span>
-          </div>
-        `).join('');
+      if (!orders || orders.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">No matching orders found.</td></tr>`;
+        return;
+      }
 
-        let actionButtonsHtml = '';
-        if (normalizedStage === 'pending') {
-          actionButtonsHtml = `
-            <button onclick="updateOrderStatus('${dbId}', 'preparing')" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow transition">
-              👨‍🍳 Start Preparing
-            </button>`;
-        } else if (normalizedStage === 'preparing') {
-          actionButtonsHtml = `
-            <button onclick="updateOrderStatus('${dbId}', 'ready')" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg shadow transition">
-              ✅ Mark Ready for Pickup
-            </button>`;
-        } else if (normalizedStage === 'ready') {
-          actionButtonsHtml = `
-            <button onclick="updateOrderStatus('${dbId}', 'completed')" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow transition">
-              🏁 Complete Order
-            </button>`;
-        } else {
-          actionButtonsHtml = `
-            <div class="text-center text-xs font-semibold text-emerald-600 py-1 bg-emerald-50 rounded-lg">
-              ✓ Order Finished
-            </div>`;
-        }
+      tbody.innerHTML = orders.map(order => {
+        const orderId = order.order_id || order.id || 'N/A';
+        const name = order.customer_name || order.client_name || order.name || 'Guest';
+        const phone = order.phone || '-';
+        const total = order.total ? `R${Number(order.total).toFixed(2)}` : 'R0.00';
+        const stage = order.stage || order.status || 'pending';
+        const date = order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A';
 
-        const cardHtml = `
-          <div class="order-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-3">
-            <div>
-              <div class="flex justify-between items-start pb-2 border-b border-slate-100">
-                <div>
-                  <h3 class="font-extrabold text-slate-900 text-sm">#${orderIdDisplay}</h3>
-                  <p class="text-xs font-semibold text-slate-600">${order.client_name || 'Customer'}</p>
-                  <p class="text-[11px] text-slate-400">📞 ${order.phone || 'N/A'}</p>
-                </div>
-                <span class="text-xs font-black text-amber-600 bg-amber-50 px-2 py-1 rounded-md">
-                  R${Number(order.total || 0).toFixed(2)}
-                </span>
-              </div>
-
-              <div class="py-2">
-                ${itemsHtml}
-              </div>
-
-              ${order.instructions ? `
-                <div class="mt-1 p-2 bg-amber-50/80 border-l-2 border-amber-500 text-[11px] text-amber-900 rounded-r">
-                  <span class="font-bold">Note:</span> ${order.instructions}
-                </div>
-              ` : ''}
-
-              <div class="mt-2 text-[11px] text-slate-400 flex justify-between">
-                <span>💳 ${order.payment_method || 'Cash'}</span>
-                <span>⏱️ ${order.created_at ? new Date(order.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</span>
-              </div>
-            </div>
-
-            <div class="pt-2 border-t border-slate-100">
-              ${actionButtonsHtml}
-            </div>
-          </div>
+        return `
+          <tr class="border-b hover:bg-gray-50 transition">
+            <td class="p-3 whitespace-nowrap text-xs text-gray-500">${date}</td>
+            <td class="p-3 font-mono font-bold text-blue-600">${orderId}</td>
+            <td class="p-3 font-medium text-gray-800">${name}</td>
+            <td class="p-3 text-gray-600">${phone}</td>
+            <td class="p-3 font-semibold text-gray-800">${total}</td>
+            <td class="p-3">
+              <span class="px-2.5 py-1 text-xs rounded-full font-semibold ${getStageBadgeStyle(stage)}">
+                ${stage.toUpperCase()}
+              </span>
+            </td>
+            <td class="p-3">
+              <button 
+                onclick="openOrderDetailModal('${orderId}')" 
+                class="bg-gray-100 hover:bg-blue-50 text-blue-600 text-xs px-2.5 py-1.5 rounded-lg font-medium border border-gray-200 transition flex items-center gap-1"
+              >
+                <span>👁️</span> Details
+              </button>
+            </td>
+          </tr>
         `;
+      }).join('');
+    }
 
-        if (columns[normalizedStage]) {
-          columns[normalizedStage].innerHTML += cardHtml;
-        }
+    function exportAuditLogToCSV() {
+      const filtered = getFilteredOrders();
+
+      if (!filtered || filtered.length === 0) {
+        alert('No matching orders found to export.');
+        return;
+      }
+
+      const headers = ['Date & Time', 'Order ID', 'Customer', 'Phone', 'Total (ZAR)', 'Stage', 'Payment Method', 'Fulfillment'];
+      const csvRows = [headers.join(',')];
+
+      filtered.forEach(order => {
+        const date = order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A';
+        const orderId = order.order_id || order.id || 'N/A';
+        const name = order.customer_name || order.client_name || order.name || 'Guest';
+        const phone = order.phone || '-';
+        const total = order.total ? Number(order.total).toFixed(2) : '0.00';
+        const stage = order.stage || order.status || 'pending';
+        const payment = order.payment_method || 'Cash';
+        const fulfillment = order.fulfillment || 'pickup';
+
+        const row = [
+          `"${date.replace(/"/g, '""')}"`,
+          `"${orderId.replace(/"/g, '""')}"`,
+          `"${name.replace(/"/g, '""')}"`,
+          `"${phone.replace(/"/g, '""')}"`,
+          `"${total}"`,
+          `"${stage.toUpperCase()}"`,
+          `"${payment.replace(/"/g, '""')}"`,
+          `"${fulfillment.replace(/"/g, '""')}"`
+        ];
+        csvRows.push(row.join(','));
       });
 
-      document.getElementById('count-pending').textContent = counts.pending || 0;
-      document.getElementById('count-preparing').textContent = counts.preparing || 0;
-      document.getElementById('count-ready').textContent = counts.ready || 0;
-      document.getElementById('count-completed').textContent = counts.completed || 0;
-
-      document.getElementById('badge-pending').textContent = counts.pending || 0;
-      document.getElementById('badge-preparing').textContent = counts.preparing || 0;
-      document.getElementById('badge-ready').textContent = counts.ready || 0;
-      document.getElementById('badge-completed').textContent = counts.completed || 0;
+      const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `dcs_audit_log_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     }
+
+    function openOrderDetailModal(orderIdRef) {
+      const order = allOrdersCache.find(o => (o.order_id === orderIdRef || o.id === orderIdRef));
+      if (!order) {
+        alert('Order details not found.');
+        return;
+      }
+
+      const orderId = order.order_id || order.id || 'N/A';
+      const name = order.customer_name || order.client_name || order.name || 'Guest';
+      const phone = order.phone || '-';
+      const payment = order.payment_method || 'Cash';
+      const fulfillment = order.fulfillment || 'pickup';
+      const stage = (order.stage || order.status || 'pending').toUpperCase();
+      const total = order.total ? `R${Number(order.total).toFixed(2)}` : 'R0.00';
+      const date = order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A';
+
+      document.getElementById('modalOrderId').innerText = `Order #${orderId}`;
+      document.getElementById('modalOrderDate').innerText = date;
+      document.getElementById('modalCustomer').innerText = name;
+      document.getElementById('modalPhone').innerText = phone;
+      document.getElementById('modalPayment').innerText = payment;
+      document.getElementById('modalFulfillment').innerText = fulfillment;
+      document.getElementById('modalStatus').innerText = stage;
+      document.getElementById('modalGrandTotal').innerText = total;
+
+      let items = [];
+      try {
+        if (typeof order.items === 'string') {
+          items = JSON.parse(order.items);
+        } else if (Array.isArray(order.items)) {
+          items = order.items;
+        }
+      } catch (e) {
+        console.warn('Could not parse items array:', e);
+      }
+
+      const itemsTbody = document.getElementById('modalItemsTableBody');
+      if (items && items.length > 0) {
+        itemsTbody.innerHTML = items.map(item => {
+          const itemName = item.name || item.title || 'Item';
+          const qty = item.qty || item.quantity || 1;
+          const price = item.price ? Number(item.price).toFixed(2) : '0.00';
+          const lineTotal = (qty * parseFloat(price)).toFixed(2);
+
+          return `
+            <tr class="border-b">
+              <td class="p-2 font-medium text-gray-800">${itemName}</td>
+              <td class="p-2 text-center text-gray-600">${qty}</td>
+              <td class="p-2 text-right text-gray-600">R${price}</td>
+              <td class="p-2 text-right font-semibold text-gray-800">R${lineTotal}</td>
+            </tr>
+          `;
+        }).join('');
+      } else {
+        itemsTbody.innerHTML = `<tr><td colspan="4" class="p-3 text-center text-gray-400">No item breakdown available.</td></tr>`;
+      }
+
+      const modal = document.getElementById('orderDetailModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeOrderDetailModal() {
+      const modal = document.getElementById('orderDetailModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function printOrderReceipt() {
+      const printContents = document.getElementById('printableArea').innerHTML;
+      const printWindow = window.open('', '_blank', 'width=500,height=700');
+
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Receipt</title>
+            <style>
+              body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; color: #111; line-height: 1.4; }
+              h2 { text-align: center; margin-bottom: 2px; font-size: 18px; }
+              .text-center { text-align: center; }
+              .text-xs { font-size: 11px; color: #555; }
+              .font-semibold { font-weight: 600; }
+              .font-bold { font-weight: bold; }
+              .border-b { border-bottom: 1px dashed #ccc; }
+              .border-t { border-top: 1px dashed #ccc; }
+              .pb-3 { padding-bottom: 10px; }
+              .pt-3 { padding-top: 10px; }
+              .mb-2 { margin-bottom: 8px; }
+              .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: #f9f9f9; padding: 10px; border-radius: 4px; margin-bottom: 12px; font-size: 12px; }
+              table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+              th, td { padding: 6px 4px; text-align: left; }
+              th { border-bottom: 1px solid #333; }
+              .text-center { text-align: center; }
+              .text-right { text-align: right; }
+              .flex { display: flex; justify-content: space-between; align-items: center; font-size: 15px; }
+            </style>
+          </head>
+          <body>
+            ${printContents}
+          </body>
+        </html>
+      `);
+
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 300);
+    }
+
+    function getStageBadgeStyle(stage) {
+      switch ((stage || '').toLowerCase()) {
+        case 'completed': return 'bg-green-100 text-green-800';
+        case 'in-progress':
+        case 'processing': return 'bg-yellow-100 text-yellow-800';
+        case 'cancelled': return 'bg-red-100 text-red-800';
+        default: return 'bg-blue-100 text-blue-800';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadAuditLog);
   </script>
 </body>
 </html>
