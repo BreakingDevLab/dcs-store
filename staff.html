@@ -18,7 +18,14 @@
       </div>
       <div class="flex items-center gap-3">
         <button 
-          onclick="loadAllData()" 
+          onclick="playChime()" 
+          class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-2.5 py-2 rounded-lg border border-gray-700 transition"
+          title="Test Chime Sound"
+        >
+          🔔 Test Chime
+        </button>
+        <button 
+          onclick="loadAllData(true)" 
           class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg font-medium transition flex items-center gap-1.5"
         >
           <span>🔄</span> Refresh Board
@@ -260,10 +267,47 @@
       return supabaseClient;
     }
 
+    // --- NOTIFICATION CHIME (Web Audio API) ---
+    function playChime() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+
+        // Note 1
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+        gain1.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+
+        // Note 2
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(880, ctx.currentTime + 0.12); // A5
+        gain2.gain.setValueAtTime(0.25, ctx.currentTime + 0.12);
+        gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+
+        osc1.start(ctx.currentTime);
+        osc1.stop(ctx.currentTime + 0.3);
+        osc2.start(ctx.currentTime + 0.12);
+        osc2.stop(ctx.currentTime + 0.5);
+      } catch (e) {
+        console.warn('Audio chime notice:', e);
+      }
+    }
+
     let allOrdersCache = [];
+    let previousPendingCount = null;
 
     // --- MAIN DATA LOADER ---
-    async function loadAllData() {
+    async function loadAllData(isManualRefresh = false) {
       const client = getSupabaseClient();
       if (!client) {
         console.error("Supabase client failed to initialize.");
@@ -283,6 +327,18 @@
       }
 
       allOrdersCache = data || [];
+      
+      const currentPendingCount = allOrdersCache.filter(o => {
+        const st = (o.stage || o.status || 'pending').toLowerCase();
+        return st === 'pending';
+      }).length;
+
+      // Play chime if new pending orders came in or on explicit refresh button click
+      if (isManualRefresh || (previousPendingCount !== null && currentPendingCount > previousPendingCount)) {
+        playChime();
+      }
+      previousPendingCount = currentPendingCount;
+
       renderKanbanBoard();
       filterAuditLog();
     }
@@ -341,7 +397,6 @@
       const total = order.total ? `R${Number(order.total).toFixed(2)}` : 'R0.00';
       const time = order.created_at ? new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
 
-      // Parse item count preview
       let itemSummary = 'Items ordered';
       try {
         const itemsArr = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
@@ -350,7 +405,6 @@
         }
       } catch (e) {}
 
-      // Action buttons depending on current stage
       let actionButtonsHtml = '';
       if (stageKey === 'pending') {
         actionButtonsHtml = `
