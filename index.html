@@ -463,6 +463,77 @@
       { id:'ts14', name:'BACON, EGG & CHEESE', category:'Toasted Sandwiches', price:38, img:'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=900&q=80', reviews:[] }
     ];
 
+    /* ---------- Customer Audio Chime & Notifications ---------- */
+    let audioCtx = null;
+    function initAudioOnUserInteraction() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) audioCtx = new AudioContext();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+    document.addEventListener('click', initAudioOnUserInteraction, { once: true });
+
+    function playCustomerChime() {
+      try {
+        initAudioOnUserInteraction();
+        if (!audioCtx) return;
+
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5 note
+        gain1.gain.setValueAtTime(0.25, audioCtx.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(987.77, audioCtx.currentTime + 0.12); // B5 note
+        gain2.gain.setValueAtTime(0.3, audioCtx.currentTime + 0.12);
+        gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+
+        osc1.start(audioCtx.currentTime);
+        osc1.stop(audioCtx.currentTime + 0.3);
+        osc2.start(audioCtx.currentTime + 0.12);
+        osc2.stop(audioCtx.currentTime + 0.5);
+      } catch (e) {
+        console.warn('Customer chime audio warning:', e);
+      }
+    }
+
+    function showStatusUpdateToast(orderId, stageName) {
+      const existingToast = document.getElementById('status-toast-alert');
+      if (existingToast) existingToast.remove();
+
+      const toast = document.createElement('div');
+      toast.id = 'status-toast-alert';
+      toast.className = 'toast-alert';
+      toast.style.background = '#1e293b';
+      toast.style.border = '1px solid #3b82f6';
+      toast.innerHTML = `
+        <span style="font-size:1.3rem;">🔔</span>
+        <div>
+          <div style="font-size:0.88rem; font-weight:700; color:#60a5fa;">Order #${orderId} Updated!</div>
+          <div style="font-size:0.78rem; font-weight:normal; color:#f8fafc;">New Status: <strong>${stageName.toUpperCase()}</strong></div>
+        </div>
+      `;
+      document.body.appendChild(toast);
+      playCustomerChime();
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.4s ease';
+        setTimeout(() => toast.remove(), 400);
+      }, 5000);
+    }
+
     /* ==========================================================================
        1. ITEM PARSING & RENDERING FUNCTIONS
        ========================================================================== */
@@ -508,23 +579,25 @@
        ========================================================================== */
 
     function buildOrderCardHTML(order) {
-      const stageMap = { 'pending': 0, 'received': 1, 'preparing': 2, 'ready': 3, 'completed': 4 };
-      const currentStageKey = (order.stage || 'received').toLowerCase();
+      const stageMap = { 'received': 0, 'pending': 1, 'preparing': 2, 'ready-for-pickup': 3, 'ready': 3, 'completed': 4 };
+      const currentStageKey = (order.stage || order.status || 'received').toLowerCase();
       const currentStepIndex = stageMap[currentStageKey] !== undefined ? stageMap[currentStageKey] : 0;
       const itemsHTML = renderOrderItemsList(order.items);
 
       const stageLabels = {
-        'pending': 'Pending',
         'received': 'Received',
+        'pending': 'Pending Review',
         'preparing': 'Kitchen Prep',
+        'ready-for-pickup': 'Ready for Pickup',
         'ready': 'Ready for Pickup',
         'completed': 'Completed'
       };
 
       const badgeColor = {
-        'pending': '#64748b',
         'received': '#3b82f6',
+        'pending': '#64748b',
         'preparing': '#d97706',
+        'ready-for-pickup': '#16a34a',
         'ready': '#16a34a',
         'completed': '#059669'
       }[currentStageKey] || '#3b82f6';
@@ -564,18 +637,18 @@
 
           <div class="tracker-steps" style="display:flex; gap:.25rem; align-items:center; justify-content:space-between; margin-top:.75rem; padding-top:.6rem; border-top:1px dashed var(--border);">
             <div class="step-item" style="display:flex; flex-direction:column; align-items:center; flex:1; text-align:center;">
-              <div class="step-node" style="width:24px;height:24px;border-radius:50%;background:${currentStepIndex>=0?'#3b82f6':'#cbd5e1'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:.7rem;font-weight:bold;margin-bottom:.2rem">1</div>
-              <div style="font-size:.68rem; font-weight:${currentStepIndex===0?'800':'600'}; color:${currentStepIndex>=0?'var(--primary)':'var(--muted)'}">Received</div>
+              <div class="step-node" style="width:22px;height:22px;border-radius:50%;background:${currentStepIndex>=0?'#3b82f6':'#cbd5e1'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:.65rem;font-weight:bold;margin-bottom:.2rem">1</div>
+              <div style="font-size:.65rem; font-weight:${currentStepIndex===0?'800':'600'}; color:${currentStepIndex>=0?'var(--primary)':'var(--muted)'}">Received</div>
             </div>
-            <div style="flex:1; height:2px; background:${currentStepIndex>=1?'#f59e0b':'#e2e8f0'}; margin-bottom:12px;"></div>
+            <div style="flex:1; height:2px; background:${currentStepIndex>=1?'#f59e0b':'#e2e8f0'}; margin-bottom:10px;"></div>
             <div class="step-item" style="display:flex; flex-direction:column; align-items:center; flex:1; text-align:center;">
-              <div class="step-node" style="width:24px;height:24px;border-radius:50%;background:${currentStepIndex>=1?'#f59e0b':'#cbd5e1'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:.7rem;font-weight:bold;margin-bottom:.2rem">2</div>
-              <div style="font-size:.68rem; font-weight:${currentStepIndex===1?'800':'600'}; color:${currentStepIndex>=1?'var(--primary)':'var(--muted)'}">Preparing</div>
+              <div class="step-node" style="width:22px;height:22px;border-radius:50%;background:${currentStepIndex>=1?'#f59e0b':'#cbd5e1'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:.65rem;font-weight:bold;margin-bottom:.2rem">2</div>
+              <div style="font-size:.65rem; font-weight:${currentStepIndex===1?'800':'600'}; color:${currentStepIndex>=1?'var(--primary)':'var(--muted)'}">Preparing</div>
             </div>
-            <div style="flex:1; height:2px; background:${currentStepIndex>=2?'#16a34a':'#e2e8f0'}; margin-bottom:12px;"></div>
+            <div style="flex:1; height:2px; background:${currentStepIndex>=3?'#16a34a':'#e2e8f0'}; margin-bottom:10px;"></div>
             <div class="step-item" style="display:flex; flex-direction:column; align-items:center; flex:1; text-align:center;">
-              <div class="step-node" style="width:24px;height:24px;border-radius:50%;background:${currentStepIndex>=2?'#16a34a':'#cbd5e1'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:.7rem;font-weight:bold;margin-bottom:.2rem">3</div>
-              <div style="font-size:.68rem; font-weight:${currentStepIndex===2?'800':'600'}; color:${currentStepIndex>=2?'var(--primary)':'var(--muted)'}">Ready</div>
+              <div class="step-node" style="width:22px;height:22px;border-radius:50%;background:${currentStepIndex>=3?'#16a34a':'#cbd5e1'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:.65rem;font-weight:bold;margin-bottom:.2rem">3</div>
+              <div style="font-size:.65rem; font-weight:${currentStepIndex>=3?'800':'600'}; color:${currentStepIndex>=3?'var(--primary)':'var(--muted)'}">Ready</div>
             </div>
           </div>
 
@@ -666,12 +739,25 @@
             subtotal: Number(o.subtotal || o.total || 0),
             discount: Number(o.discount || 0),
             total: Number(o.total || 0),
-            stage: o.stage || o.status || 'received',
+            stage: (o.stage || o.status || 'received').toLowerCase(),
             clientName: o.client_name || o.clientName || client.name,
             phone: o.phone || client.phone,
             address: o.address || client.address,
             is_reorder: o.is_reorder || false
           }));
+
+          // Detect stage changes for live sound/toast alerts
+          let prevStages = JSON.parse(localStorage.getItem('dcs_prev_order_stages') || '{}');
+          let newStages = {};
+          let statusChanged = false;
+
+          mappedRemote.forEach(o => {
+            newStages[o.id] = o.stage;
+            if (prevStages[o.id] && prevStages[o.id] !== o.stage) {
+              showStatusUpdateToast(o.id, o.stage);
+            }
+          });
+          localStorage.setItem('dcs_prev_order_stages', JSON.stringify(newStages));
 
           const orderMap = new Map();
           localOrders.forEach(o => orderMap.set(o.id, o));
