@@ -256,6 +256,7 @@
     let cart = JSON.parse(localStorage.getItem('dcs_cart')) || [];
     let favorites = JSON.parse(localStorage.getItem('dcs_favorites')) || [];
     let activeCategoryFilter = 'ALL';
+    let lastFetchedSignature = '';
 
     const catalog = [
       { id: 'ch1', name: 'SMALL CHIPS', category: 'Chips', price: 15, img: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80' },
@@ -431,6 +432,11 @@
         if (!res.ok) return;
         const remoteOrders = await res.json();
         if (Array.isArray(remoteOrders) && remoteOrders.length > 0) {
+          // Optimization: create signature to avoid DOM re-renders if nothing changed
+          const newSignature = JSON.stringify(remoteOrders.map(o => o.id + (o.stage || o.status)));
+          if (newSignature === lastFetchedSignature) return;
+          lastFetchedSignature = newSignature;
+
           let state = getSharedState();
           let prevStages = JSON.parse(localStorage.getItem('dcs_prev_stages') || '{}');
           let newStages = {};
@@ -463,6 +469,7 @@
           localStorage.setItem('dcs_prev_stages', JSON.stringify(newStages));
           state.orders = mapped;
           saveSharedState(state);
+          renderLiveOrderTrackersUI();
         }
       } catch (e) {}
     }
@@ -470,7 +477,8 @@
     window.addEventListener('DOMContentLoaded', () => {
       checkStoreOperatingHours();
       renderCategoryChips(); renderClientProfile(); renderCatalog(); renderCart(); renderFavorites(); renderOrderHistory(); renderLiveOrderTrackers();
-      setInterval(renderLiveOrderTrackers, 4000);
+      // Optimization: Increased interval from 4s to 8s to prevent main-thread throttling
+      setInterval(renderLiveOrderTrackers, 8000);
     });
 
     function checkStoreOperatingHours() {
@@ -772,8 +780,7 @@
       ).join('');
     }
 
-    async function renderLiveOrderTrackers() {
-      if (client) await verifyAndFetchSupabaseOrders();
+    function renderLiveOrderTrackersUI() {
       const container = document.getElementById('active-orders-tracker-container');
       const panel = document.getElementById('customer-tracker-panel');
       const trackerBody = document.getElementById('live-tracker-body');
@@ -785,11 +792,17 @@
         return st !== 'order-completed' && st !== 'completed' && st !== 'cancelled';
       });
 
-      document.getElementById('header-orders-badge').innerText = active.length;
+      const badgeEl = document.getElementById('header-orders-badge');
+      if (badgeEl) badgeEl.innerText = active.length;
       if (panel) panel.style.display = (client && active.length > 0) ? 'block' : 'none';
       if (container) container.innerHTML = active.length ? active.map(buildOrderCardHTML).join('') : '<p style="font-size:0.8rem; color:var(--muted);">No active orders.</p>';
       if (trackerBody) trackerBody.innerHTML = active.length ? active.map(buildOrderCardHTML).join('') : '<p style="font-size:0.85rem; color:var(--muted); text-align:center; padding:1rem 0;">No active orders found.</p>';
       renderOrderHistory();
+    }
+
+    async function renderLiveOrderTrackers() {
+      if (client) await verifyAndFetchSupabaseOrders();
+      else renderLiveOrderTrackersUI();
     }
   </script>
 </body>
