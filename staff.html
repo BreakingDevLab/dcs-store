@@ -1,192 +1,443 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👨‍🍳</text></svg>">
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Davidsonville Community Store | Staff Dashboard & Audit Log</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Staff Dashboard - Store Management & Audit Log</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    :root{
-      --primary:#0f172a; --brand:#d97706; --brand-gradient:linear-gradient(135deg,#f59e0b 0%,#d97706 100%);
-      --bg-page:#f8fafc; --card-bg:#ffffff; --muted:#64748b; --border:#e2e8f0;
-      --shadow:0 10px 25px -5px rgba(0,0,0,0.08);
-    }
-    *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,system-ui,-apple-system,sans-serif}
-    body{background:var(--bg-page); color:var(--primary); min-height:100vh; padding-bottom:40px;}
-    header{
-      background:var(--primary); color:#fff; padding:1rem 1.5rem; display:flex; align-items:center;
-      justify-content:space-between; box-shadow:0 4px 20px rgba(0,0,0,0.12);
-    }
-    .header-title h1{font-size:1.2rem; font-weight:800}
-    .header-title p{font-size:.78rem; color:#cbd5e1}
-    .container{max-width:1400px; margin:1.5rem auto; padding:0 1rem; display:flex; flex-direction:column; gap:1.25rem;}
-    .card{background:var(--card-bg); border-radius:12px; padding:1.25rem; border:1px solid var(--border); box-shadow:var(--shadow);}
-    .toolbar{display:flex; flex-wrap:wrap; gap:1rem; align-items:center; justify-content:space-between; margin-bottom:1rem;}
-    .filter-group{display:flex; gap:.75rem; align-items:center; flex-wrap:wrap;}
-    input, select{padding:.5rem .75rem; border:1px solid var(--border); border-radius:8px; font-size:.88rem; outline:none;}
-    button{padding:.5rem 1rem; border-radius:8px; border:none; font-weight:700; cursor:pointer; font-size:.85rem;}
-    .btn-primary{background:var(--brand-gradient); color:#fff;}
-    .btn-secondary{background:#64748b; color:#fff;}
-    table{width:100%; border-collapse:collapse; margin-top:.5rem; font-size:.88rem;}
-    th, td{padding:.75rem 1rem; text-align:left; border-bottom:1px solid var(--border);}
-    th{background:#f1f5f9; font-weight:800; color:var(--primary);}
-    tr:hover{background:#f8fafc;}
-    .badge{padding:.2rem .6rem; border-radius:20px; font-size:.72rem; font-weight:800; display:inline-block;}
-    .badge-received{background:#64748b; color:#fff;}
-    .badge-pending{background:#d97706; color:#fff;}
-    .badge-prep{background:#2563eb; color:#fff;}
-    .badge-ready{background:#059669; color:#fff;}
-    .modal-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.7);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;z-index:300;padding:1rem;}
-    .modal-content{background:#fff;border-radius:12px;max-width:540px;width:100%;padding:1.5rem;max-height:90vh;overflow-y:auto;}
+    .order-card { transition: all 0.2s ease-in-out; }
+    .order-card:hover { transform: translateY(-2px); }
   </style>
 </head>
-<body>
-  <header>
-    <div class="header-title">
-      <h1>👨‍🍳 Staff Dashboard & Order Audit Log</h1>
-      <p>Davidsonville Community Store | Kitchen Management & Export</p>
-    </div>
-    <div style="display:flex; gap:0.75rem;">
-      <button onclick="exportAuditLogCSV()" class="btn-primary">📥 Export CSV</button>
-      <button onclick="fetchStaffOrders()" class="btn-secondary">🔄 Refresh</button>
-    </div>
-  </header>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-12">
 
-  <div class="container">
-    <div class="card">
-      <div class="toolbar">
-        <div class="filter-group">
-          <label style="font-size:0.85rem; font-weight:700;">Filter Status:</label>
-          <select id="filter-status" onchange="renderOrdersTable()">
-            <option value="ALL">All Active Orders</option>
-            <option value="received">Received</option>
-            <option value="pending">Pending</option>
-            <option value="kitchen-prep">Kitchen Prep</option>
-            <option value="ready">Ready for Pickup</option>
-          </select>
-          <label style="font-size:0.85rem; font-weight:700;">From Date:</label>
-          <input type="date" id="filter-start-date" onchange="renderOrdersTable()">
-          <label style="font-size:0.85rem; font-weight:700;">To Date:</label>
-          <input type="date" id="filter-end-date" onchange="renderOrdersTable()">
+  <!-- MAIN DASHBOARD CONTENT -->
+  <div id="dashboard" class="min-h-screen flex flex-col">
+    
+    <!-- TOP NAVIGATION BAR -->
+    <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="h-3 w-3 rounded-full bg-emerald-500 animate-pulse" id="status-indicator"></div>
+          <h1 class="text-xl font-bold tracking-tight">Store Ops <span class="text-indigo-400">Dashboard</span></h1>
         </div>
-        <div>
-          <button onclick="resetFilters()" class="btn-secondary" style="background:#94a3b8;">Reset Filters</button>
+
+        <div class="flex items-center space-x-3">
+          <!-- View Switcher -->
+          <div class="bg-slate-800 p-1 rounded-lg border border-slate-700 flex space-x-1 text-xs font-medium">
+            <button onclick="switchView('kanban')" id="btn-view-kanban" class="px-3 py-1.5 rounded-md bg-indigo-600 text-white transition-colors">Kitchen Kanban</button>
+            <button onclick="switchView('audit')" id="btn-view-audit" class="px-3 py-1.5 rounded-md text-slate-300 hover:text-white transition-colors">Audit Log</button>
+          </div>
+
+          <!-- Audio Toggle Button -->
+          <button id="audio-toggle" onclick="toggleAudio()" 
+            class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-lg border border-slate-700 flex items-center space-x-2 transition-colors">
+            <span id="audio-icon">🔔</span>
+            <span id="audio-label" class="hidden sm:inline">Chime Enabled</span>
+          </button>
+
+          <!-- Refresh Button -->
+          <button onclick="fetchOrders()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs">
+            ↻ Refresh
+          </button>
         </div>
       </div>
+    </header>
 
-      <div style="overflow-x:auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>Order ID</th>
-              <th>Time / Date</th>
-              <th>Customer</th>
-              <th>Phone</th>
-              <th>Items</th>
-              <th>Total</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="audit-table-body">
-            <tr><td colspan="8" style="text-align:center; color:var(--muted); padding:2rem;">Loading orders...</td></tr>
-          </tbody>
-        </table>
+    <!-- METRICS OVERVIEW BAR -->
+    <div class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+        <div class="p-3 bg-amber-50 rounded-xl border border-amber-100">
+          <p class="text-xs text-amber-700 font-semibold uppercase">Pending</p>
+          <p id="count-pending" class="text-2xl font-black text-amber-900">0</p>
+        </div>
+        <div class="p-3 bg-blue-50 rounded-xl border border-blue-100">
+          <p class="text-xs text-blue-700 font-semibold uppercase">Preparing</p>
+          <p id="count-preparing" class="text-2xl font-black text-blue-900">0</p>
+        </div>
+        <div class="p-3 bg-indigo-50 rounded-xl border border-indigo-100">
+          <p class="text-xs text-indigo-700 font-semibold uppercase">Ready</p>
+          <p id="count-ready" class="text-2xl font-black text-indigo-900">0</p>
+        </div>
+        <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+          <p class="text-xs text-emerald-700 font-semibold uppercase">Completed Today</p>
+          <p id="count-completed" class="text-2xl font-black text-emerald-900">0</p>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div id="order-modal" class="modal-overlay">
-    <div class="modal-content">
-      <div id="modal-details-container"></div>
-      <div style="margin-top:1.25rem; display:flex; justify-content:flex-end;">
-        <button onclick="closeOrderModal()" class="btn-secondary">Close</button>
+    <!-- VIEW 1: KANBAN BOARD / ORDER STAGES -->
+    <main id="view-kanban" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- STAGE: PENDING -->
+        <section class="flex flex-col bg-slate-200/60 p-4 rounded-2xl min-h-[500px]">
+          <h2 class="font-bold text-slate-700 text-sm uppercase tracking-wide mb-4 flex items-center justify-between">
+            <span>New Orders</span>
+            <span id="badge-pending" class="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">0</span>
+          </h2>
+          <div id="col-pending" class="space-y-4 flex-1"></div>
+        </section>
+
+        <!-- STAGE: PREPARING -->
+        <section class="flex flex-col bg-slate-200/60 p-4 rounded-2xl min-h-[500px]">
+          <h2 class="font-bold text-slate-700 text-sm uppercase tracking-wide mb-4 flex items-center justify-between">
+            <span>In Preparation</span>
+            <span id="badge-preparing" class="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">0</span>
+          </h2>
+          <div id="col-preparing" class="space-y-4 flex-1"></div>
+        </section>
+
+        <!-- STAGE: READY -->
+        <section class="flex flex-col bg-slate-200/60 p-4 rounded-2xl min-h-[500px]">
+          <h2 class="font-bold text-slate-700 text-sm uppercase tracking-wide mb-4 flex items-center justify-between">
+            <span>Ready for Pickup / Dispatch</span>
+            <span id="badge-ready" class="bg-indigo-500 text-white text-xs px-2 py-0.5 rounded-full">0</span>
+          </h2>
+          <div id="col-ready" class="space-y-4 flex-1"></div>
+        </section>
+
       </div>
-    </div>
+    </main>
+
+    <!-- VIEW 2: AUDIT LOG TABLE VIEW -->
+    <main id="view-audit" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 hidden">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+          <div class="flex flex-wrap items-center gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Status Filter</label>
+              <select id="audit-status-filter" onchange="renderAuditLog()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none">
+                <option value="ALL">All Orders</option>
+                <option value="pending">Pending</option>
+                <option value="preparing">Preparing</option>
+                <option value="ready">Ready</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">From Date</label>
+              <input type="date" id="audit-start-date" onchange="renderAuditLog()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">To Date</label>
+              <input type="date" id="audit-end-date" onchange="renderAuditLog()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none">
+            </div>
+          </div>
+          <div>
+            <button onclick="exportAuditCSV()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center space-x-2">
+              <span>📥 Export CSV</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr class="bg-slate-50 text-slate-600 uppercase text-xs tracking-wider border-b border-slate-200">
+                <th class="py-3 px-4">Order ID</th>
+                <th class="py-3 px-4">Date / Time</th>
+                <th class="py-3 px-4">Customer</th>
+                <th class="py-3 px-4">Phone</th>
+                <th class="py-3 px-4">Items Summary</th>
+                <th class="py-3 px-4">Total</th>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4">Action</th>
+              </tr>
+            </thead>
+            <tbody id="audit-table-body" class="divide-y divide-slate-100">
+              <tr><td colspan="8" class="text-center py-8 text-slate-400">Loading audit records...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
   </div>
 
   <script>
-    const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU';
+    // CONFIGURATION & SUPABASE SETUP
+    const SUPABASE_URL = "https://qbmszgddepljxqxynyxv.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU";
 
-    let staffOrders = [];
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let audioEnabled = true;
     let audioCtx = null;
+    let ordersCache = [];
+    let currentView = 'kanban';
 
-    function initAudio() {
-      if (!audioCtx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) audioCtx = new AC(); }
-      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    // AUTO-START ON PAGE LOAD
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchOrders();
+      subscribeToRealtime();
+    });
+
+    function switchView(view) {
+      currentView = view;
+      const kanbanEl = document.getElementById('view-kanban');
+      const auditEl = document.getElementById('view-audit');
+      const btnKanban = document.getElementById('btn-view-kanban');
+      const btnAudit = document.getElementById('btn-view-audit');
+
+      if (view === 'kanban') {
+        kanbanEl.classList.remove('hidden');
+        auditEl.classList.add('hidden');
+        btnKanban.className = 'px-3 py-1.5 rounded-md bg-indigo-600 text-white transition-colors';
+        btnAudit.className = 'px-3 py-1.5 rounded-md text-slate-300 hover:text-white transition-colors';
+      } else {
+        kanbanEl.classList.add('hidden');
+        auditEl.classList.remove('hidden');
+        btnAudit.className = 'px-3 py-1.5 rounded-md bg-indigo-600 text-white transition-colors';
+        btnKanban.className = 'px-3 py-1.5 rounded-md text-slate-300 hover:text-white transition-colors';
+        renderAuditLog();
+      }
     }
-    document.addEventListener('click', initAudio, { once: true });
 
-    function playAudioChime() {
+    // AUDIO NOTIFICATION (Web Audio API)[cite: 8]
+    function playChime() {
+      if (!audioEnabled) return;
       try {
-        initAudio();
-        if (!audioCtx) return;
-        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.4);
-      } catch (e) {}
-    }
-
-    async function fetchStaffOrders() {
-      try {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/orders?select=*&order=created_at.desc`, {
-          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.length > staffOrders.length) {
-            playAudioChime();
-          }
-          staffOrders = data;
-          renderOrdersTable();
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
-      } catch(e) {}
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        
+        const now = audioCtx.currentTime;
+        
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(587.33, now);
+        gain1.gain.setValueAtTime(0.3, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.3);
+
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(880.00, now + 0.15);
+        gain2.gain.setValueAtTime(0.4, now + 0.15);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+        osc2.start(now + 0.15);
+        osc2.stop(now + 0.7);
+      } catch (err) {
+        console.warn("Audio playback issue:", err);
+      }
     }
 
-    async function updateOrderStatus(orderId, newStage) {
-      try {
-        await fetch(`${SUPABASE_URL}/rest/v1/orders?order_id=eq.${encodeURIComponent(orderId)}`, {
-          method: 'PATCH',
-          headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify({ stage: newStage })
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      document.getElementById('audio-icon').textContent = audioEnabled ? '🔔' : '🔕';
+      document.getElementById('audio-label').textContent = audioEnabled ? 'Chime Enabled' : 'Muted';
+      if (audioEnabled) playChime();
+    }
+
+    // REAL-TIME SUBSCRIPTION & DATA FETCHING[cite: 8]
+    function subscribeToRealtime() {
+      supabaseClient
+        .channel('dashboard-orders')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'orders' },
+          (payload) => {
+            if (payload.eventType === 'INSERT') {
+              playChime();
+            }
+            fetchOrders();
+          }
+        )
+        .subscribe((status) => {
+          const indicator = document.getElementById('status-indicator');
+          if (status === 'SUBSCRIBED') {
+            indicator.className = 'h-3 w-3 rounded-full bg-emerald-500 animate-pulse';
+          } else {
+            indicator.className = 'h-3 w-3 rounded-full bg-amber-500';
+          }
         });
-        fetchStaffOrders();
-      } catch(e) {}
     }
 
-    function parseOrderItems(rawItems) {
+    async function fetchOrders() {
+      const { data: orders, error } = await supabaseClient
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("Error fetching orders:", error.message);
+        return;
+      }
+
+      ordersCache = orders || [];
+      renderOrders();
+      if (currentView === 'audit') renderAuditLog();
+    }
+
+    // ORDER STAGE TRANSITIONS
+    async function updateOrderStatus(orderId, newStatus) {
+      const { error } = await supabaseClient
+        .from('orders')
+        .update({ stage: newStatus, status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', orderId);
+
+      if (error) {
+        // Try matching order_id if id column differs
+        await supabaseClient
+          .from('orders')
+          .update({ stage: newStatus, status: newStatus, updated_at: new Date().toISOString() })
+          .eq('order_id', orderId);
+      }
+      fetchOrders();
+    }
+
+    function parseItems(rawItems) {
       if (!rawItems) return [];
       if (Array.isArray(rawItems)) return rawItems;
-      try { const p = JSON.parse(rawItems); if (Array.isArray(p)) return p; return [p]; } catch (e) { return [{ name: rawItems, qty: 1, price: 0 }]; }
+      try { const p = JSON.parse(rawItems); if (Array.isArray(p)) return p; return [p]; } catch (e) { return [{ name: rawItems, quantity: 1, price: 0 }]; }
     }
 
-    function renderOrdersTable() {
-      const tbody = document.getElementById('audit-table-body');
-      const statusFilter = document.getElementById('filter-status').value;
-      const startDate = document.getElementById('filter-start-date').value;
-      const endDate = document.getElementById('filter-end-date').value;
+    // RENDER KANBAN
+    function renderOrders() {
+      const columns = {
+        pending: document.getElementById('col-pending'),
+        preparing: document.getElementById('col-preparing'),
+        ready: document.getElementById('col-ready')
+      };
 
-      // Immediately clear and filter out completed or cancelled orders from staff dashboard table view
-      let filtered = staffOrders.filter(o => {
-        const stage = (o.stage || o.status || 'received').toLowerCase().trim().replace(/_/g, '-');
-        if (stage === 'order-completed' || stage === 'cancelled') return false;
-        return true;
+      Object.values(columns).forEach(col => col.innerHTML = '');
+
+      const counts = { pending: 0, preparing: 0, ready: 0, completed: 0 };
+
+      ordersCache.forEach(order => {
+        const rawStage = (order.stage || order.status || 'pending').toLowerCase().trim().replace(/_/g, '-');
+        let stage = rawStage;
+        if (rawStage === 'kitchen-prep') stage = 'preparing';
+        if (rawStage === 'ready-for-pick-up') stage = 'ready';
+
+        if (stage === 'completed' || stage === 'order-completed' || stage === 'cancelled') {
+          counts.completed++;
+          return; // Completed & cancelled orders are immediately cleared and hidden from active kanban board columns
+        }
+
+        if (counts[stage] !== undefined) counts[stage]++;
+
+        const card = createOrderCard(order, stage);
+        if (columns[stage]) {
+          columns[stage].appendChild(card);
+        }
       });
+
+      document.getElementById('count-pending').textContent = counts.pending;
+      document.getElementById('count-preparing').textContent = counts.preparing;
+      document.getElementById('count-ready').textContent = counts.ready;
+      document.getElementById('count-completed').textContent = counts.completed;
+
+      document.getElementById('badge-pending').textContent = counts.pending;
+      document.getElementById('badge-preparing').textContent = counts.preparing;
+      document.getElementById('badge-ready').textContent = counts.ready;
+    }
+
+    function createOrderCard(order, stage) {
+      const card = document.createElement('div');
+      card.className = "order-card bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between space-y-3";
+
+      const timeFormatted = order.created_at ? new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      const items = parseItems(order.items);
+      const orderIdKey = order.id || order.order_id;
+      const customerName = order.customer_name || order.client_name || 'Walk-in Customer';
+      const customerPhone = order.customer_phone || order.phone || '';
+      const totalAmount = Number(order.total || order.total_amount || 0);
+      const notes = order.notes || order.instructions || '';
+
+      let itemsListHtml = items.map(item => `
+        <div class="flex justify-between text-xs text-slate-600">
+          <span><strong class="text-slate-800">${item.quantity || item.qty || 1}x</strong> ${item.name || item.title || 'Item'}</span>
+          <span>R${((item.price || 0) * (item.quantity || item.qty || 1)).toFixed(2)}</span>
+        </div>
+      `).join('');
+
+      let actionButtonsHtml = '';
+      if (stage === 'pending') {
+        actionButtonsHtml = `
+          <button onclick="updateOrderStatus('${orderIdKey}', 'kitchen-prep')" 
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-3 rounded-lg text-xs transition-colors">
+            Start Preparing →
+          </button>`;
+      } else if (stage === 'preparing') {
+        actionButtonsHtml = `
+          <button onclick="updateOrderStatus('${orderIdKey}', 'ready')" 
+            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-1.5 px-3 rounded-lg text-xs transition-colors">
+            Mark Ready →
+          </button>`;
+      } else if (stage === 'ready') {
+        actionButtonsHtml = `
+          <div class="flex space-x-2">
+            <button onclick="updateOrderStatus('${orderIdKey}', 'order-completed')" 
+              class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-1.5 px-2 rounded-lg text-xs transition-colors">
+              Complete ✓
+            </button>
+            <button onclick="updateOrderStatus('${orderIdKey}', 'cancelled')" 
+              class="bg-red-500 hover:bg-red-600 text-white font-medium py-1.5 px-2 rounded-lg text-xs transition-colors">
+              Cancel ✕
+            </button>
+          </div>`;
+      }
+
+      card.innerHTML = `
+        <div>
+          <div class="flex justify-between items-start border-b border-slate-100 pb-2 mb-2">
+            <div>
+              <span class="text-xs font-bold text-slate-400">#${String(orderIdKey).slice(-6)}</span>
+              <h3 class="font-bold text-slate-900 text-sm">${customerName}</h3>
+              <p class="text-[11px] text-slate-500">${customerPhone}</p>
+            </div>
+            <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">${timeFormatted}</span>
+          </div>
+
+          <div class="space-y-1 my-2 max-h-36 overflow-y-auto">
+            ${itemsListHtml}
+          </div>
+
+          ${notes ? `<div class="mt-2 text-[11px] bg-amber-50 text-amber-800 p-2 rounded border border-amber-200 font-medium">⚠️ ${notes}</div>` : ''}
+        </div>
+
+        <div class="pt-2 border-t border-slate-100">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-semibold text-slate-500">Total:</span>
+            <span class="text-sm font-black text-slate-900">R${totalAmount.toFixed(2)}</span>
+          </div>
+          ${actionButtonsHtml}
+        </div>
+      `;
+
+      return card;
+    }
+
+    // RENDER AUDIT LOG
+    function renderAuditLog() {
+      const tbody = document.getElementById('audit-table-body');
+      const statusFilter = document.getElementById('audit-status-filter').value;
+      const startDate = document.getElementById('audit-start-date').value;
+      const endDate = document.getElementById('audit-end-date').value;
+
+      let filtered = [...ordersCache];
 
       if (statusFilter !== 'ALL') {
         filtered = filtered.filter(o => {
-          const stage = (o.stage || o.status || 'received').toLowerCase().trim().replace(/_/g, '-');
-          if (statusFilter === 'ready') return stage === 'ready' || stage === 'ready-for-pick-up';
-          return stage === statusFilter;
+          const st = (o.stage || o.status || 'pending').toLowerCase().trim();
+          if (statusFilter === 'completed') return st === 'completed' || st === 'order-completed';
+          if (statusFilter === 'preparing') return st === 'preparing' || st === 'kitchen-prep';
+          if (statusFilter === 'ready') return st === 'ready' || st === 'ready-for-pick-up';
+          return st === statusFilter;
         });
       }
 
@@ -201,107 +452,63 @@
       }
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--muted); padding:2rem;">No active orders found matching criteria.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-slate-400">No orders match the selected filters.</td></tr>`;
         return;
       }
 
-      const stageLabels = {
-        'received': 'Received', 'pending': 'Pending', 'kitchen-prep': 'Kitchen Prep',
-        'ready': 'Ready for Pickup', 'ready-for-pick-up': 'Ready for Pickup'
-      };
-
       tbody.innerHTML = filtered.map(o => {
-        const oid = o.order_id || o.id;
-        const stage = (o.stage || o.status || 'received').toLowerCase().trim().replace(/_/g, '-');
-        const badgeClass = `badge badge-${stage === 'ready-for-pick-up' ? 'ready' : stage}`;
-        const items = parseOrderItems(o.items);
-        const itemSummary = items.map(i => `${i.qty || 1}x ${i.name || i.title}`).join(', ');
+        const orderIdKey = o.id || o.order_id;
         const dateStr = o.created_at ? new Date(o.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '';
+        const customerName = o.customer_name || o.client_name || 'Walk-in';
+        const phone = o.customer_phone || o.phone || 'N/A';
+        const items = parseItems(o.items);
+        const itemSummary = items.map(i => `${i.quantity || i.qty || 1}x ${i.name || i.title}`).join(', ');
+        const total = Number(o.total || o.total_amount || 0);
+        const st = (o.stage || o.status || 'pending').toLowerCase();
+
+        let badgeColor = 'bg-slate-100 text-slate-700';
+        if (st === 'pending') badgeColor = 'bg-amber-100 text-amber-800';
+        else if (st === 'preparing' || st === 'kitchen-prep') badgeColor = 'bg-blue-100 text-blue-800';
+        else if (st === 'ready' || st === 'ready-for-pick-up') badgeColor = 'bg-indigo-100 text-indigo-800';
+        else if (st === 'completed' || st === 'order-completed') badgeColor = 'bg-emerald-100 text-emerald-800';
+        else if (st === 'cancelled') badgeColor = 'bg-red-100 text-red-800';
 
         return `
-          <tr>
-            <td><strong>#${oid}</strong></td>
-            <td>${dateStr}</td>
-            <td>${o.client_name || 'Customer'}</td>
-            <td>${o.phone || 'N/A'}</td>
-            <td style="max-width:250px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${itemSummary}">${itemSummary}</td>
-            <td><strong>R${Number(o.total || 0).toFixed(2)}</strong></td>
-            <td><span class="${badgeClass}">${stageLabels[stage] || stage.toUpperCase()}</span></td>
-            <td>
-              <div style="display:flex; gap:0.35rem;">
-                <button onclick="viewOrderModal('${oid}')" class="btn-secondary" style="padding:0.25rem 0.5rem; font-size:0.75rem;">View</button>
-                <button onclick="updateOrderStatus('${oid}', 'kitchen-prep')" class="btn-primary" style="padding:0.25rem 0.5rem; font-size:0.75rem; background:#2563eb;">Prep</button>
-                <button onclick="updateOrderStatus('${oid}', 'ready')" class="btn-primary" style="padding:0.25rem 0.5rem; font-size:0.75rem; background:#059669;">Ready</button>
-                <button onclick="updateOrderStatus('${oid}', 'order-completed')" class="btn-primary" style="padding:0.25rem 0.5rem; font-size:0.75rem; background:#16a34a;">Complete</button>
-              </div>
+          <tr class="hover:bg-slate-50">
+            <td class="py-3 px-4 font-bold text-slate-900">#${String(orderIdKey).slice(-6)}</td>
+            <td class="py-3 px-4 text-slate-600">${dateStr}</td>
+            <td class="py-3 px-4 font-semibold text-slate-800">${customerName}</td>
+            <td class="py-3 px-4 text-slate-600">${phone}</td>
+            <td class="py-3 px-4 text-slate-600 max-w-xs truncate" title="${itemSummary}">${itemSummary}</td>
+            <td class="py-3 px-4 font-bold text-slate-900">R${total.toFixed(2)}</td>
+            <td class="py-3 px-4"><span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase ${badgeColor}">${st.replace('_', ' ')}</span></td>
+            <td class="py-3 px-4">
+              <button onclick="updateOrderStatus('${orderIdKey}', 'pending')" class="text-xs text-indigo-600 hover:underline font-semibold">Reset</button>
             </td>
           </tr>
         `;
       }).join('');
     }
 
-    function viewOrderModal(oid) {
-      const o = staffOrders.find(x => String(x.order_id || x.id) === String(oid));
-      if (!o) return;
-      const items = parseOrderItems(o.items);
-      const modal = document.getElementById('order-modal');
-      const container = document.getElementById('modal-details-container');
-
-      container.innerHTML = `
-        <h3 style="color:var(--brand); margin-bottom:0.75rem;">Order Details #${o.order_id || o.id}</h3>
-        <p><strong>Customer:</strong> ${o.client_name || 'Customer'} (${o.phone || 'N/A'})</p>
-        <p><strong>Address:</strong> ${o.address || 'N/A'}</p>
-        <p><strong>Payment:</strong> ${o.payment_method || 'Cash'}</p>
-        ${o.instructions ? `<p style="margin-top:0.5rem; background:#fffbeb; padding:0.5rem; border-left:3px solid var(--brand);"><strong>Notes:</strong> ${o.instructions}</p>` : ''}
-        <h4 style="margin-top:1rem; margin-bottom:0.5rem;">Items:</h4>
-        <ul style="list-style:none; padding:0;">
-          ${items.map(i => `<li style="display:flex; justify-content:space-between; padding:0.3rem 0; border-bottom:1px dotted var(--border);">
-            <span>${i.qty \vert{}\vert{} 1}x${i.name || i.title}</span>
-            <strong>R${((i.qty || 1) * Number(i.price || 0)).toFixed(2)}</strong>
-          </li>`).join('')}
-        </ul>
-        <div style="display:flex; justify-content:space-between; margin-top:1rem; font-weight:800; font-size:1.05rem;">
-          <span>Total:</span> <span style="color:var(--brand);">R${Number(o.total || 0).toFixed(2)}</span>
-        </div>
-      `;
-      modal.style.display = 'flex';
-    }
-
-    function closeOrderModal() {
-      document.getElementById('order-modal').style.display = 'none';
-    }
-
-    function resetFilters() {
-      document.getElementById('filter-status').value = 'ALL';
-      document.getElementById('filter-start-date').value = '';
-      document.getElementById('filter-end-date').value = '';
-      renderOrdersTable();
-    }
-
-    function exportAuditLogCSV() {
-      if (staffOrders.length === 0) { alert('No orders to export'); return; }
+    function exportAuditCSV() {
+      if (ordersCache.length === 0) { alert('No orders to export'); return; }
       let csv = 'OrderID,Date,Customer,Phone,Total,Status\n';
-      staffOrders.forEach(o => {
-        const oid = o.order_id || o.id;
+      ordersCache.forEach(o => {
+        const oid = o.id || o.order_id;
         const date = o.created_at ? new Date(o.created_at).toISOString() : '';
-        const name = (o.client_name || '').replace(/,/g, '');
-        const phone = o.phone || '';
-        const total = Number(o.total || 0).toFixed(2);
-        const stage = o.stage || o.status || 'received';
+        const name = (o.customer_name || o.client_name || '').replace(/,/g, '');
+        const phone = o.customer_phone || o.phone || '';
+        const total = Number(o.total || o.total_amount || 0).toFixed(2);
+        const stage = o.stage || o.status || 'pending';
         csv += `${oid},${date},${name},${phone},${total},${stage}\n`;
       });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `davidsonville_audit_log_${new Date().toISOString().slice(0,10)}.csv`;
+      a.download = `store_audit_log_${new Date().toISOString().slice(0,10)}.csv`;
       a.click();
     }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      fetchStaffOrders();
-      setInterval(fetchStaffOrders, 4000);
-    });
   </script>
 </body>
 </html>
