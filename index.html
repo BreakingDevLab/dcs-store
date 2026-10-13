@@ -324,14 +324,14 @@
         'cancelled': 'Your order was cancelled. Feel free to reorder anytime.'
       };
 
-      const msg = messages[stage] || `Order #${orderId} stage updated to ${stage.toUpperCase()}`;
+      const msg = messages[stage] || 'Order #' + orderId + ' stage updated to ' + stage.toUpperCase();
       const existing = document.getElementById('status-toast');
       if (existing) existing.remove();
 
       const toast = document.createElement('div');
       toast.id = 'status-toast';
       toast.className = 'toast-alert';
-      toast.innerHTML = `<span>🔔</span><div><strong>Order #${orderId}</strong><br>${msg}</div>`;
+      toast.innerHTML = '<span>🔔</span><div><strong>Order #' + orderId + '</strong><br>' + msg + '</div>';
       document.body.appendChild(toast);
       playStageChime(stage);
       setTimeout(() => toast.remove(), 6000);
@@ -341,7 +341,7 @@
       const modal = document.getElementById('pending-confirm-modal');
       const text = document.getElementById('pending-confirm-text');
       if (modal && text) {
-        text.innerHTML = `Hello ${client?.name || 'Customer'}, our team is reviewing Order #${orderId}. Please double-check your items and instructions. Are you completely sure everything is correct before we send it to kitchen prep?`;
+        text.innerHTML = 'Hello ' + (client?.name || 'Customer') + ', our team is reviewing Order #' + orderId + '. Please double-check your items and instructions. Are you completely sure everything is correct before we send it to kitchen prep?';
         modal.style.display = 'flex';
       }
     }
@@ -359,11 +359,16 @@
 
     function renderOrderItemsList(itemsInput) {
       const items = parseOrderItems(itemsInput);
-      return `<ul style="list-style:none; padding:0; margin:0.35rem 0; font-size:0.82rem;">` +
-        items.map(item => `<li style="display:flex; justify-content:space-between; padding:0.2rem 0; border-bottom:1px dotted var(--border);">
-          <span><strong>${item.qty || item.quantity || 1}x</strong> ${item.name || item.title}</span>
-          <span style="font-weight:700;">R${(((item.qty || item.quantity || 1)) * Number(item.price || 0)).toFixed(2)}</span>
-        </li>`).join('') + `</ul>`;
+      let html = '<ul style="list-style:none; padding:0; margin:0.35rem 0; font-size:0.82rem;">';
+      for (let i = 0; i < items.length; i++) {
+        let item = items[i];
+        let q = item.qty || item.quantity || 1;
+        let n = item.name || item.title || 'Item';
+        let p = Number(item.price || 0);
+        html += '<li style="display:flex; justify-content:space-between; padding:0.2rem 0; border-bottom:1px dotted var(--border);"><span><strong>' + q + 'x</strong> ' + n + '</span><span style="font-weight:700;">R' + (q * p).toFixed(2) + '</span></li>';
+      }
+      html += '</ul>';
+      return html;
     }
 
     function buildOrderCardHTML(order) {
@@ -375,35 +380,38 @@
       };
 
       const oid = order.id || order.order_id;
-      return `
-        <div style="padding:.85rem; border:1px solid var(--border); border-radius:12px; margin-bottom:.75rem; background:#fff;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.5rem; border-bottom:1px solid var(--border); padding-bottom:.5rem;">
-            <div>
-              <strong>Order #${oid}</strong>
-              <div style="font-size:.72rem; color:var(--muted);">${order.date || ''}</div>
-            </div>
-            <span style="background:var(--primary); color:#fff; font-size:.68rem; font-weight:800; padding:.2rem .5rem; border-radius:20px;">
-              ${stageLabels[stage] || stage.toUpperCase()}
-            </span>
-          </div>
-          <div style="margin:.5rem 0; background:#f8fafc; padding:.5rem; border-radius:8px;">${renderOrderItemsList(order.items)}</div>
-          ${order.instructions || order.notes ? `<div style="font-size:.75rem; background:#fffbeb; padding:.3rem .5rem; border-left:3px solid var(--brand); margin-bottom:.5rem;"><strong>Notes:</strong> ${order.instructions || order.notes}</div>` : ''}
-          <div style="display:flex; justify-content:space-between; align-items:center; font-size:.85rem;">
-            <span>Total:</span><strong style="color:var(--brand);">R${Number(order.total || order.total_amount || 0).toFixed(2)}</strong>
-          </div>
-          <div style="margin-top:.75rem; display:flex; justify-content:space-between; align-items:center; gap:0.5rem;">
-            ${isFailedOrCancelled ? `<button onclick="resubmitOrderFromSlip('${oid}')" style="font-size:.72rem; font-weight:700; padding:.35rem .7rem; background:#9333ea; color:#fff; border:none; border-radius:6px; cursor:pointer;">🔄 Resubmit / Reorder</button>` : `<button onclick="saveOrderAsFavorite('${oid}')" style="font-size:.72rem; font-weight:700; padding:.35rem .7rem; background:#059669; color:#fff; border:none; border-radius:6px; cursor:pointer;">⭐ Save to Favorites</button>`}
-            <button onclick="showDigitalReceiptFromId('${oid}')" style="font-size:.72rem; font-weight:700; padding:.35rem .7rem; background:var(--primary); color:#fff; border:none; border-radius:6px; cursor:pointer;">🧾 View Slip</button>
-          </div>
-        </div>
-      `;
+      let notesHtml = '';
+      if (order.instructions || order.notes) {
+        notesHtml = '<div style="font-size:.75rem; background:#fffbeb; padding:.3rem .5rem; border-left:3px solid var(--brand); margin-bottom:.5rem;"><strong>Notes:</strong> ' + (order.instructions || order.notes) + '</div>';
+      }
+
+      let btnHtml = '';
+      if (isFailedOrCancelled) {
+        btnHtml = '<button onclick="resubmitOrderFromSlip(\'' + oid + '\')" style="font-size:.72rem; font-weight:700; padding:.35rem .7rem; background:#9333ea; color:#fff; border:none; border-radius:6px; cursor:pointer;">🔄 Resubmit / Reorder</button>';
+      } else {
+        btnHtml = '<button onclick="saveOrderAsFavorite(\'' + oid + '\')" style="font-size:.72rem; font-weight:700; padding:.35rem .7rem; background:#059669; color:#fff; border:none; border-radius:6px; cursor:pointer;">⭐ Save to Favorites</button>';
+      }
+
+      return '<div style="padding:.85rem; border:1px solid var(--border); border-radius:12px; margin-bottom:.75rem; background:#fff;">' +
+        '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.5rem; border-bottom:1px solid var(--border); padding-bottom:.5rem;">' +
+          '<div><strong>Order #' + oid + '</strong><div style="font-size:.72rem; color:var(--muted);">' + (order.date || '') + '</div></div>' +
+          '<span style="background:var(--primary); color:#fff; font-size:.68rem; font-weight:800; padding:.2rem .5rem; border-radius:20px;">' + (stageLabels[stage] || stage.toUpperCase()) + '</span>' +
+        '</div>' +
+        '<div style="margin:.5rem 0; background:#f8fafc; padding:.5rem; border-radius:8px;">' + renderOrderItemsList(order.items) + '</div>' +
+        notesHtml +
+        '<div style="display:flex; justify-content:space-between; align-items:center; font-size:.85rem;"><span>Total:</span><strong style="color:var(--brand);">R' + Number(order.total || order.total_amount || 0).toFixed(2) + '</strong></div>' +
+        '<div style="margin-top:.75rem; display:flex; justify-content:space-between; align-items:center; gap:0.5rem;">' +
+          btnHtml +
+          '<button onclick="showDigitalReceiptFromId(\'' + oid + '\')" style="font-size:.72rem; font-weight:700; padding:.35rem .7rem; background:var(--primary); color:#fff; border:none; border-radius:6px; cursor:pointer;">🧾 View Slip</button>' +
+        '</div>' +
+      '</div>';
     }
 
     async function postOrderToSupabase(order) {
       try {
-        await fetch(`${SUPABASE_URL}/rest/v1/orders`, {
+        await fetch(SUPABASE_URL + '/rest/v1/orders', {
           method: 'POST',
-          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
           body: JSON.stringify({
             order_id: order.id, id: order.id, client_name: order.clientName, customer_name: order.clientName, phone: order.phone, customer_phone: order.phone, address: order.address,
             items: JSON.stringify(order.items), instructions: order.instructions, notes: order.instructions, fulfillment: order.fulfillment,
@@ -417,8 +425,8 @@
     async function verifyAndFetchSupabaseOrders() {
       if (!client || !client.phone) return;
       try {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/orders?select=*&phone=eq.${encodeURIComponent(client.phone.trim())}&order=created_at.desc`, {
-          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' }
+        const res = await fetch(SUPABASE_URL + '/rest/v1/orders?select=*&phone=eq.' + encodeURIComponent(client.phone.trim()) + '&order=created_at.desc', {
+          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json' }
         });
         if (!res.ok) return;
         const remoteOrders = await res.json();
@@ -500,7 +508,7 @@
       const c = document.getElementById('category-filter-chips');
       if (!c) return;
       const cats = ['ALL', 'Chips', 'Chicken Combos', 'Bunny Chows', 'Specials', 'Toasted Sandwiches'];
-      c.innerHTML = cats.map(cat => `<button onclick="setCategoryFilter('${cat}')" class="filter-chip ${activeCategoryFilter === cat ? 'active' : ''}">${cat}</button>`).join('');
+      c.innerHTML = cats.map(cat => '<button onclick="setCategoryFilter(\'' + cat + '\')" class="filter-chip ' + (activeCategoryFilter === cat ? 'active' : '') + '">' + cat + '</button>').join('');
     }
 
     function setCategoryFilter(cat) { activeCategoryFilter = cat; renderCategoryChips(); renderCatalog(); }
@@ -513,7 +521,7 @@
       const found = (state.clients || []).find(c => c.phone === phone);
       if (!found) { alert('Account not found. Please register.'); return; }
       client = found; localStorage.setItem('dcs_client', JSON.stringify(client));
-      renderClientProfile(); renderLiveOrderTrackers(); renderOrderHistory(); alert(`Welcome back, ${client.name}!`);
+      renderClientProfile(); renderLiveOrderTrackers(); renderOrderHistory(); alert('Welcome back, ' + client.name + '!');
     }
 
     function handleRegisterClient() {
@@ -538,13 +546,13 @@
       const now = new Date(); const isClosed = (now.getHours() >= 20 || now.getHours() < 7);
 
       if (client) {
-        box.innerHTML = `👤 <strong>${client.name}</strong><br>📞 ${client.phone}<br>⭐ Points: ${client.points}<br><button onclick="logoutClient()" style="background:#b91c1c;color:#fff;border:none;margin-top:.4rem;font-size:.7rem;padding:.25rem .5rem;border-radius:4px;cursor:pointer">Logout</button>`;
+        box.innerHTML = '👤 <strong>' + client.name + '</strong><br>📞 ' + client.phone + '<br>⭐ Points: ' + client.points + '<br><button onclick="logoutClient()" style="background:#b91c1c;color:#fff;border:none;margin-top:.4rem;font-size:.7rem;padding:.25rem .5rem;border-radius:4px;cursor:pointer">Logout</button>';
         document.getElementById('login-panel').style.display = 'none';
         document.getElementById('registration-panel').style.display = 'none';
         document.getElementById('order-history-panel').style.display = 'block';
         if (!isClosed) { btn.disabled = false; btn.innerText = 'Complete Order'; }
       } else {
-        box.innerHTML = `⚠️ Guest Mode`;
+        box.innerHTML = '⚠️ Guest Mode';
         document.getElementById('login-panel').style.display = 'block';
         document.getElementById('registration-panel').style.display = 'block';
         document.getElementById('order-history-panel').style.display = 'none';
@@ -562,16 +570,16 @@
       container.innerHTML = filteredCats.map(cat => {
         const items = catalog.filter(i => i.category === cat && i.name.toLowerCase().includes(q));
         if (items.length === 0) return '';
-        return `<details class="menu-category-dropdown" open><summary><span>${cat}</span></summary><div class="dropdown-content-grid">${items.map(i => `
-          <div class="item-card">
-            <div class="item-img-container"><img src="${i.img}" class="item-img"></div>
-            <div class="item-details">
-              <h4>${i.name}</h4>
-              <div class="item-price">R${i.price.toFixed(2)}</div>
-              <button onclick="addToCart('${i.id}')" class="btn-primary small" style="margin-top:.5rem">+ Add</button>
-            </div>
-          </div>
-        `).join('')}</div></details>`;
+        return '<details class="menu-category-dropdown" open><summary><span>' + cat + '</span></summary><div class="dropdown-content-grid">' + items.map(i => 
+          '<div class="item-card">' +
+            '<div class="item-img-container"><img src="' + i.img + '" class="item-img"></div>' +
+            '<div class="item-details">' +
+              '<h4>' + i.name + '</h4>' +
+              '<div class="item-price">R' + i.price.toFixed(2) + '</div>' +
+              '<button onclick="addToCart(\'' + i.id + '\')" class="btn-primary small" style="margin-top:.5rem">+ Add</button>' +
+            '</div>' +
+          '</div>'
+        .join('') + '</div></details>';
       }).join('');
     }
 
@@ -592,8 +600,8 @@
 
       if (cart.length === 0) { list.innerHTML = 'Cart is empty'; sum.innerHTML = ''; return; }
       let sub = cart.reduce((a, b) => a + (b.price * b.qty), 0);
-      list.innerHTML = cart.map(i => `<div class="cart-row"><span>${i.qty}x ${i.name}</span><strong>R${(i.price * i.qty).toFixed(2)}</strong></div>`).join('');
-      sum.innerHTML = `<div><strong>Total: R${sub.toFixed(2)}</strong></div>`;
+      list.innerHTML = cart.map(i => '<div class="cart-row"><span>' + i.qty + 'x ' + i.name + '</span><strong>R' + (i.price * i.qty).toFixed(2) + '</strong></div>').join('');
+      sum.innerHTML = '<div><strong>Total: R' + sub.toFixed(2) + '</strong></div>';
     }
 
     function toggleCartDrawer() {
@@ -617,7 +625,7 @@
       let state = getSharedState();
       if (!state.orders) state.orders = [];
       const nextNum = (state.orders.length + 1).toString().padStart(2, '0');
-      const formattedOrderId = `DCS-${nextNum}`;
+      const formattedOrderId = 'DCS-' + nextNum;
 
       const newOrder = {
         id: formattedOrderId,
@@ -646,17 +654,16 @@
     }
 
     function showDigitalReceipt(order) {
-      document.getElementById('receipt-details-container').innerHTML = `
-        <div class="receipt-box">
-          <div style="text-align:center"><strong>Davidsonville Community Store</strong><br>Order Slip #${order.id}</div>
-          <hr style="margin:10px 0">
-          <div>Customer: ${order.clientName}</div>
-          <div>Instructions: ${order.instructions || 'None'}</div>
-          ${renderOrderItemsList(order.items)}
-          <hr style="margin:10px 0">
-          <div class="receipt-row receipt-total"><span>Total:</span> <span>R${Number(order.total).toFixed(2)}</span></div>
-        </div>
-      `;
+      document.getElementById('receipt-details-container').innerHTML = 
+        '<div class="receipt-box">' +
+          '<div style="text-align:center"><strong>Davidsonville Community Store</strong><br>Order Slip #' + order.id + '</div>' +
+          '<hr style="margin:10px 0">' +
+          '<div>Customer: ' + order.clientName + '</div>' +
+          '<div>Instructions: ' + (order.instructions || 'None') + '</div>' +
+          renderOrderItemsList(order.items) +
+          '<hr style="margin:10px 0">' +
+          '<div class="receipt-row receipt-total"><span>Total:</span> <span>R' + Number(order.total).toFixed(2) + '</span></div>' +
+        '</div>';
       document.getElementById('receipt-modal').style.display = 'flex';
     }
 
@@ -679,7 +686,7 @@
       if (!o || !confirm('Resubmit this order?')) return;
       
       const nextNum = (state.orders.length + 1).toString().padStart(2, '0');
-      o.id = `DCS-${nextNum}`;
+      o.id = 'DCS-' + nextNum;
       o.stage = 'received';
       o.timestamp = Date.now();
       state.orders.unshift(o);
@@ -694,7 +701,7 @@
       const state = getSharedState();
       const o = (state.orders || []).find(x => String(x.id) === String(id));
       if (!o) return;
-      const favName = prompt('Enter a label for this favorite order (e.g., Weekly Favorite):', `Order #${o.id}`);
+      const favName = prompt('Enter a label for this favorite order (e.g., Weekly Favorite):', 'Order #' + o.id);
       if (!favName) return;
 
       favorites.push({ id: 'fav_' + Date.now(), name: favName, items: [...o.items] });
@@ -710,15 +717,12 @@
         container.innerHTML = '<p style="font-size:0.8rem; color:var(--muted);">No saved favorite orders yet.</p>';
         return;
       }
-      container.innerHTML = favorites.map(f => `
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; padding:.5rem 0; border-bottom:1px dashed var(--border);">
-          <div>
-            <strong style="color:var(--primary);">${f.name}</strong><br>
-            <span style="font-size:0.72rem; color:var(--muted);">${f.items.length} items</span>
-          </div>
-          <button onclick="loadFavoriteToCart('${f.id}')" style="font-size:0.72rem; font-weight:700; padding:0.35rem 0.7rem; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">Reorder</button>
-        </div>
-      `).join('');
+      container.innerHTML = favorites.map(f => 
+        '<div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; padding:.5rem 0; border-bottom:1px dashed var(--border);">' +
+          '<div><strong style="color:var(--primary);">' + f.name + '</strong><br><span style="font-size:0.72rem; color:var(--muted);">' + f.items.length + ' items</span></div>' +
+          '<button onclick="loadFavoriteToCart(\'' + f.id + '\')" style="font-size:0.72rem; font-weight:700; padding:0.35rem 0.7rem; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">Reorder</button>' +
+        '</div>'
+      ).join('');
     }
 
     function loadFavoriteToCart(favId) {
@@ -728,7 +732,7 @@
         localStorage.setItem('dcs_cart', JSON.stringify(cart));
         renderCart();
         toggleCartDrawer();
-        alert(`Loaded "${fav.name}" into your cart!`);
+        alert('Loaded "' + fav.name + '" into your cart!');
       }
     }
 
@@ -754,21 +758,18 @@
         return;
       }
 
-      container.innerHTML = myOrders.map(o => `
-        <div style="padding:.5rem 0; border-bottom:1px dashed var(--border);">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <strong style="color:var(--primary);">#${o.id}</strong> (${o.date})<br>
-              <span style="font-size:0.72rem; color:var(--brand); font-weight:bold;">Status: ${(o.stage || 'received').toUpperCase()}</span>
-            </div>
-            <div style="display:flex; gap:4px;">
-              <button onclick="saveOrderAsFavorite('${o.id}')" style="font-size:0.7rem; font-weight:700; padding:0.3rem 0.5rem; background:#059669; color:white; border:none; border-radius:4px; cursor:pointer;" title="Save to Favorites">⭐ Fav</button>
-              <button onclick="showDigitalReceiptFromId('${o.id}')" style="font-size:0.7rem; font-weight:700; padding:0.3rem 0.5rem; background:var(--primary); color:white; border:none; border-radius:4px; cursor:pointer;">Slip</button>
-            </div>
-          </div>
-          ${renderOrderItemsList(o.items)}
-        </div>
-      `).join('');
+      container.innerHTML = myOrders.map(o => 
+        '<div style="padding:.5rem 0; border-bottom:1px dashed var(--border);">' +
+          '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+            '<div><strong style="color:var(--primary);">#' + o.id + '</strong> (' + o.date + ')<br><span style="font-size:0.72rem; color:var(--brand); font-weight:bold;">Status: ' + (o.stage || 'received').toUpperCase() + '</span></div>' +
+            '<div style="display:flex; gap:4px;">' +
+              '<button onclick="saveOrderAsFavorite(\'' + o.id + '\')" style="font-size:0.7rem; font-weight:700; padding:0.3rem 0.5rem; background:#059669; color:white; border:none; border-radius:4px; cursor:pointer;" title="Save to Favorites">⭐ Fav</button>' +
+              '<button onclick="showDigitalReceiptFromId(\'' + o.id + '\')" style="font-size:0.7rem; font-weight:700; padding:0.3rem 0.5rem; background:var(--primary); color:white; border:none; border-radius:4px; cursor:pointer;">Slip</button>' +
+            '</div>' +
+          '</div>' +
+          renderOrderItemsList(o.items) +
+        '</div>'
+      ).join('');
     }
 
     async function renderLiveOrderTrackers() {
