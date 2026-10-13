@@ -97,7 +97,6 @@
     </div>
   </header>
 
-  <!-- STORE CLOSED BANNER NOTICE -->
   <div id="store-closed-banner" style="display:none; background:#ef4444; color:#fff; text-align:center; padding:.65rem 1rem; font-weight:700; font-size:.88rem;">
     🌙 The kitchen is currently resting! We are closed for the evening (orders close at 8:00 PM and reopen at 7:00 AM). You are welcome to browse the menu in the meantime!
   </div>
@@ -226,7 +225,6 @@
     </div>
   </div>
 
-  <!-- PENDING CONFIRMATION MODAL -->
   <div id="pending-confirm-modal" class="modal-overlay">
     <div class="modal-content" style="text-align:center;">
       <h3 style="color:var(--brand); margin-bottom:0.75rem;">🔍 Order Review & Confirmation</h3>
@@ -751,12 +749,14 @@
       const trackerBody = document.getElementById('live-tracker-body');
       const state = getSharedState();
       const myOrders = (state.orders || []).filter(o => client && o.phone === client.phone);
-      const active = myOrders.filter(o => o.stage !== 'order-completed');
+      
+      // Filter out completed and cancelled orders from the active list
+      const active = myOrders.filter(o => o.stage !== 'order-completed' && o.stage !== 'cancelled');
 
       document.getElementById('header-orders-badge').innerText = active.length;
-      if (panel) panel.style.display = (client && myOrders.length > 0) ? 'block' : 'none';
-      if (container) container.innerHTML = myOrders.length ? myOrders.map(buildOrderCardHTML).join('') : 'No orders.';
-      if (trackerBody) trackerBody.innerHTML = active.length ? active.map(buildOrderCardHTML).join('') : 'No active orders.';
+      if (panel) panel.style.display = (client && active.length > 0) ? 'block' : 'none';
+      if (container) container.innerHTML = active.length ? active.map(buildOrderCardHTML).join('') : '<p style="font-size:0.8rem; color:var(--muted);">No active orders.</p>';
+      if (trackerBody) trackerBody.innerHTML = active.length ? active.map(buildOrderCardHTML).join('') : '<p style="font-size:0.85rem; color:var(--muted); text-align:center; padding:1rem 0;">No active orders found.</p>';
       renderOrderHistory();
     }
   </script>
