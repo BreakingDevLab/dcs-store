@@ -158,7 +158,6 @@
   </div>
 
   <script>
-    // CONFIGURATION & SUPABASE SETUP
     const SUPABASE_URL = "https://qbmszgddepljxqxynyxv.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU";
 
@@ -169,7 +168,6 @@
     let ordersCache = [];
     let currentView = 'kanban';
 
-    // AUTO-START ON PAGE LOAD
     document.addEventListener('DOMContentLoaded', () => {
       fetchOrders();
       subscribeToRealtime();
@@ -196,7 +194,6 @@
       }
     }
 
-    // AUDIO NOTIFICATION (Web Audio API)[cite: 8]
     function playChime() {
       if (!audioEnabled) return;
       try {
@@ -208,7 +205,6 @@
         }
         
         const now = audioCtx.currentTime;
-        
         const osc1 = audioCtx.createOscillator();
         const gain1 = audioCtx.createGain();
         osc1.type = 'sine';
@@ -230,9 +226,7 @@
         gain2.connect(audioCtx.destination);
         osc2.start(now + 0.15);
         osc2.stop(now + 0.7);
-      } catch (err) {
-        console.warn("Audio playback issue:", err);
-      }
+      } catch (err) {}
     }
 
     function toggleAudio() {
@@ -242,7 +236,6 @@
       if (audioEnabled) playChime();
     }
 
-    // REAL-TIME SUBSCRIPTION & DATA FETCHING[cite: 8]
     function subscribeToRealtime() {
       supabaseClient
         .channel('dashboard-orders')
@@ -272,17 +265,13 @@
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error("Error fetching orders:", error.message);
-        return;
-      }
+      if (error) return;
 
       ordersCache = orders || [];
       renderOrders();
       if (currentView === 'audit') renderAuditLog();
     }
 
-    // ORDER STAGE TRANSITIONS
     async function updateOrderStatus(orderId, newStatus) {
       const { error } = await supabaseClient
         .from('orders')
@@ -290,7 +279,6 @@
         .eq('id', orderId);
 
       if (error) {
-        // Try matching order_id if id column differs
         await supabaseClient
           .from('orders')
           .update({ stage: newStatus, status: newStatus, updated_at: new Date().toISOString() })
@@ -305,7 +293,6 @@
       try { const p = JSON.parse(rawItems); if (Array.isArray(p)) return p; return [p]; } catch (e) { return [{ name: rawItems, quantity: 1, price: 0 }]; }
     }
 
-    // RENDER KANBAN
     function renderOrders() {
       const columns = {
         pending: document.getElementById('col-pending'),
@@ -352,7 +339,7 @@
 
       const timeFormatted = order.created_at ? new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
       const items = parseItems(order.items);
-      const orderIdKey = order.id || order.order_id;
+      const orderIdKey = order.id || order.order_id || 'DCS-01';
       const customerName = order.customer_name || order.client_name || 'Walk-in Customer';
       const customerPhone = order.customer_phone || order.phone || '';
       const totalAmount = Number(order.total || order.total_amount || 0);
@@ -396,7 +383,7 @@
         <div>
           <div class="flex justify-between items-start border-b border-slate-100 pb-2 mb-2">
             <div>
-              <span class="text-xs font-bold text-slate-400">#${String(orderIdKey).slice(-6)}</span>
+              <span class="text-xs font-bold text-slate-400">#${orderIdKey}</span>
               <h3 class="font-bold text-slate-900 text-sm">${customerName}</h3>
               <p class="text-[11px] text-slate-500">${customerPhone}</p>
             </div>
@@ -422,7 +409,6 @@
       return card;
     }
 
-    // RENDER AUDIT LOG
     function renderAuditLog() {
       const tbody = document.getElementById('audit-table-body');
       const statusFilter = document.getElementById('audit-status-filter').value;
@@ -457,7 +443,7 @@
       }
 
       tbody.innerHTML = filtered.map(o => {
-        const orderIdKey = o.id || o.order_id;
+        const orderIdKey = o.id || o.order_id || 'DCS-01';
         const dateStr = o.created_at ? new Date(o.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '';
         const customerName = o.customer_name || o.client_name || 'Walk-in';
         const phone = o.customer_phone || o.phone || 'N/A';
@@ -475,7 +461,7 @@
 
         return `
           <tr class="hover:bg-slate-50">
-            <td class="py-3 px-4 font-bold text-slate-900">#${String(orderIdKey).slice(-6)}</td>
+            <td class="py-3 px-4 font-bold text-slate-900">#${orderIdKey}</td>
             <td class="py-3 px-4 text-slate-600">${dateStr}</td>
             <td class="py-3 px-4 font-semibold text-slate-800">${customerName}</td>
             <td class="py-3 px-4 text-slate-600">${phone}</td>
@@ -494,7 +480,7 @@
       if (ordersCache.length === 0) { alert('No orders to export'); return; }
       let csv = 'OrderID,Date,Customer,Phone,Total,Status\n';
       ordersCache.forEach(o => {
-        const oid = o.id || o.order_id;
+        const oid = o.id || o.order_id || 'DCS-01';
         const date = o.created_at ? new Date(o.created_at).toISOString() : '';
         const name = (o.customer_name || o.client_name || '').replace(/,/g, '');
         const phone = o.customer_phone || o.phone || '';

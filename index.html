@@ -8,7 +8,6 @@
   <style>
     :root{
       --primary:#0f172a; --brand:#d97706; --brand-gradient:linear-gradient(135deg,#f59e0b 0%,#d97706 100%);
-      --accent-gradient:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);
       --bg-page:#f8fafc; --card-bg:#ffffff; --muted:#64748b; --border:#e2e8f0;
       --shadow:0 10px 25px -5px rgba(0,0,0,0.08),0 8px 10px -6px rgba(0,0,0,0.04);
       --radius:14px; --focus: 0 0 0 4px rgba(217,119,6,0.12);
@@ -258,30 +257,22 @@
     let favorites = JSON.parse(localStorage.getItem('dcs_favorites')) || [];
     let activeCategoryFilter = 'ALL';
 
-    // Official Davidsonville Community Store Menu Catalog with Real Kasi Food Imagery
     const catalog = [
-      // CHIPS (SMALL, MEDIUM, LARGE)
       { id: 'ch1', name: 'SMALL CHIPS', category: 'Chips', price: 15, img: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80' },
       { id: 'ch2', name: 'MEDIUM CHIPS', category: 'Chips', price: 25, img: 'https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?auto=format&fit=crop&w=500&q=80' },
       { id: 'ch3', name: 'LARGE CHIPS', category: 'Chips', price: 35, img: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=500&q=80' },
-
-      // CHICKEN COMBOS
       { id: 'cc1', name: 'FULL HOUSE COMBO 1', category: 'Chicken Combos', price: 155, img: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=500&q=80' },
       { id: 'cc2', name: 'FULL CHICKEN', category: 'Chicken Combos', price: 95, img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=80' },
       { id: 'cc3', name: 'HALF CHICKEN', category: 'Chicken Combos', price: 50, img: 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&w=500&q=80' },
       { id: 'cc4', name: '½ CHICKEN & CHIPS', category: 'Chicken Combos', price: 60, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=500&q=80' },
       { id: 'cc5', name: '¼ CHICKEN & CHIPS', category: 'Chicken Combos', price: 45, img: 'https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&w=500&q=80' },
       { id: 'cc6', name: 'WINGS & CHIPS (SPECIAL)', category: 'Chicken Combos', price: 35, img: 'https://images.unsplash.com/photo-1567620832903-9fc6debc209f?auto=format&fit=crop&w=500&q=80' },
-
-      // BUNNY CHOWS (KOTA)
       { id: 'bc1', name: 'CHIP BUNNY', category: 'Bunny Chows', price: 20, img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=500&q=80' },
       { id: 'bc2', name: 'POLONY BUNNY', category: 'Bunny Chows', price: 38, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
       { id: 'bc3', name: 'RUSSIAN BUNNY', category: 'Bunny Chows', price: 43, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?auto=format&fit=crop&w=500&q=80' },
       { id: 'bc4', name: 'PATTY BUNNY', category: 'Bunny Chows', price: 50, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=500&q=80' },
       { id: 'bc5', name: 'STEAK BUNNY', category: 'Bunny Chows', price: 55, img: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=500&q=80' },
       { id: 'bc6', name: 'BACON BUNNY', category: 'Bunny Chows', price: 40, img: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?auto=format&fit=crop&w=500&q=80' },
-
-      // SPECIALS
       { id: 'sp1', name: 'FOOTLONG FRANKFURTER', category: 'Specials', price: 40, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?auto=format&fit=crop&w=500&q=80' },
       { id: 'sp2', name: 'FOOTLONG FRANK & CHIPS', category: 'Specials', price: 45, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=500&q=80' },
       { id: 'sp3', name: 'STEAK ROLL', category: 'Specials', price: 50, img: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=500&q=80' },
@@ -290,8 +281,6 @@
       { id: 'sp6', name: 'BOEREWORS ROLL', category: 'Specials', price: 25, img: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=500&q=80' },
       { id: 'sp7', name: 'PREGO ROLL', category: 'Specials', price: 35, img: 'https://images.unsplash.com/photo-1603064752734-4c48eff53d05?auto=format&fit=crop&w=500&q=80' },
       { id: 'sp8', name: 'CHICKEN MAYO ROLL', category: 'Specials', price: 15, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
-
-      // TOASTED SANDWICHES
       { id: 'ts1', name: 'CHIP BREAD', category: 'Toasted Sandwiches', price: 8, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
       { id: 'ts2', name: 'TOASTED CHIP BREAD', category: 'Toasted Sandwiches', price: 10, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
       { id: 'ts3', name: 'SCHOOL BOY', category: 'Toasted Sandwiches', price: 35, img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=500&q=80' },
@@ -372,8 +361,8 @@
       const items = parseOrderItems(itemsInput);
       return `<ul style="list-style:none; padding:0; margin:0.35rem 0; font-size:0.82rem;">` +
         items.map(item => `<li style="display:flex; justify-content:space-between; padding:0.2rem 0; border-bottom:1px dotted var(--border);">
-          <span><strong>${item.qty || 1}x</strong> ${item.name || item.title}</span>
-          <span style="font-weight:700;">R${((item.qty || 1) * Number(item.price || 0)).toFixed(2)}</span>
+          <span><strong>${item.qty || item.quantity || 1}x</strong> ${item.name || item.title}</span>
+          <span style="font-weight:700;">R${(((item.qty || item.quantity || 1)) * Number(item.price || 0)).toFixed(2)}</span>
         </li>`).join('') + `</ul>`;
     }
 
@@ -381,15 +370,16 @@
       const stage = (order.stage || order.status || 'received').toLowerCase().trim().replace(/_/g, '-');
       const isFailedOrCancelled = (stage === 'cancelled' || stage === 'failed');
       const stageLabels = {
-        'received': 'Received', 'pending': 'Pending', 'kitchen-prep': 'Kitchen Prep',
-        'ready': 'Ready', 'ready-for-pick-up': 'Ready for Pick up', 'order-completed': 'Completed', 'cancelled': 'Cancelled'
+        'received': 'Received', 'pending': 'Pending', 'kitchen-prep': 'Kitchen Prep', 'preparing': 'Preparing',
+        'ready': 'Ready', 'ready-for-pick-up': 'Ready for Pick up', 'order-completed': 'Completed', 'completed': 'Completed', 'cancelled': 'Cancelled'
       };
 
+      const oid = order.id || order.order_id;
       return `
         <div style="padding:.85rem; border:1px solid var(--border); border-radius:12px; margin-bottom:.75rem; background:#fff;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.5rem; border-bottom:1px solid var(--border); padding-bottom:.5rem;">
             <div>
-              <strong>Order #${order.id}</strong>
+              <strong>Order #${oid}</strong>
               <div style="font-size:.72rem; color:var(--muted);">${order.date || ''}</div>
             </div>
             <span style="background:var(--primary); color:#fff; font-size:.68rem; font-weight:800; padding:.2rem .5rem; border-radius:20px;">
@@ -397,13 +387,13 @@
             </span>
           </div>
           <div style="margin:.5rem 0; background:#f8fafc; padding:.5rem; border-radius:8px;">${renderOrderItemsList(order.items)}</div>
-          ${order.instructions ? `<div style="font-size:.75rem; background:#fffbeb; padding:.3rem .5rem; border-left:3px solid var(--brand); margin-bottom:.5rem;"><strong>Notes:</strong> ${order.instructions}</div>` : ''}
+          ${order.instructions || order.notes ? `<div style="font-size:.75rem; background:#fffbeb; padding:.3rem .5rem; border-left:3px solid var(--brand); margin-bottom:.5rem;"><strong>Notes:</strong> ${order.instructions || order.notes}</div>` : ''}
           <div style="display:flex; justify-content:space-between; align-items:center; font-size:.85rem;">
-            <span>Total:</span><strong style="color:var(--brand);">R${Number(order.total || 0).toFixed(2)}</strong>
+            <span>Total:</span><strong style="color:var(--brand);">R${Number(order.total || order.total_amount || 0).toFixed(2)}</strong>
           </div>
           <div style="margin-top:.75rem; display:flex; justify-content:space-between; align-items:center; gap:0.5rem;">
-            ${isFailedOrCancelled ? `<button onclick="resubmitOrderFromSlip('${order.id}')" style="font-size:.72rem; font-weight:700; padding:.35rem .7rem; background:#9333ea; color:#fff; border:none; border-radius:6px; cursor:pointer;">🔄 Resubmit / Reorder</button>` : `<button onclick="saveOrderAsFavorite('${order.id}')" style="font-size:.72rem; font-weight:700; padding:.35rem .7rem; background:#059669; color:#fff; border:none; border-radius:6px; cursor:pointer;">⭐ Save to Favorites</button>`}
-            <button onclick="showDigitalReceiptFromId('${order.id}')" style="font-size:.72rem; font-weight:700; padding:.35rem .7rem; background:var(--primary); color:#fff; border:none; border-radius:6px; cursor:pointer;">🧾 View Slip</button>
+            ${isFailedOrCancelled ? `<button onclick="resubmitOrderFromSlip('${oid}')" style="font-size:.72rem; font-weight:700; padding:.35rem .7rem; background:#9333ea; color:#fff; border:none; border-radius:6px; cursor:pointer;">🔄 Resubmit / Reorder</button>` : `<button onclick="saveOrderAsFavorite('${oid}')" style="font-size:.72rem; font-weight:700; padding:.35rem .7rem; background:#059669; color:#fff; border:none; border-radius:6px; cursor:pointer;">⭐ Save to Favorites</button>`}
+            <button onclick="showDigitalReceiptFromId('${oid}')" style="font-size:.72rem; font-weight:700; padding:.35rem .7rem; background:var(--primary); color:#fff; border:none; border-radius:6px; cursor:pointer;">🧾 View Slip</button>
           </div>
         </div>
       `;
@@ -415,9 +405,9 @@
           method: 'POST',
           headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
           body: JSON.stringify({
-            order_id: order.id, client_name: order.clientName, phone: order.phone, address: order.address,
-            items: JSON.stringify(order.items), instructions: order.instructions, fulfillment: order.fulfillment,
-            payment_method: order.paymentMethod, subtotal: order.subtotal, total: order.total, stage: order.stage,
+            order_id: order.id, id: order.id, client_name: order.clientName, customer_name: order.clientName, phone: order.phone, customer_phone: order.phone, address: order.address,
+            items: JSON.stringify(order.items), instructions: order.instructions, notes: order.instructions, fulfillment: order.fulfillment,
+            payment_method: order.paymentMethod, subtotal: order.subtotal, total: order.total, total_amount: order.total, stage: order.stage, status: order.stage,
             created_at: new Date(order.timestamp).toISOString()
           })
         });
@@ -452,14 +442,14 @@
               date: o.created_at ? new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
               timestamp: o.created_at ? new Date(o.created_at).getTime() : Date.now(),
               items: parseOrderItems(o.items),
-              instructions: o.instructions || '',
+              instructions: o.instructions || o.notes || '',
               fulfillment: o.fulfillment || 'Pickup',
               paymentMethod: o.payment_method || 'Cash',
-              subtotal: Number(o.subtotal || o.total || 0),
-              total: Number(o.total || 0),
+              subtotal: Number(o.subtotal || o.total || o.total_amount || 0),
+              total: Number(o.total || o.total_amount || 0),
               stage: st,
-              clientName: o.client_name || client.name,
-              phone: o.phone || client.phone
+              clientName: o.client_name || o.customer_name || client.name,
+              phone: o.phone || o.customer_phone || client.phone
             };
           });
           localStorage.setItem('dcs_prev_stages', JSON.stringify(newStages));
@@ -624,8 +614,13 @@
       const instructions = document.getElementById('special-instructions').value.trim();
       const sub = cart.reduce((a, b) => a + (b.price * b.qty), 0);
 
+      let state = getSharedState();
+      if (!state.orders) state.orders = [];
+      const nextNum = (state.orders.length + 1).toString().padStart(2, '0');
+      const formattedOrderId = `DCS-${nextNum}`;
+
       const newOrder = {
-        id: 'DCS-' + Math.floor(100000 + Math.random() * 900000),
+        id: formattedOrderId,
         date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         timestamp: Date.now(),
         items: [...cart],
@@ -639,8 +634,6 @@
         phone: client.phone
       };
 
-      let state = getSharedState();
-      if (!state.orders) state.orders = [];
       state.orders.unshift(newOrder);
       saveSharedState(state);
 
@@ -684,7 +677,9 @@
       const state = getSharedState();
       const o = (state.orders || []).find(x => String(x.id) === String(id));
       if (!o || !confirm('Resubmit this order?')) return;
-      o.id = 'DCS-' + Math.floor(100000 + Math.random() * 900000);
+      
+      const nextNum = (state.orders.length + 1).toString().padStart(2, '0');
+      o.id = `DCS-${nextNum}`;
       o.stage = 'received';
       o.timestamp = Date.now();
       state.orders.unshift(o);
@@ -784,7 +779,10 @@
       const state = getSharedState();
       const myOrders = (state.orders || []).filter(o => client && o.phone === client.phone);
       
-      const active = myOrders.filter(o => o.stage !== 'order-completed' && o.stage !== 'cancelled');
+      const active = myOrders.filter(o => {
+        const st = (o.stage || o.status || 'received').toLowerCase().trim();
+        return st !== 'order-completed' && st !== 'completed' && st !== 'cancelled';
+      });
 
       document.getElementById('header-orders-badge').innerText = active.length;
       if (panel) panel.style.display = (client && active.length > 0) ? 'block' : 'none';
