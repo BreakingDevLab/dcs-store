@@ -429,7 +429,7 @@
 
           const mapped = remoteOrders.map(o => {
             const st = (o.stage || o.status || 'received').toLowerCase().trim().replace(/_/g, '-');
-            const oid = o.order_id || o.id;
+            const oid = o.order_id || o.id || 'DCS-01';
             newStages[oid] = st;
             if (prevStages[oid] && prevStages[oid] !== st) {
               showStageNotification(oid, st);
@@ -736,7 +736,7 @@
       if (!client) return;
       if (!confirm('Are you sure you want to clear your order history?')) return;
       let state = getSharedState();
-      state.orders = (state.orders || []).filter(o => o.phone !== client.phone);
+      state.orders = (state.orders || []).filter(o => o.phone !== client.phone && o.clientName !== client.name);
       saveSharedState(state);
       renderOrderHistory();
       renderLiveOrderTrackers();
@@ -747,7 +747,7 @@
       const container = document.getElementById('order-history-list');
       if (!container) return;
       const state = getSharedState();
-      const myOrders = (state.orders || []).filter(o => client && o.phone === client.phone);
+      const myOrders = (state.orders || []).filter(o => client && (o.phone === client.phone || o.clientName === client.name));
 
       if (myOrders.length === 0) {
         container.innerHTML = '<p style="font-size:0.8rem; color:var(--muted);">No past orders found.</p>';
@@ -777,7 +777,7 @@
       const panel = document.getElementById('customer-tracker-panel');
       const trackerBody = document.getElementById('live-tracker-body');
       const state = getSharedState();
-      const myOrders = (state.orders || []).filter(o => client && o.phone === client.phone);
+      const myOrders = (state.orders || []).filter(o => client && (o.phone === client.phone || o.clientName === client.name));
       
       const active = myOrders.filter(o => {
         const st = (o.stage || o.status || 'received').toLowerCase().trim();

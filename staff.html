@@ -127,9 +127,12 @@
               <input type="date" id="audit-end-date" onchange="renderAuditLog()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none">
             </div>
           </div>
-          <div>
+          <div class="flex items-center gap-2">
             <button onclick="exportAuditCSV()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center space-x-2">
               <span>📥 Export CSV</span>
+            </button>
+            <button onclick="clearAllAuditOrders()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center space-x-2">
+              <span>🗑️ Clear All</span>
             </button>
           </div>
         </div>
@@ -155,6 +158,16 @@
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- ORDER DETAILS MODAL FOR AUDIT LOG VIEW -->
+  <div id="audit-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+      <div id="audit-modal-content"></div>
+      <div class="mt-6 flex justify-end">
+        <button onclick="closeAuditModal()" class="px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-semibold">Close</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -287,6 +300,19 @@
       fetchOrders();
     }
 
+    async function clearAllAuditOrders() {
+      if (!confirm('Are you sure you want to clear all orders from the audit log?')) return;
+      const { error } = await supabaseClient.from('orders').delete().neq('id', 0);
+      if (error) {
+        // Fallback delete if id is string or uuid
+        await supabaseClient.from('orders').delete().not('order_id', 'is', null);
+      }
+      ordersCache = [];
+      renderOrders();
+      renderAuditLog();
+      alert('All orders cleared.');
+    }
+
     function parseItems(rawItems) {
       if (!rawItems) return [];
       if (Array.isArray(rawItems)) return rawItems;
@@ -312,7 +338,7 @@
 
         if (stage === 'completed' || stage === 'order-completed' || stage === 'cancelled') {
           counts.completed++;
-          return; // Completed & cancelled orders are immediately cleared and hidden from active kanban board columns
+          return;
         }
 
         if (counts[stage] !== undefined) counts[stage]++;
@@ -339,7 +365,7 @@
 
       const timeFormatted = order.created_at ? new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
       const items = parseItems(order.items);
-      const orderIdKey = order.id || order.order_id || 'DCS-01';
+      const orderIdKey = order.order_id || order.id || 'DCS-01';
       const customerName = order.customer_name || order.client_name || 'Walk-in Customer';
       const customerPhone = order.customer_phone || order.phone || '';
       const totalAmount = Number(order.total || order.total_amount || 0);
@@ -443,7 +469,7 @@
       }
 
       tbody.innerHTML = filtered.map(o => {
-        const orderIdKey = o.id || o.order_id || 'DCS-01';
+        const orderIdKey = o.order_id || o.id || 'DCS-01';
         const dateStr = o.created_at ? new Date(o.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '';
         const customerName = o.customer_name || o.client_name || 'Walk-in';
         const phone = o.customer_phone || o.phone || 'N/A';
@@ -469,18 +495,51 @@
             <td class="py-3 px-4 font-bold text-slate-900">R${total.toFixed(2)}</td>
             <td class="py-3 px-4"><span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase ${badgeColor}">${st.replace('_', ' ')}</span></td>
             <td class="py-3 px-4">
-              <button onclick="updateOrderStatus('${orderIdKey}', 'pending')" class="text-xs text-indigo-600 hover:underline font-semibold">Reset</button>
+              <button onclick="viewAuditOrderModal('${orderIdKey}')" class="text-xs text-indigo-600 hover:underline font-semibold">View</button>
             </td>
           </tr>
         `;
       }).join('');
     }
 
+    function viewAuditOrderModal(orderId) {
+      const o = ordersCache.find(x => String(x.order_id || x.id) === String(orderId));
+      if (!o) return;
+      const items = parseItems(o.items);
+      const modal = document.getElementById('audit-modal');
+      const content = document.getElementById('audit-modal-content');
+
+      content.innerHTML = `
+        <h3 class="text-lg font-bold text-slate-900 mb-3">Order Details #${o.order_id || o.id}</h3>
+        <p class="text-sm text-slate-600 mb-1"><strong>Customer:</strong> ${o.customer_name || o.client_name || 'Walk-in'} (${o.customer_phone || o.phone || 'N/A'})</p>
+        <p class="text-sm text-slate-600 mb-3"><strong>Address:</strong> ${o.address || 'N/A'}</p>
+        ${o.notes || o.instructions ? `<div class="mb-3 p-2 bg-amber-50 text-amber-800 text-xs rounded border border-amber-200"><strong>Notes:</strong> ${o.notes || o.instructions}</div>` : ''}
+        <h4 class="font-bold text-sm text-slate-700 mb-2">Items:</h4>
+        <ul class="space-y-1 mb-4 text-sm">
+          ${items.map(i => `<li class="flex justify-between py-1 border-b border-slate-100">
+            <span>${i.quantity \vert{}\vert{} i.qty \vert{}\vert{} 1}x${i.name || i.title}</span>
+            <span class="font-bold">R${((i.quantity || i.qty || 1) * Number(i.price || 0)).toFixed(2)}</span>
+          </li>`).join('')}
+        </ul>
+        <div class="flex justify-between text-base font-bold text-slate-900 pt-2 border-t border-slate-200">
+          <span>Total:</span> <span class="text-amber-600">R${Number(o.total || o.total_amount || 0).toFixed(2)}</span>
+        </div>
+      `;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeAuditModal() {
+      const modal = document.getElementById('audit-modal');
+      modal.classList.remove('flex');
+      modal.classList.add('hidden');
+    }
+
     function exportAuditCSV() {
       if (ordersCache.length === 0) { alert('No orders to export'); return; }
       let csv = 'OrderID,Date,Customer,Phone,Total,Status\n';
       ordersCache.forEach(o => {
-        const oid = o.id || o.order_id || 'DCS-01';
+        const oid = o.order_id || o.id || 'DCS-01';
         const date = o.created_at ? new Date(o.created_at).toISOString() : '';
         const name = (o.customer_name || o.client_name || '').replace(/,/g, '');
         const phone = o.customer_phone || o.phone || '';
