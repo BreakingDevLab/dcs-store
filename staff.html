@@ -14,7 +14,7 @@
     <div class="max-w-7xl mx-auto flex justify-between items-center">
       <div>
         <h1 class="text-xl font-bold">Davidsonville Community Store</h1>
-        <p class="text-xs text-gray-400">Staff Dashboard & 5-Stage Kanban Flow</p>
+        <p class="text-xs text-gray-400">Staff Dashboard & 7-Stage Unified Order Flow</p>
       </div>
       <div class="flex items-center gap-3">
         <span id="realtimeStatus" class="text-[10px] bg-emerald-900/80 text-emerald-300 border border-emerald-700 px-2 py-1 rounded-full flex items-center gap-1">
@@ -23,7 +23,6 @@
         <button 
           onclick="playChime()" 
           class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-2.5 py-2 rounded-lg border border-gray-700 transition"
-          title="Test Chime Sound"
         >
           🔔 Test Chime
         </button>
@@ -40,7 +39,7 @@
 
   <main class="max-w-7xl mx-auto p-4 md:p-6 space-y-8">
 
-    <!-- Staff Notification Banner for Stale Orders Cleaned Up -->
+    <!-- Staff Notification Banner -->
     <div id="staffNotificationBanner" class="hidden bg-amber-50 border-l-4 border-amber-500 p-4 rounded-xl shadow-sm text-sm text-amber-800 flex justify-between items-center">
       <div class="flex items-center gap-2">
         <span>⚠️</span>
@@ -49,85 +48,102 @@
       <button onclick="document.getElementById('staffNotificationBanner').classList.add('hidden')" class="text-amber-600 hover:text-amber-900 font-bold text-lg">&times;</button>
     </div>
 
-    <!-- KANBAN ORDER FLOW BOARD (5 COLUMNS) -->
+    <!-- 7-STAGE KANBAN BOARD -->
     <section>
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
         <div>
-          <h2 class="text-2xl font-bold text-gray-800">Kanban Order Flow</h2>
-          <p class="text-xs text-gray-500">Manage orders through Received, Pending, Preparing, Ready for pickup, and Cancelled</p>
+          <h2 class="text-2xl font-bold text-gray-800">Unified 7-Stage Order Flow</h2>
+          <p class="text-xs text-gray-500">Received → Pending → Kitchen Prep → Ready → Ready for Pick up → Order Completed → Cancelled</p>
         </div>
         <div class="flex items-center gap-2">
           <button 
             onclick="clearResolvedOrders()" 
             class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-2 rounded-lg font-medium transition flex items-center gap-1"
-            title="Clear Ready for pickup or Cancelled orders from the board"
+            title="Clear Completed or Cancelled orders from the board"
           >
-            <span>🗑️</span> Clear Ready / Cancelled
+            <span>🗑️</span> Clear Completed / Cancelled
           </button>
         </div>
       </div>
 
-      <!-- Kanban Columns Container (5 Columns) -->
-      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
+      <!-- Kanban Columns Container (7 Stages) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
         
         <!-- 1. Received -->
-        <div class="bg-blue-50/80 p-3 rounded-xl border border-blue-200 flex flex-col min-h-[450px]">
-          <div class="flex justify-between items-center mb-3 px-1">
-            <h3 class="font-bold text-blue-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
-              <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
-              Received
+        <div class="bg-blue-50/80 p-2.5 rounded-xl border border-blue-200 flex flex-col min-h-[420px]">
+          <div class="flex justify-between items-center mb-2 px-1">
+            <h3 class="font-bold text-blue-900 text-[11px] uppercase tracking-wider flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-blue-600"></span> Received
             </h3>
-            <span id="count-received" class="bg-blue-200 text-blue-900 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+            <span id="count-received" class="bg-blue-200 text-blue-900 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
           </div>
-          <div id="kanban-received" class="space-y-3 flex-1 overflow-y-auto max-h-[70vh]"></div>
+          <div id="kanban-received" class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh]"></div>
         </div>
 
         <!-- 2. Pending -->
-        <div class="bg-gray-200/70 p-3 rounded-xl border border-gray-300 flex flex-col min-h-[450px]">
-          <div class="flex justify-between items-center mb-3 px-1">
-            <h3 class="font-bold text-gray-700 text-xs uppercase tracking-wider flex items-center gap-1.5">
-              <span class="w-2.5 h-2.5 rounded-full bg-gray-500"></span>
-              Pending
+        <div class="bg-gray-200/70 p-2.5 rounded-xl border border-gray-300 flex flex-col min-h-[420px]">
+          <div class="flex justify-between items-center mb-2 px-1">
+            <h3 class="font-bold text-gray-700 text-[11px] uppercase tracking-wider flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-gray-500"></span> Pending
             </h3>
-            <span id="count-pending" class="bg-gray-300 text-gray-700 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+            <span id="count-pending" class="bg-gray-300 text-gray-700 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
           </div>
-          <div id="kanban-pending" class="space-y-3 flex-1 overflow-y-auto max-h-[70vh]"></div>
+          <div id="kanban-pending" class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh]"></div>
         </div>
 
-        <!-- 3. Preparing -->
-        <div class="bg-yellow-50/80 p-3 rounded-xl border border-yellow-200 flex flex-col min-h-[450px]">
-          <div class="flex justify-between items-center mb-3 px-1">
-            <h3 class="font-bold text-yellow-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
-              <span class="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
-              Preparing
+        <!-- 3. Kitchen Prep -->
+        <div class="bg-yellow-50/80 p-2.5 rounded-xl border border-yellow-200 flex flex-col min-h-[420px]">
+          <div class="flex justify-between items-center mb-2 px-1">
+            <h3 class="font-bold text-yellow-900 text-[11px] uppercase tracking-wider flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-yellow-500"></span> Kitchen Prep
             </h3>
-            <span id="count-preparing" class="bg-yellow-200 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+            <span id="count-kitchen-prep" class="bg-yellow-200 text-yellow-900 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
           </div>
-          <div id="kanban-preparing" class="space-y-3 flex-1 overflow-y-auto max-h-[70vh]"></div>
+          <div id="kanban-kitchen-prep" class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh]"></div>
         </div>
 
-        <!-- 4. Ready for pickup -->
-        <div class="bg-emerald-50/80 p-3 rounded-xl border border-emerald-200 flex flex-col min-h-[450px]">
-          <div class="flex justify-between items-center mb-3 px-1">
-            <h3 class="font-bold text-emerald-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
-              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-              Ready for pickup
+        <!-- 4. Ready -->
+        <div class="bg-teal-50/80 p-2.5 rounded-xl border border-teal-200 flex flex-col min-h-[420px]">
+          <div class="flex justify-between items-center mb-2 px-1">
+            <h3 class="font-bold text-teal-900 text-[11px] uppercase tracking-wider flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-teal-500"></span> Ready
             </h3>
-            <span id="count-ready-for-pickup" class="bg-emerald-200 text-emerald-900 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+            <span id="count-ready" class="bg-teal-200 text-teal-900 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
           </div>
-          <div id="kanban-ready-for-pickup" class="space-y-3 flex-1 overflow-y-auto max-h-[70vh]"></div>
+          <div id="kanban-ready" class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh]"></div>
         </div>
 
-        <!-- 5. Cancelled -->
-        <div class="bg-red-50/80 p-3 rounded-xl border border-red-200 flex flex-col min-h-[450px]">
-          <div class="flex justify-between items-center mb-3 px-1">
-            <h3 class="font-bold text-red-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
-              <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
-              Cancelled
+        <!-- 5. Ready for Pick up -->
+        <div class="bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-200 flex flex-col min-h-[420px]">
+          <div class="flex justify-between items-center mb-2 px-1">
+            <h3 class="font-bold text-emerald-900 text-[11px] uppercase tracking-wider flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Pick up
             </h3>
-            <span id="count-cancelled" class="bg-red-200 text-red-900 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+            <span id="count-ready-for-pick-up" class="bg-emerald-200 text-emerald-900 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
           </div>
-          <div id="kanban-cancelled" class="space-y-3 flex-1 overflow-y-auto max-h-[70vh]"></div>
+          <div id="kanban-ready-for-pick-up" class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh]"></div>
+        </div>
+
+        <!-- 6. Order Completed -->
+        <div class="bg-green-50/80 p-2.5 rounded-xl border border-green-200 flex flex-col min-h-[420px]">
+          <div class="flex justify-between items-center mb-2 px-1">
+            <h3 class="font-bold text-green-900 text-[11px] uppercase tracking-wider flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-green-600"></span> Completed
+            </h3>
+            <span id="count-order-completed" class="bg-green-200 text-green-900 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
+          </div>
+          <div id="kanban-order-completed" class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh]"></div>
+        </div>
+
+        <!-- 7. Cancelled -->
+        <div class="bg-red-50/80 p-2.5 rounded-xl border border-red-200 flex flex-col min-h-[420px]">
+          <div class="flex justify-between items-center mb-2 px-1">
+            <h3 class="font-bold text-red-900 text-[11px] uppercase tracking-wider flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-red-500"></span> Cancelled
+            </h3>
+            <span id="count-cancelled" class="bg-red-200 text-red-900 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
+          </div>
+          <div id="kanban-cancelled" class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh]"></div>
         </div>
 
       </div>
@@ -152,7 +168,6 @@
           <button 
             onclick="clearAuditLog()" 
             class="bg-red-600 hover:bg-red-700 text-white text-xs md:text-sm px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-1.5"
-            title="Clear all log entries"
           >
             <span>🗑️</span> Clear Audit Log
           </button>
@@ -192,8 +207,10 @@
             <option value="all">All Stages</option>
             <option value="received">Received</option>
             <option value="pending">Pending</option>
-            <option value="preparing">Preparing</option>
-            <option value="ready-for-pickup">Ready for pickup</option>
+            <option value="kitchen-prep">Kitchen Prep</option>
+            <option value="ready">Ready</option>
+            <option value="ready-for-pick-up">Ready for Pick up</option>
+            <option value="order-completed">Order Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
         </div>
@@ -223,11 +240,9 @@
 
   </main>
 
-  <!-- ORDER DETAIL & PRINTABLE RECEIPT MODAL -->
+  <!-- ORDER DETAIL MODAL -->
   <div id="orderDetailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden flex flex-col max-h-[90vh]">
-      
-      <!-- Modal Header -->
       <div class="bg-gray-900 text-white p-4 flex justify-between items-center">
         <div>
           <h3 class="font-bold text-lg" id="modalOrderId">Order Receipt</h3>
@@ -236,23 +251,24 @@
         <button onclick="closeOrderDetailModal()" class="text-gray-400 hover:text-white text-2xl font-bold p-1 leading-none">&times;</button>
       </div>
 
-      <!-- Modal Body / Printable Receipt Area -->
       <div id="printableArea" class="p-5 overflow-y-auto space-y-4 text-sm text-gray-700">
         <div class="text-center border-b pb-3">
           <h2 class="text-xl font-bold text-gray-900">Davidsonville Community Store</h2>
-          <p class="text-xs text-gray-500">Official Customer Order Receipt</p>
+          <p class="text-xs text-gray-500">Official Kitchen & Customer Order Receipt</p>
         </div>
 
-        <!-- Customer Details Summary -->
         <div class="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-3 rounded-lg border border-gray-100">
           <div><span class="font-semibold text-gray-600">Customer:</span> <span id="modalCustomer" class="font-medium text-gray-900"></span></div>
           <div><span class="font-semibold text-gray-600">Phone:</span> <span id="modalPhone" class="font-medium text-gray-900"></span></div>
           <div><span class="font-semibold text-gray-600">Payment:</span> <span id="modalPayment" class="font-medium text-gray-900"></span></div>
           <div><span class="font-semibold text-gray-600">Fulfillment:</span> <span id="modalFulfillment" class="font-medium text-gray-900"></span></div>
           <div class="col-span-2"><span class="font-semibold text-gray-600">Status:</span> <span id="modalStatus" class="font-bold"></span></div>
+          <div class="col-span-2" id="modalInstructionsWrapper" style="display:none;">
+            <span class="font-semibold text-amber-700">Kitchen Notes / Instructions:</span>
+            <div id="modalInstructions" class="bg-amber-50 text-amber-900 p-2 rounded mt-1 text-xs border border-amber-200"></div>
+          </div>
         </div>
 
-        <!-- Itemized Breakdown -->
         <div>
           <h4 class="font-bold text-gray-800 mb-2 border-b pb-1 text-xs uppercase tracking-wider">Items Ordered</h4>
           <table class="w-full text-left text-xs">
@@ -268,39 +284,29 @@
           </table>
         </div>
 
-        <!-- Grand Total -->
         <div class="border-t pt-3 flex justify-between items-center font-bold text-base text-gray-900">
           <span>Grand Total:</span>
           <span id="modalGrandTotal" class="text-blue-600 text-lg"></span>
         </div>
       </div>
 
-      <!-- Modal Actions -->
       <div class="bg-gray-50 p-4 border-t flex justify-end gap-2">
-        <button 
-          onclick="printOrderReceipt()" 
-          class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-lg font-medium transition flex items-center gap-1.5"
-        >
+        <button onclick="printOrderReceipt()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-lg font-medium transition flex items-center gap-1.5">
           <span>🖨️</span> Print Receipt
         </button>
-        <button 
-          onclick="closeOrderDetailModal()" 
-          class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm px-4 py-2 rounded-lg font-medium transition"
-        >
+        <button onclick="closeOrderDetailModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm px-4 py-2 rounded-lg font-medium transition">
           Close
         </button>
       </div>
-
     </div>
   </div>
 
-  <!-- JAVASCRIPT APPLICATION LOGIC -->
+  <!-- JAVASCRIPT LOGIC -->
   <script>
     const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU';
 
     let supabaseClient = null;
-
     function getSupabaseClient() {
       if (!supabaseClient && window.supabase) {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -308,17 +314,13 @@
       return supabaseClient;
     }
 
-    // --- NOTIFICATION CHIME ---
     let audioCtx = null;
-
     function initAudioOnUserInteraction() {
       if (!audioCtx) {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (AudioContext) audioCtx = new AudioContext();
       }
-      if (audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
+      if (audioCtx && audioCtx.state === 'suspended') { audioCtx.resume(); }
     }
     document.addEventListener('click', initAudioOnUserInteraction, { once: true });
 
@@ -326,52 +328,34 @@
       try {
         initAudioOnUserInteraction();
         if (!audioCtx) return;
-
         const osc1 = audioCtx.createOscillator();
         const gain1 = audioCtx.createGain();
         osc1.type = 'sine';
         osc1.frequency.setValueAtTime(587.33, audioCtx.currentTime);
         gain1.gain.setValueAtTime(0.3, audioCtx.currentTime);
         gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
-        osc1.connect(gain1);
-        gain1.connect(audioCtx.destination);
-
-        const osc2 = audioCtx.createOscillator();
-        const gain2 = audioCtx.createGain();
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15);
-        gain2.gain.setValueAtTime(0.35, audioCtx.currentTime + 0.15);
-        gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
-        osc2.connect(gain2);
-        gain2.connect(audioCtx.destination);
-
-        osc1.start(audioCtx.currentTime);
-        osc1.stop(audioCtx.currentTime + 0.35);
-        osc2.start(audioCtx.currentTime + 0.15);
-        osc2.stop(audioCtx.currentTime + 0.6);
-      } catch (e) {
-        console.warn('Audio chime error:', e);
-      }
+        osc1.connect(gain1); gain1.connect(audioCtx.destination);
+        osc1.start(audioCtx.currentTime); osc1.stop(audioCtx.currentTime + 0.35);
+      } catch (e) {}
     }
 
     let allOrdersCache = [];
     let previousPendingIds = new Set();
 
-    // --- NORMALIZE STAGE HELPER ---
     function normalizeStage(rawStage) {
-      const st = (rawStage || 'received').toLowerCase().trim();
+      const st = (rawStage || 'received').toLowerCase().trim().replace(/_/g, '-');
       if (st === 'pending') return 'pending';
-      if (st === 'preparing' || st === 'in-progress' || st === 'processing') return 'preparing';
-      if (st === 'ready-for-pickup' || st === 'completed' || st === 'ready') return 'ready-for-pickup';
-      if (st === 'cancelled' || st === 'cancel') return 'cancelled';
+      if (st === 'kitchen-prep' || st === 'preparing' || st === 'in-progress' || st === 'processing') return 'kitchen-prep';
+      if (st === 'ready') return 'ready';
+      if (st === 'ready-for-pick-up' || st === 'ready-for-pickup' || st === 'pickup') return 'ready-for-pick-up';
+      if (st === 'order-completed' || st === 'completed') return 'order-completed';
+      if (st === 'cancelled' || st === 'cancel' || st === 'failed') return 'cancelled';
       return 'received';
     }
 
-    // --- AUTOMATIC STALE PENDING ORDER CLEANUP (> 24 HOURS) ---
     async function checkAndCleanupStalePendingOrders(orders) {
       const client = getSupabaseClient();
       if (!client || !orders || orders.length === 0) return;
-
       const now = Date.now();
       const ONE_DAY_MS = 24 * 60 * 60 * 1000;
       const staleIds = [];
@@ -390,19 +374,10 @@
       });
 
       if (staleIds.length > 0) {
-        const { error } = await client.from('orders').delete().in('id', staleIds);
-        if (!error) {
-          const banner = document.getElementById('staffNotificationBanner');
-          const text = document.getElementById('staffNotificationText');
-          if (banner && text) {
-            text.innerText = `System Notice: ${staleIds.length} incoming/pending order(s) older than 24 hours were automatically removed due to inactivity.`;
-            banner.classList.remove('hidden');
-          }
-        }
+        await client.from('orders').delete().in('id', staleIds);
       }
     }
 
-    // --- MAIN DATA LOADER ---
     async function loadAllData(isManualTrigger = false) {
       const client = getSupabaseClient();
       if (!client) return;
@@ -412,10 +387,7 @@
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching orders:', error);
-        return;
-      }
+      if (error) return;
 
       let rawOrders = data || [];
       await checkAndCleanupStalePendingOrders(rawOrders);
@@ -437,10 +409,7 @@
 
       let hasNewPending = false;
       for (let id of currentPendingIds) {
-        if (!previousPendingIds.has(id)) {
-          hasNewPending = true;
-          break;
-        }
+        if (!previousPendingIds.has(id)) { hasNewPending = true; break; }
       }
 
       if (isManualTrigger || (previousPendingIds.size > 0 && hasNewPending)) {
@@ -452,95 +421,69 @@
       filterAuditLog();
     }
 
-    // --- REALTIME LISTENER ---
     function setupRealtimeListener() {
       const client = getSupabaseClient();
       if (!client) return;
-
       client
         .channel('schema-db-changes')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
-          playChime();
-          loadAllData();
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-          loadAllData();
-        })
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, () => { playChime(); loadAllData(); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => { loadAllData(); })
         .subscribe();
-
       setInterval(() => { loadAllData(); }, 4000);
     }
 
-    // --- CLEAR RESOLVED / CANCELLED ORDERS ---
     async function clearResolvedOrders() {
-      if (!confirm("Are you sure you want to clear all 'Ready for pickup' and 'Cancelled' orders from the board and database?")) {
-        return;
-      }
-
+      if (!confirm("Are you sure you want to clear all 'Order Completed' and 'Cancelled' orders from the board and database?")) return;
       const client = getSupabaseClient();
       if (!client) return;
 
       const targetOrders = allOrdersCache.filter(o => {
         const st = normalizeStage(o.stage || o.status);
-        return st === 'ready-for-pickup' || st === 'cancelled';
+        return st === 'order-completed' || st === 'cancelled';
       });
 
-      if (targetOrders.length === 0) {
-        alert("No ready or cancelled orders to clear.");
-        return;
-      }
-
+      if (targetOrders.length === 0) { alert("No completed or cancelled orders to clear."); return; }
       const ids = targetOrders.map(o => o.id).filter(Boolean);
-      const { error } = await client.from('orders').delete().in('id', ids);
-
-      if (error) {
-        alert("Failed to clear orders: " + error.message);
-        return;
-      }
-
+      await client.from('orders').delete().in('id', ids);
       loadAllData();
     }
 
-    // --- KANBAN BOARD RENDERER (5 COLUMNS) ---
     function renderKanbanBoard() {
       const columns = {
         'received': document.getElementById('kanban-received'),
         'pending': document.getElementById('kanban-pending'),
-        'preparing': document.getElementById('kanban-preparing'),
-        'ready-for-pickup': document.getElementById('kanban-ready-for-pickup'),
+        'kitchen-prep': document.getElementById('kanban-kitchen-prep'),
+        'ready': document.getElementById('kanban-ready'),
+        'ready-for-pick-up': document.getElementById('kanban-ready-for-pick-up'),
+        'order-completed': document.getElementById('kanban-order-completed'),
         'cancelled': document.getElementById('kanban-cancelled')
       };
 
-      const counts = { 'received': 0, 'pending': 0, 'preparing': 0, 'ready-for-pickup': 0, 'cancelled': 0 };
-
+      const counts = { 'received': 0, 'pending': 0, 'kitchen-prep': 0, 'ready': 0, 'ready-for-pick-up': 0, 'order-completed': 0, 'cancelled': 0 };
       Object.values(columns).forEach(col => { if(col) col.innerHTML = ''; });
 
       allOrdersCache.forEach(order => {
         const stageKey = normalizeStage(order.stage || order.status);
-        counts[stageKey]++;
-
+        counts[stageKey] = (counts[stageKey] || 0) + 1;
         const targetCol = columns[stageKey];
-        if (targetCol) {
-          targetCol.appendChild(createKanbanCard(order, stageKey));
-        }
+        if (targetCol) targetCol.appendChild(createKanbanCard(order, stageKey));
       });
 
-      document.getElementById('count-received').innerText = counts['received'];
-      document.getElementById('count-pending').innerText = counts['pending'];
-      document.getElementById('count-preparing').innerText = counts['preparing'];
-      document.getElementById('count-ready-for-pickup').innerText = counts['ready-for-pickup'];
-      document.getElementById('count-cancelled').innerText = counts['cancelled'];
+      Object.keys(counts).forEach(key => {
+        const badge = document.getElementById(`count-${key}`);
+        if (badge) badge.innerText = counts[key];
+      });
 
       Object.keys(columns).forEach(key => {
         if (counts[key] === 0 && columns[key]) {
-          columns[key].innerHTML = `<div class="text-center text-xs text-gray-400 py-8 border-2 border-dashed border-gray-200 rounded-lg">No orders</div>`;
+          columns[key].innerHTML = `<div class="text-center text-[10px] text-gray-400 py-6 border border-dashed border-gray-200 rounded-lg">No orders</div>`;
         }
       });
     }
 
     function createKanbanCard(order, stageKey) {
       const card = document.createElement('div');
-      card.className = "bg-white p-3.5 rounded-xl shadow-sm border border-gray-200 space-y-2.5 hover:shadow-md transition";
+      card.className = "bg-white p-3 rounded-xl shadow-sm border border-gray-200 space-y-2 hover:shadow-md transition text-xs";
 
       const orderId = order.order_id || order.id || 'N/A';
       const name = order.customer_name || order.client_name || order.name || 'Guest';
@@ -548,131 +491,99 @@
       const total = order.total ? `R${Number(order.total).toFixed(2)}` : 'R0.00';
       const time = order.created_at ? new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
       const isReorder = order.is_reorder || order.order_type === 'REORDER';
+      const instructions = order.instructions || order.notes || '';
 
       let itemSummary = 'Items ordered';
       try {
         const itemsArr = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
-        if (Array.isArray(itemsArr)) {
-          itemSummary = `${itemsArr.length} item(s)`;
-        }
+        if (Array.isArray(itemsArr)) itemSummary = `${itemsArr.length} item(s)`;
       } catch (e) {}
 
-      // Action buttons based on 5 stages
       let actionButtonsHtml = '';
       if (stageKey === 'received') {
         actionButtonsHtml = `
-          <button onclick="updateOrderStage('${orderId}', 'pending')" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white text-xs py-1.5 rounded font-medium transition">Pending</button>
-          <button onclick="updateOrderStage('${orderId}', 'preparing')" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs py-1.5 rounded font-medium transition">Prepare</button>
+          <button onclick="updateOrderStage('${orderId}', 'pending')" class="flex-1 bg-gray-700 hover:bg-gray-800 text-white py-1 rounded font-medium transition">Pending</button>
+          <button onclick="updateOrderStage('${orderId}', 'kitchen-prep')" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-1 rounded font-medium transition">Prep</button>
         `;
       } else if (stageKey === 'pending') {
         actionButtonsHtml = `
-          <button onclick="updateOrderStage('${orderId}', 'preparing')" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs py-1.5 rounded font-medium transition">Prepare</button>
-          <button onclick="updateOrderStage('${orderId}', 'cancelled')" class="bg-red-50 hover:bg-red-100 text-red-600 text-xs px-2 py-1.5 rounded font-medium transition">Cancel</button>
+          <button onclick="updateOrderStage('${orderId}', 'kitchen-prep')" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-1 rounded font-medium transition">Prep</button>
+          <button onclick="updateOrderStage('${orderId}', 'cancelled')" class="bg-red-50 text-red-600 px-2 py-1 rounded font-medium transition">Cancel</button>
         `;
-      } else if (stageKey === 'preparing') {
+      } else if (stageKey === 'kitchen-prep') {
         actionButtonsHtml = `
-          <button onclick="updateOrderStage('${orderId}', 'ready-for-pickup')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs py-1.5 rounded font-medium transition">Ready</button>
-          <button onclick="updateOrderStage('${orderId}', 'pending')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-2 py-1.5 rounded font-medium transition">Back</button>
+          <button onclick="updateOrderStage('${orderId}', 'ready')" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-1 rounded font-medium transition">Ready</button>
         `;
-      } else if (stageKey === 'ready-for-pickup') {
+      } else if (stageKey === 'ready') {
         actionButtonsHtml = `
-          <button onclick="updateOrderStage('${orderId}', 'preparing')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs py-1.5 rounded font-medium transition">Reopen</button>
+          <button onclick="updateOrderStage('${orderId}', 'ready-for-pick-up')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-1 rounded font-medium transition">Pick up</button>
         `;
+      } else if (stageKey === 'ready-for-pick-up') {
+        actionButtonsHtml = `
+          <button onclick="updateOrderStage('${orderId}', 'order-completed')" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-1 rounded font-medium transition">Complete</button>
+        `;
+      } else if (stageKey === 'order-completed') {
+        actionButtonsHtml = `<span class="text-gray-400 italic text-[10px]">Archived</span>`;
       } else if (stageKey === 'cancelled') {
         actionButtonsHtml = `
-          <button onclick="updateOrderStage('${orderId}', 'received')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs py-1.5 rounded font-medium transition">Restore</button>
+          <button onclick="updateOrderStage('${orderId}', 'received')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-1 rounded font-medium transition">Restore</button>
         `;
       }
 
       card.innerHTML = `
         <div class="flex justify-between items-start">
           <div>
-            <div class="flex items-center gap-1.5">
-              <span class="font-mono font-bold text-xs text-blue-600">#${orderId}</span>
-              ${isReorder ? '<span class="bg-purple-100 text-purple-800 text-[10px] font-bold px-1.5 py-0.5 rounded">🔄 REORDER</span>' : ''}
+            <div class="flex items-center gap-1">
+              <span class="font-mono font-bold text-blue-600">#${orderId}</span>
+              ${isReorder ? '<span class="bg-purple-100 text-purple-800 text-[9px] font-bold px-1 rounded">REORDER</span>' : ''}
             </div>
-            <h4 class="font-bold text-gray-900 text-sm leading-snug">${name}</h4>
+            <h4 class="font-bold text-gray-900 leading-snug">${name}</h4>
           </div>
-          <span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded">${time}</span>
+          <span class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">${time}</span>
         </div>
 
-        <div class="text-xs text-gray-500 flex justify-between items-center bg-gray-50 p-2 rounded border border-gray-100">
+        <div class="text-gray-500 flex justify-between items-center bg-gray-50 p-1.5 rounded border border-gray-100">
           <span>📞 ${phone}</span>
           <span class="font-medium text-gray-700">${itemSummary}</span>
         </div>
 
-        <div class="flex justify-between items-center pt-1">
-          <span class="text-xs text-gray-400">Total:</span>
-          <span class="font-extrabold text-base text-gray-900">${total}</span>
+        ${instructions ? `<div class="bg-amber-50 text-amber-900 p-1.5 rounded border border-amber-200 text-[11px]"><strong>Note:</strong> ${instructions}</div>` : ''}
+
+        <div class="flex justify-between items-center pt-0.5">
+          <span class="text-gray-400">Total:</span>
+          <span class="font-extrabold text-sm text-gray-900">${total}</span>
         </div>
 
-        <div class="flex gap-2 pt-2 border-t border-gray-100">
-          <button 
-            onclick="openOrderDetailModal('${orderId}')" 
-            class="bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs px-2.5 py-1.5 rounded font-medium border border-blue-200 transition"
-            title="View details & print receipt"
-          >
-            👁️ Details
-          </button>
+        <div class="flex gap-1.5 pt-1.5 border-t border-gray-100">
+          <button onclick="openOrderDetailModal('${orderId}')" class="bg-blue-50 hover:bg-blue-100 text-blue-600 px-2 py-1 rounded font-medium border border-blue-200 transition">👁️</button>
           ${actionButtonsHtml}
         </div>
       `;
-
       return card;
     }
 
-    // --- UPDATE ORDER STAGE ---
     async function updateOrderStage(orderId, newStage) {
       const client = getSupabaseClient();
       if (!client) return;
-
-      const { error } = await client
-        .from('orders')
-        .update({ stage: newStage, status: newStage })
-        .or(`id.eq.${orderId},order_id.eq.${orderId}`);
-
-      if (error) {
-        console.error('Error updating order stage:', error);
-        alert('Failed to update stage in database.');
-        return;
-      }
-
+      await client.from('orders').update({ stage: newStage, status: newStage }).or(`id.eq.${orderId},order_id.eq.${orderId}`);
       loadAllData();
     }
 
-    // --- AUDIT LOG & FILTER LOGIC ---
     function isSameDay(d1, d2) {
-      return d1.getFullYear() === d2.getFullYear() &&
-             d1.getMonth() === d2.getMonth() &&
-             d1.getDate() === d2.getDate();
+      return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
     }
 
     function matchesDateRange(orderCreatedAt, range) {
       if (range === 'all' || !orderCreatedAt) return true;
       const date = new Date(orderCreatedAt);
       if (isNaN(date.getTime())) return true;
-
       const now = new Date();
       if (range === 'today') return isSameDay(date, now);
       if (range === 'yesterday') {
-        const yesterday = new Date(now);
-        yesterday.setDate(now.getDate() - 1);
-        return isSameDay(date, yesterday);
+        const yest = new Date(now); yest.setDate(now.getDate() - 1);
+        return isSameDay(date, yest);
       }
-      if (range === 'this-week') {
-        const startOfWeek = new Date(now);
-        const day = now.getDay();
-        const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-        startOfWeek.setDate(diff);
-        startOfWeek.setHours(0, 0, 0, 0);
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(startOfWeek.getDate() + 6);
-        endOfWeek.setHours(23, 59, 59, 999);
-        return date >= startOfWeek && date <= endOfWeek;
-      }
-      if (range === 'this-month') {
-        return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
-      }
+      if (range === 'this-month') return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
       return true;
     }
 
@@ -690,20 +601,17 @@
         const matchesQuery = !query || orderId.includes(query) || name.includes(query) || phone.includes(query);
         const matchesStage = stageFilter === 'all' || stage === stageFilter;
         const matchesDate = matchesDateRange(order.created_at, dateFilter);
-
         return matchesQuery && matchesStage && matchesDate;
       });
     }
 
     function filterAuditLog() {
-      const filtered = getFilteredOrders();
-      renderAuditTable(filtered);
+      renderAuditTable(getFilteredOrders());
     }
 
     function renderAuditTable(orders) {
       const tbody = document.getElementById('auditLogTableBody');
       if (!tbody) return;
-
       if (!orders || orders.length === 0) {
         tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">No matching orders found.</td></tr>`;
         return;
@@ -716,230 +624,113 @@
         const total = order.total ? `R${Number(order.total).toFixed(2)}` : 'R0.00';
         const stage = normalizeStage(order.stage || order.status);
         const date = order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A';
-        const isReorder = order.is_reorder || order.order_type === 'REORDER';
 
         return `
           <tr class="border-b hover:bg-gray-50 transition">
             <td class="p-3 whitespace-nowrap text-xs text-gray-500">${date}</td>
-            <td class="p-3 font-mono font-bold text-blue-600">
-              #${orderId} ${isReorder ? '<span class="text-[9px] bg-purple-100 text-purple-800 px-1 py-0.5 rounded ml-1 font-sans">REORDER</span>' : ''}
-            </td>
+            <td class="p-3 font-mono font-bold text-blue-600">#${orderId}</td>
             <td class="p-3 font-medium text-gray-800">${name}</td>
             <td class="p-3 text-gray-600">${phone}</td>
             <td class="p-3 font-semibold text-gray-800">${total}</td>
-            <td class="p-3">
-              <span class="px-2.5 py-1 text-xs rounded-full font-semibold ${getStageBadgeStyle(stage)}">
-                ${stage.replace(/-/g, ' ').toUpperCase()}
-              </span>
-            </td>
+            <td class="p-3"><span class="px-2.5 py-1 text-xs rounded-full font-semibold bg-gray-100 text-gray-800">${stage.replace(/-/g, ' ').toUpperCase()}</span></td>
             <td class="p-3 text-right">
-              <button 
-                onclick="openOrderDetailModal('${orderId}')" 
-                class="bg-gray-100 hover:bg-blue-50 text-blue-600 text-xs px-3 py-1.5 rounded-lg font-medium border border-gray-200 transition"
-              >
-                👁️ Details
-              </button>
+              <button onclick="openOrderDetailModal('${orderId}')" class="bg-gray-100 hover:bg-blue-50 text-blue-600 text-xs px-3 py-1.5 rounded-lg font-medium border border-gray-200 transition">👁️ Details</button>
             </td>
           </tr>
         `;
       }).join('');
     }
 
-    // --- CLEAR AUDIT LOG ---
     async function clearAuditLog() {
       const filtered = getFilteredOrders();
-      if (!filtered || filtered.length === 0) {
-        alert('There are no orders in the log to clear.');
-        return;
-      }
-      if (!confirm(`Are you sure you want to permanently clear ${filtered.length} order(s) from the database?`)) return;
-
+      if (!filtered || filtered.length === 0) { alert('No orders to clear.'); return; }
+      if (!confirm(`Permanently clear ${filtered.length} order(s)?`)) return;
       const client = getSupabaseClient();
       if (!client) return;
-
-      const idsToDelete = filtered.map(o => o.id).filter(Boolean);
-      let error = null;
-      if (idsToDelete.length > 0) {
-        const res = await client.from('orders').delete().in('id', idsToDelete);
-        error = res.error;
-      }
-
-      if (error) {
-        alert('Failed to clear log: ' + error.message);
-        return;
-      }
-
-      alert('Order Audit Log cleared successfully!');
+      const ids = filtered.map(o => o.id).filter(Boolean);
+      await client.from('orders').delete().in('id', ids);
       loadAllData();
     }
 
-    // --- CSV EXPORT ---
     function exportAuditLogToCSV() {
       const filtered = getFilteredOrders();
-      if (!filtered || filtered.length === 0) {
-        alert('No matching orders found to export.');
-        return;
-      }
-
-      const headers = ['Date & Time', 'Order ID', 'Customer', 'Phone', 'Total (ZAR)', 'Stage', 'Type', 'Payment', 'Fulfillment'];
+      if (!filtered || filtered.length === 0) { alert('No orders to export.'); return; }
+      const headers = ['Date', 'Order ID', 'Customer', 'Phone', 'Total', 'Stage', 'Payment'];
       const csvRows = [headers.join(',')];
-
-      filtered.forEach(order => {
-        const date = order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A';
-        const orderId = order.order_id || order.id || 'N/A';
-        const name = order.customer_name || order.client_name || order.name || 'Guest';
-        const phone = order.phone || '-';
-        const total = order.total ? Number(order.total).toFixed(2) : '0.00';
-        const stage = normalizeStage(order.stage || order.status);
-        const orderType = (order.is_reorder || order.order_type === 'REORDER') ? 'REORDER' : 'STANDARD';
-        const payment = order.payment_method || 'Cash';
-        const fulfillment = order.fulfillment || 'pickup';
-
-        const row = [
-          `"${date.replace(/"/g, '""')}"`,
-          `"${orderId.toString().replace(/"/g, '""')}"`,
-          `"${name.replace(/"/g, '""')}"`,
-          `"${phone.replace(/"/g, '""')}"`,
-          `"${total}"`,
-          `"${stage.toUpperCase()}"`,
-          `"${orderType}"`,
-          `"${payment.replace(/"/g, '""')}"`,
-          `"${fulfillment.replace(/"/g, '""')}"`
-        ];
-        csvRows.push(row.join(','));
+      filtered.forEach(o => {
+        csvRows.push([
+          `"${new Date(o.created_at).toLocaleString()}"`,
+          `"${o.order_id || o.id}"`,
+          `"${o.customer_name || o.client_name || o.name || 'Guest'}"`,
+          `"${o.phone || ''}"`,
+          `"${o.total || 0}"`,
+          `"${normalizeStage(o.stage || o.status).toUpperCase()}"`,
+          `"${o.payment_method || 'Cash'}"`
+        ].join(','));
       });
-
       const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = `dcs_audit_log_${new Date().toISOString().slice(0, 10)}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 
-    // --- MODAL & RECEIPT ---
     function openOrderDetailModal(orderIdRef) {
       const order = allOrdersCache.find(o => String(o.order_id) === String(orderIdRef) || String(o.id) === String(orderIdRef));
-      if (!order) {
-        alert('Order details not found.');
-        return;
+      if (!order) return;
+
+      document.getElementById('modalOrderId').innerText = `Order #${order.order_id || order.id}`;
+      document.getElementById('modalOrderDate').innerText = order.created_at ? new Date(order.created_at).toLocaleString() : '';
+      document.getElementById('modalCustomer').innerText = order.customer_name || order.client_name || order.name || 'Guest';
+      document.getElementById('modalPhone').innerText = order.phone || '-';
+      document.getElementById('modalPayment').innerText = order.payment_method || 'Cash';
+      document.getElementById('modalFulfillment').innerText = order.fulfillment || 'Pickup';
+      document.getElementById('modalStatus').innerText = normalizeStage(order.stage || order.status).toUpperCase();
+      document.getElementById('modalGrandTotal').innerText = order.total ? `R${Number(order.total).toFixed(2)}` : 'R0.00';
+
+      const instr = order.instructions || order.notes || '';
+      const instrWrapper = document.getElementById('modalInstructionsWrapper');
+      if (instr) {
+        document.getElementById('modalInstructions').innerText = instr;
+        instrWrapper.style.display = 'block';
+      } else {
+        instrWrapper.style.display = 'none';
       }
-
-      const orderId = order.order_id || order.id || 'N/A';
-      const name = order.customer_name || order.client_name || order.name || 'Guest';
-      const phone = order.phone || '-';
-      const payment = order.payment_method || 'Cash';
-      const fulfillment = order.fulfillment || 'pickup';
-      const stage = normalizeStage(order.stage || order.status).toUpperCase();
-      const total = order.total ? `R${Number(order.total).toFixed(2)}` : 'R0.00';
-      const date = order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A';
-
-      document.getElementById('modalOrderId').innerText = `Order #${orderId}`;
-      document.getElementById('modalOrderDate').innerText = date;
-      document.getElementById('modalCustomer').innerText = name;
-      document.getElementById('modalPhone').innerText = phone;
-      document.getElementById('modalPayment').innerText = payment;
-      document.getElementById('modalFulfillment').innerText = fulfillment;
-      document.getElementById('modalStatus').innerText = stage;
-      document.getElementById('modalGrandTotal').innerText = total;
 
       let items = [];
-      try {
-        if (typeof order.items === 'string') {
-          items = JSON.parse(order.items);
-        } else if (Array.isArray(order.items)) {
-          items = order.items;
-        }
-      } catch (e) {}
+      try { items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items; } catch (e) {}
 
-      const itemsTbody = document.getElementById('modalItemsTableBody');
-      if (items && items.length > 0) {
-        itemsTbody.innerHTML = items.map(item => {
-          const itemName = item.name || item.title || 'Item';
-          const qty = item.qty || item.quantity || 1;
-          const price = item.price ? Number(item.price).toFixed(2) : '0.00';
-          const lineTotal = (qty * parseFloat(price)).toFixed(2);
-
-          return `
-            <tr class="border-b">
-              <td class="p-2 font-medium text-gray-800">${itemName}</td>
-              <td class="p-2 text-center text-gray-600">${qty}</td>
-              <td class="p-2 text-right text-gray-600">R${price}</td>
-              <td class="p-2 text-right font-semibold text-gray-800">R${lineTotal}</td>
-            </tr>
-          `;
-        }).join('');
+      const tbody = document.getElementById('modalItemsTableBody');
+      if (Array.isArray(items) && items.length > 0) {
+        tbody.innerHTML = items.map(item => `
+          <tr class="border-b">
+            <td class="p-2 font-medium">${item.name || item.title || 'Item'}</td>
+            <td class="p-2 text-center">${item.qty || item.quantity || 1}</td>
+            <td class="p-2 text-right">R${Number(item.price || 0).toFixed(2)}</td>
+            <td class="p-2 text-right font-semibold">R${((item.qty || 1) * Number(item.price || 0)).toFixed(2)}</td>
+          </tr>
+        `).join('');
       } else {
-        itemsTbody.innerHTML = `<tr><td colspan="4" class="p-3 text-center text-gray-400">No item breakdown available.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" class="p-2 text-center text-gray-400">No items breakdown</td></tr>`;
       }
 
-      const modal = document.getElementById('orderDetailModal');
-      if (modal) modal.classList.remove('hidden');
+      document.getElementById('orderDetailModal').classList.remove('hidden');
     }
 
     function closeOrderDetailModal() {
-      const modal = document.getElementById('orderDetailModal');
-      if (modal) modal.classList.add('hidden');
+      document.getElementById('orderDetailModal').classList.add('hidden');
     }
 
     function printOrderReceipt() {
       const printContents = document.getElementById('printableArea').innerHTML;
-      const printWindow = window.open('', '_blank', 'width=500,height=700');
-
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Receipt</title>
-            <style>
-              body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; color: #111; line-height: 1.4; }
-              h2 { text-align: center; margin-bottom: 2px; font-size: 18px; }
-              .text-center { text-align: center; }
-              .text-xs { font-size: 11px; color: #555; }
-              .font-semibold { font-weight: 600; }
-              .font-bold { font-weight: bold; }
-              .border-b { border-bottom: 1px dashed #ccc; }
-              .border-t { border-top: 1px dashed #ccc; }
-              .pb-3 { padding-bottom: 10px; }
-              .pt-3 { padding-top: 10px; }
-              .mb-2 { margin-bottom: 8px; }
-              .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: #f9f9f9; padding: 10px; border-radius: 4px; margin-bottom: 12px; font-size: 12px; }
-              table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
-              th, td { padding: 6px 4px; text-align: left; }
-              th { border-bottom: 1px solid #333; }
-              .text-right { text-align: right; }
-            </style>
-          </head>
-          <body>
-            ${printContents}
-          </body>
-        </html>
-      `);
-
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-      }, 300);
+      const win = window.open('', '_blank', 'width=500,height=700');
+      win.document.write(`<html><head><title>Receipt</title><style>body{font-family:sans-serif;padding:20px;}</style></head><body>${printContents}</body></html>`);
+      win.document.close(); win.focus();
+      setTimeout(() => { win.print(); win.close(); }, 300);
     }
 
-    function getStageBadgeStyle(stage) {
-      switch (stage) {
-        case 'ready-for-pickup': return 'bg-emerald-100 text-emerald-800';
-        case 'preparing': return 'bg-yellow-100 text-yellow-800';
-        case 'pending': return 'bg-gray-200 text-gray-800';
-        case 'cancelled': return 'bg-red-100 text-red-800';
-        default: return 'bg-blue-100 text-blue-800'; // received
-      }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      loadAllData();
-      setupRealtimeListener();
-    });
+    document.addEventListener('DOMContentLoaded', () => { loadAllData(); setupRealtimeListener(); });
   </script>
 </body>
 </html>
