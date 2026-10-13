@@ -408,19 +408,22 @@
       '</div>';
     }
 
+    // Non-blocking background sync with Supabase
     async function postOrderToSupabase(order) {
-      try {
-        await fetch(SUPABASE_URL + '/rest/v1/orders', {
-          method: 'POST',
-          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-          body: JSON.stringify({
-            order_id: order.id, id: order.id, client_name: order.clientName, customer_name: order.clientName, phone: order.phone, customer_phone: order.phone, address: order.address,
-            items: JSON.stringify(order.items), instructions: order.instructions, notes: order.instructions, fulfillment: order.fulfillment,
-            payment_method: order.paymentMethod, subtotal: order.subtotal, total: order.total, total_amount: order.total, stage: order.stage, status: order.stage,
-            created_at: new Date(order.timestamp).toISOString()
-          })
-        });
-      } catch (e) {}
+      setTimeout(async () => {
+        try {
+          await fetch(SUPABASE_URL + '/rest/v1/orders', {
+            method: 'POST',
+            headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify({
+              order_id: order.id, id: order.id, client_name: order.clientName, customer_name: order.clientName, phone: order.phone, customer_phone: order.phone, address: order.address,
+              items: JSON.stringify(order.items), instructions: order.instructions, notes: order.instructions, fulfillment: order.fulfillment,
+              payment_method: order.paymentMethod, subtotal: order.subtotal, total: order.total, total_amount: order.total, stage: order.stage, status: order.stage,
+              created_at: new Date(order.timestamp).toISOString()
+            })
+          });
+        } catch (e) {}
+      }, 10);
     }
 
     async function verifyAndFetchSupabaseOrders() {
@@ -432,7 +435,6 @@
         if (!res.ok) return;
         const remoteOrders = await res.json();
         if (Array.isArray(remoteOrders) && remoteOrders.length > 0) {
-          // Optimization: create signature to avoid DOM re-renders if nothing changed
           const newSignature = JSON.stringify(remoteOrders.map(o => o.id + (o.stage || o.status)));
           if (newSignature === lastFetchedSignature) return;
           lastFetchedSignature = newSignature;
@@ -477,8 +479,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       checkStoreOperatingHours();
       renderCategoryChips(); renderClientProfile(); renderCatalog(); renderCart(); renderFavorites(); renderOrderHistory(); renderLiveOrderTrackers();
-      // Optimization: Increased interval from 4s to 8s to prevent main-thread throttling
-      setInterval(renderLiveOrderTrackers, 8000);
+      setInterval(renderLiveOrderTrackers, 10000);
     });
 
     function checkStoreOperatingHours() {
@@ -620,7 +621,7 @@
       document.getElementById('live-tracker-panel').classList.toggle('hidden');
     }
 
-    async function checkoutOrder() {
+    function checkoutOrder() {
       const now = new Date();
       if (now.getHours() >= 20 || now.getHours() < 7) {
         alert('We are closed for the evening (orders close at 8:00 PM and open at 7:00 AM). You can still browse our menu!');
@@ -653,11 +654,11 @@
       state.orders.unshift(newOrder);
       saveSharedState(state);
 
-      await postOrderToSupabase(newOrder);
+      postOrderToSupabase(newOrder);
       cart = []; localStorage.removeItem('dcs_cart');
       document.getElementById('special-instructions').value = '';
       toggleCartDrawer();
-      renderCart(); renderLiveOrderTrackers(); renderOrderHistory();
+      renderCart(); renderLiveOrderTrackersUI(); renderOrderHistory();
       showDigitalReceipt(newOrder);
     }
 
@@ -683,7 +684,7 @@
       if (o) showDigitalReceipt(o);
     }
 
-    async function resubmitOrderFromSlip(id) {
+    function resubmitOrderFromSlip(id) {
       const now = new Date();
       if (now.getHours() >= 20 || now.getHours() < 7) {
         alert('Store is closed. Orders open at 7:00 AM.');
@@ -699,8 +700,8 @@
       o.timestamp = Date.now();
       state.orders.unshift(o);
       saveSharedState(state);
-      await postOrderToSupabase(o);
-      renderLiveOrderTrackers();
+      postOrderToSupabase(o);
+      renderLiveOrderTrackersUI();
       renderOrderHistory();
       alert('Order resubmitted!');
     }
@@ -751,7 +752,7 @@
       state.orders = (state.orders || []).filter(o => o.phone !== client.phone && o.clientName !== client.name);
       saveSharedState(state);
       renderOrderHistory();
-      renderLiveOrderTrackers();
+      renderLiveOrderTrackersUI();
       alert('Order history cleared.');
     }
 
