@@ -371,41 +371,45 @@
       const notes = order.notes || order.instructions || '';
 
       let itemsListHtml = items.map(item => {
-        let qty = item.quantity || item.qty || 1;
-        let name = item.name || item.title || 'Item';
-        let price = Number(item.price || 0);
-        return '<div class="flex justify-between text-xs text-slate-600"><span><strong class="text-slate-800">' + qty + 'x</strong> ' + name + '</span><span>R' + (price * qty).toFixed(2) + '</span></div>';
+        const qty = item.quantity || item.qty || 1;
+        const name = item.name || item.title || 'Item';
+        const price = Number(item.price || 0);
+        return `<div class="flex justify-between text-xs text-slate-600"><span><strong class="text-slate-800">${qty}x</strong> ${name}</span><span>R${(price * qty).toFixed(2)}</span></div>`;
       }).join('');
-
-      let notesHtml = '';
-      if (notes) {
-        notesHtml = '<div class="mt-2 text-[11px] bg-amber-50 text-amber-800 p-2 rounded border border-amber-200 font-medium">⚠️ ' + notes + '</div>';
-      }
 
       let actionButtonsHtml = '';
       if (stage === 'pending') {
-        actionButtonsHtml = '<button onclick="updateOrderStatus(\'' + orderIdKey + '\', \'kitchen-prep\')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-3 rounded-lg text-xs transition-colors">Start Preparing →</button>';
+        actionButtonsHtml = `<button onclick="updateOrderStatus('${orderIdKey}', 'kitchen-prep')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-3 rounded-lg text-xs transition-colors">Start Preparing →</button>`;
       } else if (stage === 'preparing') {
-        actionButtonsHtml = '<button onclick="updateOrderStatus(\'' + orderIdKey + '\', \'ready\')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-1.5 px-3 rounded-lg text-xs transition-colors">Mark Ready →</button>';
+        actionButtonsHtml = `<button onclick="updateOrderStatus('${orderIdKey}', 'ready')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-1.5 px-3 rounded-lg text-xs transition-colors">Mark Ready →</button>`;
       } else if (stage === 'ready') {
-        actionButtonsHtml = '<div class="flex space-x-2">' +
-          '<button onclick="updateOrderStatus(\'' + orderIdKey + '\', \'order-completed\')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-1.5 px-2 rounded-lg text-xs transition-colors">Complete ✓</button>' +
-          '<button onclick="updateOrderStatus(\'' + orderIdKey + '\', \'cancelled\')" class="bg-red-500 hover:bg-red-600 text-white font-medium py-1.5 px-2 rounded-lg text-xs transition-colors">Cancel ✕</button>' +
-        '</div>';
+        actionButtonsHtml = `<div class="flex space-x-2">
+          <button onclick="updateOrderStatus('${orderIdKey}', 'order-completed')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-1.5 px-2 rounded-lg text-xs transition-colors">Complete ✓</button>
+          <button onclick="updateOrderStatus('${orderIdKey}', 'cancelled')" class="bg-red-500 hover:bg-red-600 text-white font-medium py-1.5 px-2 rounded-lg text-xs transition-colors">Cancel ✕</button>
+        </div>`;
       }
 
-      card.innerHTML = '<div>' +
-          '<div class="flex justify-between items-start border-b border-slate-100 pb-2 mb-2">' +
-            '<div><span class="text-xs font-bold text-slate-400">#' + orderIdKey + '</span><h3 class="font-bold text-slate-900 text-sm">' + customerName + '</h3><p class="text-[11px] text-slate-500">' + customerPhone + '</p></div>' +
-            '<span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">' + timeFormatted + '</span>' +
-          '</div>' +
-          '<div class="space-y-1 my-2 max-h-36 overflow-y-auto">' + itemsListHtml + '</div>' +
-          notesHtml +
-        '</div>' +
-        '<div class="pt-2 border-t border-slate-100">' +
-          '<div class="flex justify-between items-center mb-2"><span class="text-xs font-semibold text-slate-500">Total:</span><span class="text-sm font-black text-slate-900">R' + totalAmount.toFixed(2) + '</span></div>' +
-          actionButtonsHtml +
-        '</div>';
+      card.innerHTML = `
+        <div>
+          <div class="flex justify-between items-start border-b border-slate-100 pb-2 mb-2">
+            <div>
+              <span class="text-xs font-bold text-slate-400">#${orderIdKey}</span>
+              <h3 class="font-bold text-slate-900 text-sm">${customerName}</h3>
+              <p class="text-[11px] text-slate-500">${customerPhone}</p>
+            </div>
+            <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">${timeFormatted}</span>
+          </div>
+          <div class="space-y-1 my-2 max-h-36 overflow-y-auto">${itemsListHtml}</div>
+          ${notes ? `<div class="mt-2 text-[11px] bg-amber-50 text-amber-800 p-2 rounded border border-amber-200 font-medium">⚠️ ${notes}</div>` : ''}
+        </div>
+        <div class="pt-2 border-t border-slate-100">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-semibold text-slate-500">Total:</span>
+            <span class="text-sm font-black text-slate-900">R${totalAmount.toFixed(2)}</span>
+          </div>
+          ${actionButtonsHtml}
+        </div>
+      `;
 
       return card;
     }
@@ -439,7 +443,7 @@
       }
 
       if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-slate-400">No orders match the selected filters.</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-slate-400">No orders match the selected filters.</td></tr>`;
         return;
       }
 
@@ -449,7 +453,7 @@
         const customerName = o.customer_name || o.client_name || 'Walk-in';
         const phone = o.customer_phone || o.phone || 'N/A';
         const items = parseItems(o.items);
-        const itemSummary = items.map(i => (i.quantity || i.qty || 1) + 'x ' + (i.name || i.title)).join(', ');
+        const itemSummary = items.map(i => `${i.quantity || i.qty || 1}x ${i.name || i.title}`).join(', ');
         const total = Number(o.total || o.total_amount || 0);
         const st = (o.stage || o.status || 'pending').toLowerCase();
 
@@ -460,16 +464,20 @@
         else if (st === 'completed' || st === 'order-completed') badgeColor = 'bg-emerald-100 text-emerald-800';
         else if (st === 'cancelled') badgeColor = 'bg-red-100 text-red-800';
 
-        return '<tr class="hover:bg-slate-50">' +
-          '<td class="py-3 px-4 font-bold text-slate-900">#' + orderIdKey + '</td>' +
-          '<td class="py-3 px-4 text-slate-600">' + dateStr + '</td>' +
-          '<td class="py-3 px-4 font-semibold text-slate-800">' + customerName + '</td>' +
-          '<td class="py-3 px-4 text-slate-600">' + phone + '</td>' +
-          '<td class="py-3 px-4 text-slate-600 max-w-xs truncate" title="' + itemSummary + '">' + itemSummary + '</td>' +
-          '<td class="py-3 px-4 font-bold text-slate-900">R' + total.toFixed(2) + '</td>' +
-          '<td class="py-3 px-4"><span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase ' + badgeColor + '">' + st.replace('_', ' ') + '</span></td>' +
-          '<td class="py-3 px-4"><button onclick="viewAuditOrderModal(\'' + orderIdKey + '\')" class="text-xs text-indigo-600 hover:underline font-semibold">View</button></td>' +
-        '</tr>';
+        return `
+          <tr class="hover:bg-slate-50">
+            <td class="py-3 px-4 font-bold text-slate-900">#${orderIdKey}</td>
+            <td class="py-3 px-4 text-slate-600">${dateStr}</td>
+            <td class="py-3 px-4 font-semibold text-slate-800">${customerName}</td>
+            <td class="py-3 px-4 text-slate-600">${phone}</td>
+            <td class="py-3 px-4 text-slate-600 max-w-xs truncate" title="${itemSummary}">${itemSummary}</td>
+            <td class="py-3 px-4 font-bold text-slate-900">R${total.toFixed(2)}</td>
+            <td class="py-3 px-4"><span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase ${badgeColor}">${st.replace('_', ' ')}</span></td>
+            <td class="py-3 px-4">
+              <button onclick="viewAuditOrderModal('${orderIdKey}')" class="text-xs text-indigo-600 hover:underline font-semibold">View</button>
+            </td>
+          </tr>
+        `;
       }).join('');
     }
 
@@ -480,26 +488,25 @@
       const modal = document.getElementById('audit-modal');
       const content = document.getElementById('audit-modal-content');
 
-      let notesHtml = '';
-      if (o.notes || o.instructions) {
-        notesHtml = '<div class="mb-3 p-2 bg-amber-50 text-amber-800 text-xs rounded border border-amber-200"><strong>Notes:</strong> ' + (o.notes || o.instructions) + '</div>';
-      }
-
+      const notes = o.notes || o.instructions || '';
       let itemsHtml = items.map(i => {
-        let q = i.quantity || i.qty || 1;
-        let n = i.name || i.title || 'Item';
-        let p = Number(i.price || 0);
-        return '<li class="flex justify-between py-1 border-b border-slate-100"><span>' + q + 'x ' + n + '</span><span class="font-bold">R' + (q * p).toFixed(2) + '</span></li>';
+        const q = i.quantity || i.qty || 1;
+        const n = i.name || i.title || 'Item';
+        const p = Number(i.price || 0);
+        return `<li class="flex justify-between py-1 border-b border-slate-100"><span>${q}x ${n}</span><span class="font-bold">R${(q * p).toFixed(2)}</span></li>`;
       }).join('');
 
-      content.innerHTML = '<h3 class="text-lg font-bold text-slate-900 mb-3">Order Details #' + (o.order_id || o.id) + '</h3>' +
-        '<p class="text-sm text-slate-600 mb-1"><strong>Customer:</strong> ' + (o.customer_name || o.client_name || 'Walk-in') + ' (' + (o.customer_phone || o.phone || 'N/A') + ')</p>' +
-        '<p class="text-sm text-slate-600 mb-3"><strong>Address:</strong> ' + (o.address || 'N/A') + '</p>' +
-        notesHtml +
-        '<h4 class="font-bold text-sm text-slate-700 mb-2">Items:</h4>' +
-        '<ul class="space-y-1 mb-4 text-sm">' + itemsHtml + '</ul>' +
-        '<div class="flex justify-between text-base font-bold text-slate-900 pt-2 border-t border-slate-200"><span>Total:</span> <span class="text-amber-600">R' + Number(o.total || o.total_amount || 0).toFixed(2) + '</span></div>';
-
+      content.innerHTML = `
+        <h3 class="text-lg font-bold text-slate-900 mb-3">Order Details #${o.order_id || o.id}</h3>
+        <p class="text-sm text-slate-600 mb-1"><strong>Customer:</strong> ${o.customer_name || o.client_name || 'Walk-in'} (${o.customer_phone || o.phone || 'N/A'})</p>
+        <p class="text-sm text-slate-600 mb-3"><strong>Address:</strong> ${o.address || 'N/A'}</p>
+        ${notes ? `<div class="mb-3 p-2 bg-amber-50 text-amber-800 text-xs rounded border border-amber-200"><strong>Notes:</strong> ${notes}</div>` : ''}
+        <h4 class="font-bold text-sm text-slate-700 mb-2">Items:</h4>
+        <ul class="space-y-1 mb-4 text-sm">${itemsHtml}</ul>
+        <div class="flex justify-between text-base font-bold text-slate-900 pt-2 border-t border-slate-200">
+          <span>Total:</span> <span class="text-amber-600">R${Number(o.total || o.total_amount || 0).toFixed(2)}</span>
+        </div>
+      `;
       modal.classList.remove('hidden');
       modal.classList.add('flex');
     }
@@ -520,13 +527,13 @@
         const phone = o.customer_phone || o.phone || '';
         const total = Number(o.total || o.total_amount || 0).toFixed(2);
         const stage = o.stage || o.status || 'pending';
-        csv += oid + ',' + date + ',' + name + ',' + phone + ',' + total + ',' + stage + '\n';
+        csv += `${oid},${date},${name},${phone},${total},${stage}\n`;
       });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'store_audit_log_' + new Date().toISOString().slice(0,10) + '.csv';
+      a.download = `store_audit_log_${new Date().toISOString().slice(0,10)}.csv`;
       a.click();
     }
   </script>

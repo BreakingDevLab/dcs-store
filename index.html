@@ -324,7 +324,7 @@
         'cancelled': 'Your order was cancelled. Feel free to reorder anytime.'
       };
 
-      const msg = messages[stage] || 'Order #' + orderId + ' stage updated to ' + stage.toUpperCase();
+      const msg = messages[stage] || ('Order #' + orderId + ' stage updated to ' + stage.toUpperCase());
       const existing = document.getElementById('status-toast');
       if (existing) existing.remove();
 
@@ -579,7 +579,7 @@
               '<button onclick="addToCart(\'' + i.id + '\')" class="btn-primary small" style="margin-top:.5rem">+ Add</button>' +
             '</div>' +
           '</div>'
-        .join('') + '</div></details>';
+        ).join('') + '</div></details>';
       }).join('');
     }
 
