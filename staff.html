@@ -576,11 +576,11 @@
         `;
       } else if (stageKey === 'ready-for-pickup') {
         actionButtonsHtml = `
-          <button onclick="updateOrderStage('${orderId}', 'preparing')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-2 py-1.5 rounded font-medium transition">Reopen</button>
+          <button onclick="updateOrderStage('${orderId}', 'preparing')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs py-1.5 rounded font-medium transition">Reopen</button>
         `;
       } else if (stageKey === 'cancelled') {
         actionButtonsHtml = `
-          <button onclick="updateOrderStage('${orderId}', 'received')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-2 py-1.5 rounded font-medium transition">Restore</button>
+          <button onclick="updateOrderStage('${orderId}', 'received')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs py-1.5 rounded font-medium transition">Restore</button>
         `;
       }
 
