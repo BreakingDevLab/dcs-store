@@ -4,7 +4,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👨‍🍳</text></svg>">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Davidsonville Community Store | Staff Kitchen Dashboard</title>
+  <title>Davidsonville Community Store | Staff Dashboard & Audit Log</title>
   <style>
     :root{
       --primary:#0f172a; --brand:#d97706; --brand-gradient:linear-gradient(135deg,#f59e0b 0%,#d97706 100%);
@@ -19,85 +19,89 @@
     }
     .header-title h1{font-size:1.2rem; font-weight:800}
     .header-title p{font-size:.78rem; color:#cbd5e1}
-    .kanban-board{
-      display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:1rem;
-      padding:1.5rem; max-width:1400px; margin:0 auto;
-    }
-    .kanban-column{
-      background:#f1f5f9; border-radius:12px; border:1px solid var(--border); padding:1rem; min-height:500px;
-      display:flex; flex-direction:column;
-    }
-    .column-header{
-      font-weight:800; font-size:.9rem; text-transform:uppercase; margin-bottom:1rem; display:flex;
-      justify-content:space-between; align-items:center; padding-bottom:.5rem; border-bottom:2px solid var(--border);
-    }
-    .column-badge{background:var(--primary); color:#fff; padding:.15rem .5rem; border-radius:20px; font-size:.75rem}
-    .order-card{
-      background:#fff; border-radius:10px; border:1px solid var(--border); padding:.9rem; margin-bottom:.85rem;
-      box-shadow:var(--shadow); display:flex; flex-direction:column; justify-content:space-between; gap:.5rem;
-    }
-    .order-card-header{display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:.4rem}
-    .order-id{font-weight:800; font-size:.9rem; color:var(--primary)}
-    .order-time{font-size:.72rem; color:var(--muted)}
-    .order-customer{font-size:.82rem; font-weight:700; color:#334155}
-    .order-items{font-size:.82rem; background:#f8fafc; padding:.5rem; border-radius:6px; margin:.2rem 0; list-style:none}
-    .order-items li{display:flex; justify-content:space-between; margin-bottom:.2rem}
-    .order-notes{font-size:.75rem; background:#fffbeb; color:#b45309; padding:.4rem; border-radius:6px; border-left:3px solid var(--brand)}
-    .stage-btn-group{display:flex; gap:.4rem; margin-top:.5rem; flex-wrap:wrap}
-    .stage-btn{
-      flex:1; padding:.4rem; border:none; border-radius:6px; font-weight:700; font-size:.72rem;
-      cursor:pointer; color:#fff; text-align:center;
-    }
-    .btn-received{background:#64748b}
-    .btn-pending{background:#d97706}
-    .btn-prep{background:#2563eb}
-    .btn-ready{background:#059669}
-    .btn-completed{background:#16a34a}
-    .btn-cancel{background:#dc2626}
+    .container{max-width:1400px; margin:1.5rem auto; padding:0 1rem; display:flex; flex-direction:column; gap:1.25rem;}
+    .card{background:var(--card-bg); border-radius:12px; padding:1.25rem; border:1px solid var(--border); box-shadow:var(--shadow);}
+    .toolbar{display:flex; flex-wrap:wrap; gap:1rem; align-items:center; justify-content:space-between; margin-bottom:1rem;}
+    .filter-group{display:flex; gap:.75rem; align-items:center; flex-wrap:wrap;}
+    input, select{padding:.5rem .75rem; border:1px solid var(--border); border-radius:8px; font-size:.88rem; outline:none;}
+    button{padding:.5rem 1rem; border-radius:8px; border:none; font-weight:700; cursor:pointer; font-size:.85rem;}
+    .btn-primary{background:var(--brand-gradient); color:#fff;}
+    .btn-secondary{background:#64748b; color:#fff;}
+    table{width:100%; border-collapse:collapse; margin-top:.5rem; font-size:.88rem;}
+    th, td{padding:.75rem 1rem; text-align:left; border-bottom:1px solid var(--border);}
+    th{background:#f1f5f9; font-weight:800; color:var(--primary);}
+    tr:hover{background:#f8fafc;}
+    .badge{padding:.2rem .6rem; border-radius:20px; font-size:.72rem; font-weight:800; display:inline-block;}
+    .badge-received{background:#64748b; color:#fff;}
+    .badge-pending{background:#d97706; color:#fff;}
+    .badge-prep{background:#2563eb; color:#fff;}
+    .badge-ready{background:#059669; color:#fff;}
+    .modal-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.7);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;z-index:300;padding:1rem;}
+    .modal-content{background:#fff;border-radius:12px;max-width:540px;width:100%;padding:1.5rem;max-height:90vh;overflow-y:auto;}
   </style>
 </head>
 <body>
   <header>
     <div class="header-title">
-      <h1>👨‍🍳 Staff Kitchen Workflow Dashboard</h1>
-      <p>Davidsonville Community Store | Live Kitchen Order Kanban</p>
+      <h1>👨‍🍳 Staff Dashboard & Order Audit Log</h1>
+      <p>Davidsonville Community Store | Kitchen Management & Export</p>
     </div>
-    <div>
-      <button onclick="fetchStaffOrders()" style="padding:.5rem 1rem; border-radius:8px; border:none; background:var(--brand); color:#fff; font-weight:700; cursor:pointer;">🔄 Refresh Orders</button>
+    <div style="display:flex; gap:0.75rem;">
+      <button onclick="exportAuditLogCSV()" class="btn-primary">📥 Export CSV</button>
+      <button onclick="fetchStaffOrders()" class="btn-secondary">🔄 Refresh</button>
     </div>
   </header>
 
-  <div class="kanban-board">
-    <div class="kanban-column">
-      <div class="column-header">
-        <span>📥 Received</span>
-        <span id="badge-received" class="column-badge">0</span>
+  <div class="container">
+    <div class="card">
+      <div class="toolbar">
+        <div class="filter-group">
+          <label style="font-size:0.85rem; font-weight:700;">Filter Status:</label>
+          <select id="filter-status" onchange="renderOrdersTable()">
+            <option value="ALL">All Active Orders</option>
+            <option value="received">Received</option>
+            <option value="pending">Pending</option>
+            <option value="kitchen-prep">Kitchen Prep</option>
+            <option value="ready">Ready for Pickup</option>
+          </select>
+          <label style="font-size:0.85rem; font-weight:700;">From Date:</label>
+          <input type="date" id="filter-start-date" onchange="renderOrdersTable()">
+          <label style="font-size:0.85rem; font-weight:700;">To Date:</label>
+          <input type="date" id="filter-end-date" onchange="renderOrdersTable()">
+        </div>
+        <div>
+          <button onclick="resetFilters()" class="btn-secondary" style="background:#94a3b8;">Reset Filters</button>
+        </div>
       </div>
-      <div id="col-received" class="column-orders"></div>
-    </div>
 
-    <div class="kanban-column">
-      <div class="column-header">
-        <span>⏳ Pending</span>
-        <span id="badge-pending" class="column-badge">0</span>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Time / Date</th>
+              <th>Customer</th>
+              <th>Phone</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="audit-table-body">
+            <tr><td colspan="8" style="text-align:center; color:var(--muted); padding:2rem;">Loading orders...</td></tr>
+          </tbody>
+        </table>
       </div>
-      <div id="col-pending" class="column-orders"></div>
     </div>
+  </div>
 
-    <div class="kanban-column">
-      <div class="column-header">
-        <span>🍳 Kitchen Prep</span>
-        <span id="badge-kitchen-prep" class="column-badge">0</span>
+  <div id="order-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div id="modal-details-container"></div>
+      <div style="margin-top:1.25rem; display:flex; justify-content:flex-end;">
+        <button onclick="closeOrderModal()" class="btn-secondary">Close</button>
       </div>
-      <div id="col-kitchen-prep" class="column-orders"></div>
-    </div>
-
-    <div class="kanban-column">
-      <div class="column-header">
-        <span>✅ Ready for Pickup</span>
-        <span id="badge-ready" class="column-badge">0</span>
-      </div>
-      <div id="col-ready" class="column-orders"></div>
     </div>
   </div>
 
@@ -106,6 +110,26 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU';
 
     let staffOrders = [];
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) audioCtx = new AC(); }
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    document.addEventListener('click', initAudio, { once: true });
+
+    function playAudioChime() {
+      try {
+        initAudio();
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.4);
+      } catch (e) {}
+    }
 
     async function fetchStaffOrders() {
       try {
@@ -114,8 +138,11 @@
         });
         if (res.ok) {
           const data = await res.json();
+          if (data.length > staffOrders.length) {
+            playAudioChime();
+          }
           staffOrders = data;
-          renderKanbanBoard();
+          renderOrdersTable();
         }
       } catch(e) {}
     }
@@ -142,56 +169,133 @@
       try { const p = JSON.parse(rawItems); if (Array.isArray(p)) return p; return [p]; } catch (e) { return [{ name: rawItems, qty: 1, price: 0 }]; }
     }
 
-    function renderKanbanBoard() {
-      const stages = ['received', 'pending', 'kitchen-prep', 'ready'];
-      
-      stages.forEach(st => {
-        const col = document.getElementById(`col-${st}`);
-        const badge = document.getElementById(`badge-${st}`);
-        
-        const filtered = staffOrders.filter(o => {
-          const stage = (o.stage || o.status || 'received').toLowerCase().trim().replace(/_/g, '-');
-          if (st === 'ready') return stage === 'ready' || stage === 'ready-for-pick-up';
-          return stage === st;
-        });
+    function renderOrdersTable() {
+      const tbody = document.getElementById('audit-table-body');
+      const statusFilter = document.getElementById('filter-status').value;
+      const startDate = document.getElementById('filter-start-date').value;
+      const endDate = document.getElementById('filter-end-date').value;
 
-        badge.innerText = filtered.length;
-
-        if (filtered.length === 0) {
-          col.innerHTML = '<p style="font-size:0.8rem; color:var(--muted); text-align:center; padding:1rem 0;">No orders</p>';
-          return;
-        }
-
-        col.innerHTML = filtered.map(o => {
-          const oid = o.order_id || o.id;
-          const items = parseOrderItems(o.items);
-          const time = o.created_at ? new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-
-          return `
-            <div class="order-card">
-              <div class="order-card-header">
-                <span class="order-id">#${oid}</span>
-                <span class="order-time">${time}</span>
-              </div>
-              <div class="order-customer">👤 ${o.client_name || 'Customer'} (${o.phone || 'N/A'})</div>
-              <ul class="order-items">
-                ${items.map(i => `<li><span>${i.qty || 1}x ${i.name \vert{}\vert{} i.title}</span> <strong>R${((i.qty||1)*Number(i.price||0)).toFixed(2)}</strong></li>`).join('')}
-              </ul>
-              ${o.instructions ? `<div class="order-notes"><strong>Notes:</strong> ${o.instructions}</div>` : ''}
-              <div style="font-weight:bold; font-size:0.85rem; color:var(--brand); display:flex; justify-content:space-between; align-items:center;">
-                <span>Total:</span> <span>R${Number(o.total || 0).toFixed(2)}</span>
-              </div>
-              <div class="stage-btn-group">
-                ${st !== 'pending' ? `<button onclick="updateOrderStatus('${oid}', 'pending')" class="stage-btn btn-pending">Pending</button>` : ''}
-                ${st !== 'kitchen-prep' ? `<button onclick="updateOrderStatus('${oid}', 'kitchen-prep')" class="stage-btn btn-prep">Prep</button>` : ''}
-                ${st !== 'ready' ? `<button onclick="updateOrderStatus('${oid}', 'ready')" class="stage-btn btn-ready">Ready</button>` : ''}
-                <button onclick="updateOrderStatus('${oid}', 'order-completed')" class="stage-btn btn-completed">Complete</button>
-                <button onclick="updateOrderStatus('${oid}', 'cancelled')" class="stage-btn btn-cancel">Cancel</button>
-              </div>
-            </div>
-          `;
-        }).join('');
+      // Immediately clear and filter out completed or cancelled orders from staff dashboard table view
+      let filtered = staffOrders.filter(o => {
+        const stage = (o.stage || o.status || 'received').toLowerCase().trim().replace(/_/g, '-');
+        if (stage === 'order-completed' || stage === 'cancelled') return false;
+        return true;
       });
+
+      if (statusFilter !== 'ALL') {
+        filtered = filtered.filter(o => {
+          const stage = (o.stage || o.status || 'received').toLowerCase().trim().replace(/_/g, '-');
+          if (statusFilter === 'ready') return stage === 'ready' || stage === 'ready-for-pick-up';
+          return stage === statusFilter;
+        });
+      }
+
+      if (startDate) {
+        const start = new Date(startDate).setHours(0,0,0,0);
+        filtered = filtered.filter(o => o.created_at && new Date(o.created_at).setHours(0,0,0,0) >= start);
+      }
+
+      if (endDate) {
+        const end = new Date(endDate).setHours(23,59,59,999);
+        filtered = filtered.filter(o => o.created_at && new Date(o.created_at).setHours(0,0,0,0) <= end);
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--muted); padding:2rem;">No active orders found matching criteria.</td></tr>`;
+        return;
+      }
+
+      const stageLabels = {
+        'received': 'Received', 'pending': 'Pending', 'kitchen-prep': 'Kitchen Prep',
+        'ready': 'Ready for Pickup', 'ready-for-pick-up': 'Ready for Pickup'
+      };
+
+      tbody.innerHTML = filtered.map(o => {
+        const oid = o.order_id || o.id;
+        const stage = (o.stage || o.status || 'received').toLowerCase().trim().replace(/_/g, '-');
+        const badgeClass = `badge badge-${stage === 'ready-for-pick-up' ? 'ready' : stage}`;
+        const items = parseOrderItems(o.items);
+        const itemSummary = items.map(i => `${i.qty || 1}x ${i.name || i.title}`).join(', ');
+        const dateStr = o.created_at ? new Date(o.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '';
+
+        return `
+          <tr>
+            <td><strong>#${oid}</strong></td>
+            <td>${dateStr}</td>
+            <td>${o.client_name || 'Customer'}</td>
+            <td>${o.phone || 'N/A'}</td>
+            <td style="max-width:250px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${itemSummary}">${itemSummary}</td>
+            <td><strong>R${Number(o.total || 0).toFixed(2)}</strong></td>
+            <td><span class="${badgeClass}">${stageLabels[stage] || stage.toUpperCase()}</span></td>
+            <td>
+              <div style="display:flex; gap:0.35rem;">
+                <button onclick="viewOrderModal('${oid}')" class="btn-secondary" style="padding:0.25rem 0.5rem; font-size:0.75rem;">View</button>
+                <button onclick="updateOrderStatus('${oid}', 'kitchen-prep')" class="btn-primary" style="padding:0.25rem 0.5rem; font-size:0.75rem; background:#2563eb;">Prep</button>
+                <button onclick="updateOrderStatus('${oid}', 'ready')" class="btn-primary" style="padding:0.25rem 0.5rem; font-size:0.75rem; background:#059669;">Ready</button>
+                <button onclick="updateOrderStatus('${oid}', 'order-completed')" class="btn-primary" style="padding:0.25rem 0.5rem; font-size:0.75rem; background:#16a34a;">Complete</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function viewOrderModal(oid) {
+      const o = staffOrders.find(x => String(x.order_id || x.id) === String(oid));
+      if (!o) return;
+      const items = parseOrderItems(o.items);
+      const modal = document.getElementById('order-modal');
+      const container = document.getElementById('modal-details-container');
+
+      container.innerHTML = `
+        <h3 style="color:var(--brand); margin-bottom:0.75rem;">Order Details #${o.order_id || o.id}</h3>
+        <p><strong>Customer:</strong> ${o.client_name || 'Customer'} (${o.phone || 'N/A'})</p>
+        <p><strong>Address:</strong> ${o.address || 'N/A'}</p>
+        <p><strong>Payment:</strong> ${o.payment_method || 'Cash'}</p>
+        ${o.instructions ? `<p style="margin-top:0.5rem; background:#fffbeb; padding:0.5rem; border-left:3px solid var(--brand);"><strong>Notes:</strong> ${o.instructions}</p>` : ''}
+        <h4 style="margin-top:1rem; margin-bottom:0.5rem;">Items:</h4>
+        <ul style="list-style:none; padding:0;">
+          ${items.map(i => `<li style="display:flex; justify-content:space-between; padding:0.3rem 0; border-bottom:1px dotted var(--border);">
+            <span>${i.qty \vert{}\vert{} 1}x${i.name || i.title}</span>
+            <strong>R${((i.qty || 1) * Number(i.price || 0)).toFixed(2)}</strong>
+          </li>`).join('')}
+        </ul>
+        <div style="display:flex; justify-content:space-between; margin-top:1rem; font-weight:800; font-size:1.05rem;">
+          <span>Total:</span> <span style="color:var(--brand);">R${Number(o.total || 0).toFixed(2)}</span>
+        </div>
+      `;
+      modal.style.display = 'flex';
+    }
+
+    function closeOrderModal() {
+      document.getElementById('order-modal').style.display = 'none';
+    }
+
+    function resetFilters() {
+      document.getElementById('filter-status').value = 'ALL';
+      document.getElementById('filter-start-date').value = '';
+      document.getElementById('filter-end-date').value = '';
+      renderOrdersTable();
+    }
+
+    function exportAuditLogCSV() {
+      if (staffOrders.length === 0) { alert('No orders to export'); return; }
+      let csv = 'OrderID,Date,Customer,Phone,Total,Status\n';
+      staffOrders.forEach(o => {
+        const oid = o.order_id || o.id;
+        const date = o.created_at ? new Date(o.created_at).toISOString() : '';
+        const name = (o.client_name || '').replace(/,/g, '');
+        const phone = o.phone || '';
+        const total = Number(o.total || 0).toFixed(2);
+        const stage = o.stage || o.status || 'received';
+        csv += `${oid},${date},${name},${phone},${total},${stage}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `davidsonville_audit_log_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
     }
 
     window.addEventListener('DOMContentLoaded', () => {
