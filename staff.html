@@ -20,18 +20,8 @@
         <span id="realtimeStatus" class="text-[10px] bg-emerald-900/80 text-emerald-300 border border-emerald-700 px-2 py-1 rounded-full flex items-center gap-1">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Live Sync Active
         </span>
-        <button 
-          onclick="playChime()" 
-          class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-2.5 py-2 rounded-lg border border-gray-700 transition"
-        >
-          🔔 Test Chime
-        </button>
-        <button 
-          onclick="loadAllData(true)" 
-          class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg font-medium transition flex items-center gap-1.5"
-        >
-          <span>🔄</span> Refresh Board
-        </button>
+        <button onclick="playChime()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-2.5 py-2 rounded-lg border border-gray-700 transition">🔔 Test Chime</button>
+        <button onclick="loadAllData(true)" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg font-medium transition flex items-center gap-1.5"><span>🔄</span> Refresh Board</button>
         <a href="index.html" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-2 rounded-lg border border-gray-700 transition">Storefront</a>
       </div>
     </div>
@@ -39,7 +29,6 @@
 
   <main class="max-w-7xl mx-auto p-4 md:p-6 space-y-8">
 
-    <!-- Staff Notification Banner -->
     <div id="staffNotificationBanner" class="hidden bg-amber-50 border-l-4 border-amber-500 p-4 rounded-xl shadow-sm text-sm text-amber-800 flex justify-between items-center">
       <div class="flex items-center gap-2">
         <span>⚠️</span>
@@ -55,26 +44,13 @@
           <h2 class="text-2xl font-bold text-gray-800">Unified 7-Stage Order Flow</h2>
           <p class="text-xs text-gray-500">Received → Pending → Kitchen Prep → Ready → Ready for Pick up → Order Completed → Cancelled</p>
         </div>
-        <div class="flex items-center gap-2">
-          <button 
-            onclick="clearResolvedOrders()" 
-            class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-2 rounded-lg font-medium transition flex items-center gap-1"
-            title="Clear Completed or Cancelled orders from the board"
-          >
-            <span>🗑️</span> Clear Completed / Cancelled
-          </button>
-        </div>
       </div>
 
-      <!-- Kanban Columns Container (7 Stages) -->
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-        
         <!-- 1. Received -->
         <div class="bg-blue-50/80 p-2.5 rounded-xl border border-blue-200 flex flex-col min-h-[420px]">
           <div class="flex justify-between items-center mb-2 px-1">
-            <h3 class="font-bold text-blue-900 text-[11px] uppercase tracking-wider flex items-center gap-1">
-              <span class="w-2 h-2 rounded-full bg-blue-600"></span> Received
-            </h3>
+            <h3 class="font-bold text-blue-900 text-[11px] uppercase tracking-wider flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-600"></span> Received</h3>
             <span id="count-received" class="bg-blue-200 text-blue-900 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
           </div>
           <div id="kanban-received" class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh]"></div>
@@ -83,9 +59,7 @@
         <!-- 2. Pending -->
         <div class="bg-gray-200/70 p-2.5 rounded-xl border border-gray-300 flex flex-col min-h-[420px]">
           <div class="flex justify-between items-center mb-2 px-1">
-            <h3 class="font-bold text-gray-700 text-[11px] uppercase tracking-wider flex items-center gap-1">
-              <span class="w-2 h-2 rounded-full bg-gray-500"></span> Pending
-            </h3>
+            <h3 class="font-bold text-gray-700 text-[11px] uppercase tracking-wider flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-gray-500"></span> Pending</h3>
             <span id="count-pending" class="bg-gray-300 text-gray-700 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
           </div>
           <div id="kanban-pending" class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh]"></div>
@@ -94,9 +68,7 @@
         <!-- 3. Kitchen Prep -->
         <div class="bg-yellow-50/80 p-2.5 rounded-xl border border-yellow-200 flex flex-col min-h-[420px]">
           <div class="flex justify-between items-center mb-2 px-1">
-            <h3 class="font-bold text-yellow-900 text-[11px] uppercase tracking-wider flex items-center gap-1">
-              <span class="w-2 h-2 rounded-full bg-yellow-500"></span> Kitchen Prep
-            </h3>
+            <h3 class="font-bold text-yellow-900 text-[11px] uppercase tracking-wider flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-yellow-500"></span> Kitchen Prep</h3>
             <span id="count-kitchen-prep" class="bg-yellow-200 text-yellow-900 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
           </div>
           <div id="kanban-kitchen-prep" class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh]"></div>
@@ -105,9 +77,7 @@
         <!-- 4. Ready -->
         <div class="bg-teal-50/80 p-2.5 rounded-xl border border-teal-200 flex flex-col min-h-[420px]">
           <div class="flex justify-between items-center mb-2 px-1">
-            <h3 class="font-bold text-teal-900 text-[11px] uppercase tracking-wider flex items-center gap-1">
-              <span class="w-2 h-2 rounded-full bg-teal-500"></span> Ready
-            </h3>
+            <h3 class="font-bold text-teal-900 text-[11px] uppercase tracking-wider flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-teal-500"></span> Ready</h3>
             <span id="count-ready" class="bg-teal-200 text-teal-900 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
           </div>
           <div id="kanban-ready" class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh]"></div>
@@ -116,9 +86,7 @@
         <!-- 5. Ready for Pick up -->
         <div class="bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-200 flex flex-col min-h-[420px]">
           <div class="flex justify-between items-center mb-2 px-1">
-            <h3 class="font-bold text-emerald-900 text-[11px] uppercase tracking-wider flex items-center gap-1">
-              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Pick up
-            </h3>
+            <h3 class="font-bold text-emerald-900 text-[11px] uppercase tracking-wider flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Pick up</h3>
             <span id="count-ready-for-pick-up" class="bg-emerald-200 text-emerald-900 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
           </div>
           <div id="kanban-ready-for-pick-up" class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh]"></div>
@@ -127,9 +95,7 @@
         <!-- 6. Order Completed -->
         <div class="bg-green-50/80 p-2.5 rounded-xl border border-green-200 flex flex-col min-h-[420px]">
           <div class="flex justify-between items-center mb-2 px-1">
-            <h3 class="font-bold text-green-900 text-[11px] uppercase tracking-wider flex items-center gap-1">
-              <span class="w-2 h-2 rounded-full bg-green-600"></span> Completed
-            </h3>
+            <h3 class="font-bold text-green-900 text-[11px] uppercase tracking-wider flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-600"></span> Completed</h3>
             <span id="count-order-completed" class="bg-green-200 text-green-900 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
           </div>
           <div id="kanban-order-completed" class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh]"></div>
@@ -138,14 +104,11 @@
         <!-- 7. Cancelled -->
         <div class="bg-red-50/80 p-2.5 rounded-xl border border-red-200 flex flex-col min-h-[420px]">
           <div class="flex justify-between items-center mb-2 px-1">
-            <h3 class="font-bold text-red-900 text-[11px] uppercase tracking-wider flex items-center gap-1">
-              <span class="w-2 h-2 rounded-full bg-red-500"></span> Cancelled
-            </h3>
+            <h3 class="font-bold text-red-900 text-[11px] uppercase tracking-wider flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> Cancelled</h3>
             <span id="count-cancelled" class="bg-red-200 text-red-900 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
           </div>
           <div id="kanban-cancelled" class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh]"></div>
         </div>
-
       </div>
     </section>
 
@@ -159,38 +122,17 @@
           <p class="text-xs text-gray-500">Search historical orders, filter by stage, or export reports</p>
         </div>
         <div class="flex items-center gap-2">
-          <button 
-            onclick="exportAuditLogToCSV()" 
-            class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs md:text-sm px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-1.5"
-          >
-            <span>📥</span> Export CSV
-          </button>
-          <button 
-            onclick="clearAuditLog()" 
-            class="bg-red-600 hover:bg-red-700 text-white text-xs md:text-sm px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-1.5"
-          >
-            <span>🗑️</span> Clear Audit Log
-          </button>
+          <button onclick="exportAuditLogToCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs md:text-sm px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-1.5"><span>📥</span> Export CSV</button>
+          <button onclick="clearAuditLog()" class="bg-red-600 hover:bg-red-700 text-white text-xs md:text-sm px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-1.5"><span>🗑️</span> Clear Audit Log</button>
         </div>
       </div>
 
-      <!-- Search & Filters -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
         <div class="md:col-span-2">
-          <input 
-            type="text" 
-            id="auditSearchInput" 
-            placeholder="Search by Order ID, Customer Name, or Phone..." 
-            class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
-            onkeyup="filterAuditLog()"
-          />
+          <input type="text" id="auditSearchInput" placeholder="Search by Order ID, Customer Name, or Phone..." class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" onkeyup="filterAuditLog()"/>
         </div>
         <div>
-          <select 
-            id="auditDateFilter" 
-            onchange="filterAuditLog()" 
-            class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-          >
+          <select id="auditDateFilter" onchange="filterAuditLog()" class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
             <option value="all">All Time</option>
             <option value="today">Today</option>
             <option value="yesterday">Yesterday</option>
@@ -199,11 +141,7 @@
           </select>
         </div>
         <div>
-          <select 
-            id="auditStageFilter" 
-            onchange="filterAuditLog()" 
-            class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-          >
+          <select id="auditStageFilter" onchange="filterAuditLog()" class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
             <option value="all">All Stages</option>
             <option value="received">Received</option>
             <option value="pending">Pending</option>
@@ -230,14 +168,11 @@
             </tr>
           </thead>
           <tbody id="auditLogTableBody">
-            <tr>
-              <td colspan="7" class="p-4 text-center text-gray-400">Loading order history...</td>
-            </tr>
+            <tr><td colspan="7" class="p-4 text-center text-gray-400">Loading order history...</td></tr>
           </tbody>
         </table>
       </div>
     </section>
-
   </main>
 
   <!-- ORDER DETAIL MODAL -->
@@ -256,7 +191,6 @@
           <h2 class="text-xl font-bold text-gray-900">Davidsonville Community Store</h2>
           <p class="text-xs text-gray-500">Official Kitchen & Customer Order Receipt</p>
         </div>
-
         <div class="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-3 rounded-lg border border-gray-100">
           <div><span class="font-semibold text-gray-600">Customer:</span> <span id="modalCustomer" class="font-medium text-gray-900"></span></div>
           <div><span class="font-semibold text-gray-600">Phone:</span> <span id="modalPhone" class="font-medium text-gray-900"></span></div>
@@ -268,7 +202,6 @@
             <div id="modalInstructions" class="bg-amber-50 text-amber-900 p-2 rounded mt-1 text-xs border border-amber-200"></div>
           </div>
         </div>
-
         <div>
           <h4 class="font-bold text-gray-800 mb-2 border-b pb-1 text-xs uppercase tracking-wider">Items Ordered</h4>
           <table class="w-full text-left text-xs">
@@ -283,7 +216,6 @@
             <tbody id="modalItemsTableBody"></tbody>
           </table>
         </div>
-
         <div class="border-t pt-3 flex justify-between items-center font-bold text-base text-gray-900">
           <span>Grand Total:</span>
           <span id="modalGrandTotal" class="text-blue-600 text-lg"></span>
@@ -291,17 +223,12 @@
       </div>
 
       <div class="bg-gray-50 p-4 border-t flex justify-end gap-2">
-        <button onclick="printOrderReceipt()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-lg font-medium transition flex items-center gap-1.5">
-          <span>🖨️</span> Print Receipt
-        </button>
-        <button onclick="closeOrderDetailModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm px-4 py-2 rounded-lg font-medium transition">
-          Close
-        </button>
+        <button onclick="printOrderReceipt()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-lg font-medium transition flex items-center gap-1.5"><span>🖨️</span> Print Receipt</button>
+        <button onclick="closeOrderDetailModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm px-4 py-2 rounded-lg font-medium transition">Close</button>
       </div>
     </div>
   </div>
 
-  <!-- JAVASCRIPT LOGIC -->
   <script>
     const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU';
@@ -353,70 +280,12 @@
       return 'received';
     }
 
-    async function checkAndCleanupStalePendingOrders(orders) {
-      const client = getSupabaseClient();
-      if (!client || !orders || orders.length === 0) return;
-      const now = Date.now();
-      const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-      const staleIds = [];
-
-      orders.forEach(order => {
-        const stage = normalizeStage(order.stage || order.status);
-        if (stage === 'pending' || stage === 'received') {
-          if (order.created_at) {
-            const createdTime = new Date(order.created_at).getTime();
-            if (!isNaN(createdTime) && (now - createdTime > ONE_DAY_MS)) {
-              const rawId = order.id || order.order_id;
-              if (rawId) staleIds.push(rawId);
-            }
-          }
-        }
-      });
-
-      if (staleIds.length > 0) {
-        await client.from('orders').delete().in('id', staleIds);
-      }
-    }
-
     async function loadAllData(isManualTrigger = false) {
       const client = getSupabaseClient();
       if (!client) return;
-
-      const { data, error } = await client
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
-
+      const { data, error } = await client.from('orders').select('*').order('created_at', { ascending: false });
       if (error) return;
-
-      let rawOrders = data || [];
-      await checkAndCleanupStalePendingOrders(rawOrders);
-
-      const { data: freshData } = await client
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      allOrdersCache = freshData || rawOrders;
-
-      const currentPendingIds = new Set();
-      allOrdersCache.forEach(o => {
-        const stage = normalizeStage(o.stage || o.status);
-        if (stage === 'received' || stage === 'pending') {
-          currentPendingIds.add(String(o.order_id || o.id));
-        }
-      });
-
-      let hasNewPending = false;
-      for (let id of currentPendingIds) {
-        if (!previousPendingIds.has(id)) { hasNewPending = true; break; }
-      }
-
-      if (isManualTrigger || (previousPendingIds.size > 0 && hasNewPending)) {
-        playChime();
-      }
-
-      previousPendingIds = currentPendingIds;
+      allOrdersCache = data || [];
       renderKanbanBoard();
       filterAuditLog();
     }
@@ -430,22 +299,6 @@
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => { loadAllData(); })
         .subscribe();
       setInterval(() => { loadAllData(); }, 4000);
-    }
-
-    async function clearResolvedOrders() {
-      if (!confirm("Are you sure you want to clear all 'Order Completed' and 'Cancelled' orders from the board and database?")) return;
-      const client = getSupabaseClient();
-      if (!client) return;
-
-      const targetOrders = allOrdersCache.filter(o => {
-        const st = normalizeStage(o.stage || o.status);
-        return st === 'order-completed' || st === 'cancelled';
-      });
-
-      if (targetOrders.length === 0) { alert("No completed or cancelled orders to clear."); return; }
-      const ids = targetOrders.map(o => o.id).filter(Boolean);
-      await client.from('orders').delete().in('id', ids);
-      loadAllData();
     }
 
     function renderKanbanBoard() {
@@ -511,23 +364,15 @@
           <button onclick="updateOrderStage('${orderId}', 'cancelled')" class="bg-red-50 text-red-600 px-2 py-1 rounded font-medium transition">Cancel</button>
         `;
       } else if (stageKey === 'kitchen-prep') {
-        actionButtonsHtml = `
-          <button onclick="updateOrderStage('${orderId}', 'ready')" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-1 rounded font-medium transition">Ready</button>
-        `;
+        actionButtonsHtml = `<button onclick="updateOrderStage('${orderId}', 'ready')" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-1 rounded font-medium transition">Ready</button>`;
       } else if (stageKey === 'ready') {
-        actionButtonsHtml = `
-          <button onclick="updateOrderStage('${orderId}', 'ready-for-pick-up')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-1 rounded font-medium transition">Pick up</button>
-        `;
+        actionButtonsHtml = `<button onclick="updateOrderStage('${orderId}', 'ready-for-pick-up')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-1 rounded font-medium transition">Pick up</button>`;
       } else if (stageKey === 'ready-for-pick-up') {
-        actionButtonsHtml = `
-          <button onclick="updateOrderStage('${orderId}', 'order-completed')" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-1 rounded font-medium transition">Complete</button>
-        `;
+        actionButtonsHtml = `<button onclick="updateOrderStage('${orderId}', 'order-completed')" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-1 rounded font-medium transition">Complete</button>`;
       } else if (stageKey === 'order-completed') {
         actionButtonsHtml = `<span class="text-gray-400 italic text-[10px]">Archived</span>`;
       } else if (stageKey === 'cancelled') {
-        actionButtonsHtml = `
-          <button onclick="updateOrderStage('${orderId}', 'received')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-1 rounded font-medium transition">Restore</button>
-        `;
+        actionButtonsHtml = `<button onclick="updateOrderStage('${orderId}', 'received')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-1 rounded font-medium transition">Restore</button>`;
       }
 
       card.innerHTML = `
@@ -541,19 +386,15 @@
           </div>
           <span class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">${time}</span>
         </div>
-
         <div class="text-gray-500 flex justify-between items-center bg-gray-50 p-1.5 rounded border border-gray-100">
           <span>📞 ${phone}</span>
           <span class="font-medium text-gray-700">${itemSummary}</span>
         </div>
-
         ${instructions ? `<div class="bg-amber-50 text-amber-900 p-1.5 rounded border border-amber-200 text-[11px]"><strong>Note:</strong> ${instructions}</div>` : ''}
-
         <div class="flex justify-between items-center pt-0.5">
           <span class="text-gray-400">Total:</span>
           <span class="font-extrabold text-sm text-gray-900">${total}</span>
         </div>
-
         <div class="flex gap-1.5 pt-1.5 border-t border-gray-100">
           <button onclick="openOrderDetailModal('${orderId}')" class="bg-blue-50 hover:bg-blue-100 text-blue-600 px-2 py-1 rounded font-medium border border-blue-200 transition">👁️</button>
           ${actionButtonsHtml}
@@ -616,7 +457,6 @@
         tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">No matching orders found.</td></tr>`;
         return;
       }
-
       tbody.innerHTML = orders.map(order => {
         const orderId = order.order_id || order.id || 'N/A';
         const name = order.customer_name || order.client_name || order.name || 'Guest';
@@ -714,7 +554,6 @@
       } else {
         tbody.innerHTML = `<tr><td colspan="4" class="p-2 text-center text-gray-400">No items breakdown</td></tr>`;
       }
-
       document.getElementById('orderDetailModal').classList.remove('hidden');
     }
 

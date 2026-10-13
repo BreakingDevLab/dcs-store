@@ -97,6 +97,11 @@
     </div>
   </header>
 
+  <!-- STORE CLOSED BANNER NOTICE -->
+  <div id="store-closed-banner" style="display:none; background:#ef4444; color:#fff; text-align:center; padding:.65rem 1rem; font-weight:700; font-size:.88rem;">
+    🌙 The kitchen is currently resting! We are closed for the evening (orders close at 8:00 PM and reopen at 7:00 AM). You are welcome to browse the menu in the meantime!
+  </div>
+
   <div class="hero-banner-container">
     <div class="hero-banner">
       <img src="Screenshot 2026-09-21 162238.png" alt="Storefront" class="hero-banner-img" onerror="this.src='https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80'">
@@ -134,7 +139,6 @@
         <div class="dropdown-content-grid" style="padding:0.75rem; grid-template-columns:1fr;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
             <strong style="font-size:0.95rem;color:var(--primary)">Active Orders</strong>
-            <button id="clear-active-orders-btn" onclick="clearActiveOrders()" style="background:none;border:none;color:#b91c1c;font-size:.82rem;font-weight:700;cursor:pointer;display:none">Clear Order Page</button>
           </div>
           <div id="active-orders-tracker-container" style="padding:0.25rem 0;"></div>
         </div>
@@ -147,12 +151,11 @@
         </div>
       </details>
 
-      <details id="order-history-panel" class="menu-category-dropdown card" style="display:none">
+      <details id="order-history-panel" class="menu-category-dropdown card" style="display:none" open>
         <summary><span>📜 Order History</span><span style="font-size:.8rem;color:var(--muted)"></span></summary>
         <div class="dropdown-content-grid" style="padding:0.75rem; grid-template-columns:1fr;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <strong style="font-size:0.95rem;color:var(--primary)">Order History</strong>
-            <button id="clear-order-history-btn" onclick="clearOrderHistory()" style="background:none;border:none;color:#b91c1c;font-size:.82rem;font-weight:700;cursor:pointer;display:none">Clear Order Page</button>
+            <strong style="font-size:0.95rem;color:var(--primary)">All Past Orders</strong>
           </div>
           <div id="order-history-list" style="padding:0.25rem 0;"></div>
         </div>
@@ -223,6 +226,15 @@
     </div>
   </div>
 
+  <!-- PENDING CONFIRMATION MODAL -->
+  <div id="pending-confirm-modal" class="modal-overlay">
+    <div class="modal-content" style="text-align:center;">
+      <h3 style="color:var(--brand); margin-bottom:0.75rem;">🔍 Order Review & Confirmation</h3>
+      <p id="pending-confirm-text" style="font-size:0.9rem; line-height:1.4; color:var(--primary); margin-bottom:1.25rem;"></p>
+      <button onclick="closePendingConfirmModal()" class="btn-primary">Got it, thanks!</button>
+    </div>
+  </div>
+
   <div id="live-tracker-panel" class="hidden">
     <div id="live-tracker-header">
       <strong style="font-size:0.95rem">Active Orders</strong>
@@ -273,12 +285,17 @@
     }
     document.addEventListener('click', initAudio, { once: true });
 
-    function playCustomerChime() {
+    function playStageChime(stage) {
       try {
         initAudio();
         if (!audioCtx) return;
         const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime);
+        let freq = 659.25;
+        if (stage === 'pending') freq = 523.25;
+        else if (stage === 'kitchen-prep') freq = 587.33;
+        else if (stage === 'ready' || stage === 'ready-for-pick-up') freq = 783.99;
+
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
         gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
         osc.connect(gain); gain.connect(audioCtx.destination);
@@ -286,16 +303,42 @@
       } catch (e) {}
     }
 
-    function showStatusToast(orderId, stageName) {
+    function showStageNotification(orderId, stage) {
+      const messages = {
+        'received': 'Order successfully received! We have logged your request.',
+        'pending': 'Your order is currently under review by our team.',
+        'kitchen-prep': 'Your food is now sizzling in the kitchen!',
+        'ready': 'Your order is ready! Come collect it hot and fresh.',
+        'ready-for-pick-up': 'Your order is ready for pickup!',
+        'order-completed': 'Order completed. Thank you for choosing Davidsonville Community Store!',
+        'cancelled': 'Your order was cancelled. Feel free to reorder anytime.'
+      };
+
+      const msg = messages[stage] || `Order #${orderId} stage updated to ${stage.toUpperCase()}`;
       const existing = document.getElementById('status-toast');
       if (existing) existing.remove();
+
       const toast = document.createElement('div');
       toast.id = 'status-toast';
       toast.className = 'toast-alert';
-      toast.innerHTML = `<span>🔔</span><div><strong>Order #${orderId} Updated</strong><br>Status: ${stageName.toUpperCase()}</div>`;
+      toast.innerHTML = `<span>🔔</span><div><strong>Order #${orderId}</strong><br>${msg}</div>`;
       document.body.appendChild(toast);
-      playCustomerChime();
-      setTimeout(() => toast.remove(), 5000);
+      playStageChime(stage);
+      setTimeout(() => toast.remove(), 6000);
+    }
+
+    function showPendingConfirmationModal(orderId) {
+      const modal = document.getElementById('pending-confirm-modal');
+      const text = document.getElementById('pending-confirm-text');
+      if (modal && text) {
+        text.innerHTML = `Hello ${client?.name || 'Customer'}, our team is reviewing Order #${orderId}. Please double-check your items and instructions. Are you completely sure everything is correct before we send it to kitchen prep?`;
+        modal.style.display = 'flex';
+      }
+    }
+
+    function closePendingConfirmModal() {
+      const modal = document.getElementById('pending-confirm-modal');
+      if (modal) modal.style.display = 'none';
     }
 
     function parseOrderItems(rawItems) {
@@ -314,21 +357,12 @@
     }
 
     function buildOrderCardHTML(order) {
-      const stageMap = { 'received': 0, 'pending': 1, 'kitchen-prep': 2, 'ready': 3, 'ready-for-pick-up': 4, 'order-completed': 5, 'cancelled': 6 };
       const stage = (order.stage || order.status || 'received').toLowerCase().trim().replace(/_/g, '-');
-      const stepIdx = stageMap[stage] !== undefined ? stageMap[stage] : 0;
-
-      const stageLabels = {
-        'received': 'Received',
-        'pending': 'Pending',
-        'kitchen-prep': 'Kitchen Prep',
-        'ready': 'Ready',
-        'ready-for-pick-up': 'Ready for Pick up',
-        'order-completed': 'Order Completed',
-        'cancelled': 'Cancelled'
-      };
-
       const isFailedOrCancelled = (stage === 'cancelled' || stage === 'failed');
+      const stageLabels = {
+        'received': 'Received', 'pending': 'Pending', 'kitchen-prep': 'Kitchen Prep',
+        'ready': 'Ready', 'ready-for-pick-up': 'Ready for Pick up', 'order-completed': 'Completed', 'cancelled': 'Cancelled'
+      };
 
       return `
         <div style="padding:.85rem; border:1px solid var(--border); border-radius:12px; margin-bottom:.75rem; background:#fff;">
@@ -347,7 +381,7 @@
             <span>Total:</span><strong style="color:var(--brand);">R${Number(order.total || 0).toFixed(2)}</strong>
           </div>
           <div style="margin-top:.75rem; display:flex; justify-content:space-between; align-items:center; gap:0.5rem;">
-            ${isFailedOrCancelled ? `<button onclick="resubmitOrderFromSlip('${order.id}')" style="font-size:.72rem; font-weight:700; padding:.35rem .7rem; background:#9333ea; color:#fff; border:none; border-radius:6px; cursor:pointer;">🔄 Resubmit / Reorder</button>` : '<div></div>'}
+            ${isFailedOrCancelled ? `<button onclick="resubmitOrderFromSlip('${order.id}')" style="font-size:.72rem; font-weight:700; padding:.35rem .7rem; background:#9333ea; color:#fff; border:none; border-radius:6px; cursor:pointer;">🔄 Resubmit / Reorder</button>` : `<button onclick="saveOrderAsFavorite('${order.id}')" style="font-size:.72rem; font-weight:700; padding:.35rem .7rem; background:#059669; color:#fff; border:none; border-radius:6px; cursor:pointer;">⭐ Save to Favorites</button>`}
             <button onclick="showDigitalReceiptFromId('${order.id}')" style="font-size:.72rem; font-weight:700; padding:.35rem .7rem; background:var(--primary); color:#fff; border:none; border-radius:6px; cursor:pointer;">🧾 View Slip</button>
           </div>
         </div>
@@ -384,12 +418,16 @@
 
           const mapped = remoteOrders.map(o => {
             const st = (o.stage || o.status || 'received').toLowerCase().trim().replace(/_/g, '-');
-            newStages[o.order_id || o.id] = st;
-            if (prevStages[o.order_id || o.id] && prevStages[o.order_id || o.id] !== st) {
-              showStatusToast(o.order_id || o.id, st);
+            const oid = o.order_id || o.id;
+            newStages[oid] = st;
+            if (prevStages[oid] && prevStages[oid] !== st) {
+              showStageNotification(oid, st);
+              if (st === 'pending') {
+                showPendingConfirmationModal(oid);
+              }
             }
             return {
-              id: o.order_id || o.id,
+              id: oid,
               date: o.created_at ? new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
               timestamp: o.created_at ? new Date(o.created_at).getTime() : Date.now(),
               items: parseOrderItems(o.items),
@@ -412,16 +450,39 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       checkStoreOperatingHours();
-      renderCategoryChips(); renderClientProfile(); renderCatalog(); renderCart(); renderFavorites(); renderLiveOrderTrackers();
+      renderCategoryChips(); renderClientProfile(); renderCatalog(); renderCart(); renderFavorites(); renderOrderHistory(); renderLiveOrderTrackers();
       setInterval(renderLiveOrderTrackers, 4000);
     });
 
     function checkStoreOperatingHours() {
-      const h = new Date().getHours();
-      const b = document.getElementById('store-hours-status');
-      if (!b) return;
-      if (h >= 7 && h < 20) { b.className = "hours-badge hours-open"; b.innerText = "● Open Now"; }
-      else { b.className = "hours-badge hours-closed"; b.innerText = "● Closed"; }
+      const now = new Date();
+      const hour = now.getHours();
+      const statusBadge = document.getElementById('store-hours-status');
+      const closedBanner = document.getElementById('store-closed-banner');
+      const checkoutBtn = document.getElementById('checkout-btn');
+
+      const isClosed = (hour >= 20 || hour < 7);
+
+      if (statusBadge) {
+        if (!isClosed) { statusBadge.className = "hours-badge hours-open"; statusBadge.innerText = "● Open Now (7 AM - 8 PM)"; }
+        else { statusBadge.className = "hours-badge hours-closed"; statusBadge.innerText = "● Closed (Opens 7 AM)"; }
+      }
+
+      if (closedBanner) {
+        closedBanner.style.display = isClosed ? 'block' : 'none';
+      }
+
+      if (checkoutBtn && client) {
+        if (isClosed) {
+          checkoutBtn.disabled = true;
+          checkoutBtn.innerText = 'Store Closed (Orders open 7 AM - 8 PM)';
+          checkoutBtn.style.background = '#94a3b8';
+        } else {
+          checkoutBtn.disabled = false;
+          checkoutBtn.innerText = 'Complete Order';
+          checkoutBtn.style.background = '';
+        }
+      }
     }
 
     function renderCategoryChips() {
@@ -441,7 +502,7 @@
       const found = (state.clients || []).find(c => c.phone === phone);
       if (!found) { alert('Account not found. Please register.'); return; }
       client = found; localStorage.setItem('dcs_client', JSON.stringify(client));
-      renderClientProfile(); renderLiveOrderTrackers(); alert(`Welcome back, ${client.name}!`);
+      renderClientProfile(); renderLiveOrderTrackers(); renderOrderHistory(); alert(`Welcome back, ${client.name}!`);
     }
 
     function handleRegisterClient() {
@@ -452,23 +513,25 @@
       client = { name, phone, address, points: 50 };
       localStorage.setItem('dcs_client', JSON.stringify(client));
       let state = getSharedState(); state.clients.push(client); saveSharedState(state);
-      renderClientProfile(); renderLiveOrderTrackers(); alert('Registered with 50 bonus points!');
+      renderClientProfile(); renderLiveOrderTrackers(); renderOrderHistory(); alert('Registered with 50 bonus points!');
     }
 
     function logoutClient() {
       client = null; localStorage.removeItem('dcs_client');
-      renderClientProfile(); renderLiveOrderTrackers(); alert('Logged out');
+      renderClientProfile(); renderLiveOrderTrackers(); renderOrderHistory(); alert('Logged out');
     }
 
     function renderClientProfile() {
       const box = document.getElementById('client-details');
       const btn = document.getElementById('checkout-btn');
+      const now = new Date(); const isClosed = (now.getHours() >= 20 || now.getHours() < 7);
+
       if (client) {
         box.innerHTML = `👤 <strong>${client.name}</strong><br>📞 ${client.phone}<br>⭐ Points: ${client.points}<br><button onclick="logoutClient()" style="background:#b91c1c;color:#fff;border:none;margin-top:.4rem;font-size:.7rem;padding:.25rem .5rem;border-radius:4px;cursor:pointer">Logout</button>`;
         document.getElementById('login-panel').style.display = 'none';
         document.getElementById('registration-panel').style.display = 'none';
         document.getElementById('order-history-panel').style.display = 'block';
-        btn.disabled = false; btn.innerText = 'Complete Order';
+        if (!isClosed) { btn.disabled = false; btn.innerText = 'Complete Order'; }
       } else {
         box.innerHTML = `⚠️ Guest Mode`;
         document.getElementById('login-panel').style.display = 'block';
@@ -531,6 +594,11 @@
     }
 
     async function checkoutOrder() {
+      const now = new Date();
+      if (now.getHours() >= 20 || now.getHours() < 7) {
+        alert('We are closed for the evening (orders close at 8:00 PM and open at 7:00 AM). You can still browse our menu!');
+        return;
+      }
       if (!client || cart.length === 0) return;
       const instructions = document.getElementById('special-instructions').value.trim();
       const sub = cart.reduce((a, b) => a + (b.price * b.qty), 0);
@@ -559,7 +627,7 @@
       cart = []; localStorage.removeItem('dcs_cart');
       document.getElementById('special-instructions').value = '';
       toggleCartDrawer();
-      renderCart(); renderLiveOrderTrackers();
+      renderCart(); renderLiveOrderTrackers(); renderOrderHistory();
       showDigitalReceipt(newOrder);
     }
 
@@ -587,6 +655,11 @@
     }
 
     async function resubmitOrderFromSlip(id) {
+      const now = new Date();
+      if (now.getHours() >= 20 || now.getHours() < 7) {
+        alert('Store is closed. Orders open at 7:00 AM.');
+        return;
+      }
       const state = getSharedState();
       const o = (state.orders || []).find(x => String(x.id) === String(id));
       if (!o || !confirm('Resubmit this order?')) return;
@@ -597,17 +670,79 @@
       saveSharedState(state);
       await postOrderToSupabase(o);
       renderLiveOrderTrackers();
+      renderOrderHistory();
       alert('Order resubmitted!');
     }
 
-    function clearActiveOrders() {
-      let state = getSharedState();
-      state.orders = (state.orders || []).filter(o => o.phone !== client?.phone || o.stage === 'order-completed');
-      saveSharedState(state);
-      renderLiveOrderTrackers();
+    function saveOrderAsFavorite(id) {
+      const state = getSharedState();
+      const o = (state.orders || []).find(x => String(x.id) === String(id));
+      if (!o) return;
+      const favName = prompt('Enter a label for this favorite order (e.g., Weekly Favorite):', `Order #${o.id}`);
+      if (!favName) return;
+
+      favorites.push({ id: 'fav_' + Date.now(), name: favName, items: [...o.items] });
+      localStorage.setItem('dcs_favorites', JSON.stringify(favorites));
+      renderFavorites();
+      alert('Order saved to your Quick Favorites!');
     }
 
-    function clearOrderHistory() { clearActiveOrders(); }
+    function renderFavorites() {
+      const container = document.getElementById('favorites-list');
+      if (!container) return;
+      if (favorites.length === 0) {
+        container.innerHTML = '<p style="font-size:0.8rem; color:var(--muted);">No saved favorite orders yet.</p>';
+        return;
+      }
+      container.innerHTML = favorites.map(f => `
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; padding:.5rem 0; border-bottom:1px dashed var(--border);">
+          <div>
+            <strong style="color:var(--primary);">${f.name}</strong><br>
+            <span style="font-size:0.72rem; color:var(--muted);">${f.items.length} items</span>
+          </div>
+          <button onclick="loadFavoriteToCart('${f.id}')" style="font-size:0.72rem; font-weight:700; padding:0.35rem 0.7rem; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">Reorder</button>
+        </div>
+      `).join('');
+    }
+
+    function loadFavoriteToCart(favId) {
+      const fav = favorites.find(f => f.id === favId);
+      if (fav) {
+        cart = [...fav.items];
+        localStorage.setItem('dcs_cart', JSON.stringify(cart));
+        renderCart();
+        toggleCartDrawer();
+        alert(`Loaded "${fav.name}" into your cart!`);
+      }
+    }
+
+    function renderOrderHistory() {
+      const container = document.getElementById('order-history-list');
+      if (!container) return;
+      const state = getSharedState();
+      const myOrders = (state.orders || []).filter(o => client && o.phone === client.phone);
+
+      if (myOrders.length === 0) {
+        container.innerHTML = '<p style="font-size:0.8rem; color:var(--muted);">No past orders found.</p>';
+        return;
+      }
+
+      container.innerHTML = myOrders.map(o => `
+        <div style="padding:.5rem 0; border-bottom:1px dashed var(--border);">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <strong style="color:var(--primary);">#${o.id}</strong> (${o.date})<br>
+              <span style="font-size:0.72rem; color:var(--brand); font-weight:bold;">Status: ${o.stage.toUpperCase()}</span>
+            </div>
+            <div style="display:flex; gap:4px;">
+              <button onclick="saveOrderAsFavorite('${o.id}')" style="font-size:0.7rem; font-weight:700; padding:0.3rem 0.5rem; background:#059669; color:white; border:none; border-radius:4px; cursor:pointer;" title="Save to Favorites">⭐ Fav</button>
+              <button onclick="showDigitalReceiptFromId('${o.id}')" style="font-size:0.7rem; font-weight:700; padding:0.3rem 0.5rem; background:var(--primary); color:white; border:none; border-radius:4px; cursor:pointer;">Slip</button>
+            </div>
+          </div>
+          ${renderOrderItemsList(o.items)}
+        </div>
+      `).join('');
+    }
 
     async function renderLiveOrderTrackers() {
       if (client) await verifyAndFetchSupabaseOrders();
@@ -622,6 +757,7 @@
       if (panel) panel.style.display = (client && myOrders.length > 0) ? 'block' : 'none';
       if (container) container.innerHTML = myOrders.length ? myOrders.map(buildOrderCardHTML).join('') : 'No orders.';
       if (trackerBody) trackerBody.innerHTML = active.length ? active.map(buildOrderCardHTML).join('') : 'No active orders.';
+      renderOrderHistory();
     }
   </script>
 </body>
