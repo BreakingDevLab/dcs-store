@@ -213,7 +213,7 @@
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
             <strong style="font-size:0.95rem;color:var(--primary)">Active Orders</strong>
             <div style="display:flex;gap:8px;align-items:center">
-              <button id="clear-active-orders-btn" onclick="clearActiveOrders()" style="background:none;border:none;color:#b91c1c;font-size:.82rem;font-weight:700;cursor:pointer;display:none">Clear Completed</button>
+              <button id="clear-active-orders-btn" onclick="clearActiveOrders()" style="background:none;border:none;color:#b91c1c;font-size:.82rem;font-weight:700;cursor:pointer;display:none">Clear Order Page</button>
             </div>
           </div>
           <div id="active-orders-tracker-container" style="padding:0.25rem 0;"></div>
@@ -236,7 +236,7 @@
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
             <strong style="font-size:0.95rem;color:var(--primary)">Order History</strong>
             <div style="display:flex;gap:8px;align-items:center">
-              <button id="clear-order-history-btn" onclick="clearOrderHistory()" style="background:none;border:none;color:#b91c1c;font-size:.82rem;font-weight:700;cursor:pointer;display:none">Clear Completed</button>
+              <button id="clear-order-history-btn" onclick="clearOrderHistory()" style="background:none;border:none;color:#b91c1c;font-size:.82rem;font-weight:700;cursor:pointer;display:none">Clear Order Page</button>
             </div>
           </div>
           <div id="order-history-list" style="padding:0.25rem 0;"></div>
@@ -509,7 +509,7 @@
 
     function buildOrderCardHTML(order) {
       const stageMap = { 'pending': 0, 'received': 1, 'preparing': 2, 'ready': 3, 'completed': 4 };
-      const currentStageKey = (order.stage || 'pending').toLowerCase();
+      const currentStageKey = (order.stage || 'received').toLowerCase();
       const currentStepIndex = stageMap[currentStageKey] !== undefined ? stageMap[currentStageKey] : 0;
       const itemsHTML = renderOrderItemsList(order.items);
 
@@ -527,7 +527,7 @@
         'preparing': '#d97706',
         'ready': '#16a34a',
         'completed': '#059669'
-      }[currentStageKey] || '#d97706';
+      }[currentStageKey] || '#3b82f6';
 
       const isReorder = order.is_reorder || order.order_type === 'REORDER';
 
@@ -666,7 +666,7 @@
             subtotal: Number(o.subtotal || o.total || 0),
             discount: Number(o.discount || 0),
             total: Number(o.total || 0),
-            stage: o.stage || o.status || 'pending',
+            stage: o.stage || o.status || 'received',
             clientName: o.client_name || o.clientName || client.name,
             phone: o.phone || client.phone,
             address: o.address || client.address,
@@ -1168,7 +1168,7 @@
         subtotal,
         discount,
         total,
-        stage: 'pending',
+        stage: 'received',
         clientName: client.name,
         phone: client.phone,
         address: client.address,
@@ -1219,10 +1219,9 @@
         return;
       }
 
-      const completedCount = myOrders.filter(o => o.stage === 'completed').length;
       const clearBtn = document.getElementById('clear-order-history-btn');
       if (clearBtn) {
-        clearBtn.style.display = completedCount > 0 ? 'inline-block' : 'none';
+        clearBtn.style.display = myOrders.length > 0 ? 'inline-block' : 'none';
       }
 
       container.innerHTML = myOrders.slice(0, 10).map(o => `
@@ -1244,22 +1243,23 @@
       if (!client) { alert('Please login to manage your order history.'); return; }
       let state = getSharedState();
       if (!state.orders) return;
-      const completedForClient = (state.orders || []).filter(o => o.phone === client.phone && o.stage === 'completed');
-      if (completedForClient.length === 0) { alert('No completed orders to clear.'); return; }
-      if (!confirm('Are you sure you want to clear your completed order history?')) return;
-      state.orders = state.orders.filter(o => !(o.phone === client.phone && o.stage === 'completed'));
+      const myOrders = (state.orders || []).filter(o => o.phone === client.phone);
+      if (myOrders.length === 0) { alert('No orders to clear.'); return; }
+      if (!confirm('Are you sure you want to clear your order page history?')) return;
+      state.orders = state.orders.filter(o => o.phone !== client.phone);
       saveSharedState(state);
       renderOrderHistory();
+      renderLiveOrderTrackers();
     }
 
     function clearActiveOrders() {
       if (!client) { alert('Please login to manage your active orders.'); return; }
       let state = getSharedState();
       if (!state.orders) return;
-      const completedActive = (state.orders || []).filter(o => o.phone === client.phone && o.stage === 'completed');
-      if (completedActive.length === 0) { alert('No completed active orders to clear.'); return; }
-      if (!confirm('Clear completed active orders from your Active Orders list?')) return;
-      state.orders = state.orders.filter(o => !(o.phone === client.phone && o.stage === 'completed'));
+      const myOrders = (state.orders || []).filter(o => o.phone === client.phone);
+      if (myOrders.length === 0) { alert('No orders to clear.'); return; }
+      if (!confirm('Are you sure you want to clear your order page?')) return;
+      state.orders = state.orders.filter(o => o.phone !== client.phone);
       saveSharedState(state);
       renderLiveOrderTrackers();
       renderOrderHistory();
@@ -1322,9 +1322,8 @@
       if (headerBadge) headerBadge.innerText = activeOrders.length;
 
       const clearBtn = document.getElementById('clear-active-orders-btn');
-      const hasCompletedInActive = allMyOrders.some(o => o.stage === 'completed');
       if (clearBtn) {
-        clearBtn.style.display = hasCompletedInActive ? 'inline-block' : 'none';
+        clearBtn.style.display = allMyOrders.length > 0 ? 'inline-block' : 'none';
       }
 
       if (panel) {
