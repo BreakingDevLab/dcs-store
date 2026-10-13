@@ -1,231 +1,103 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Staff Dashboard - DCS Store</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👨‍🍳</text></svg>">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Davidsonville Community Store | Staff Kitchen Dashboard</title>
+  <style>
+    :root{
+      --primary:#0f172a; --brand:#d97706; --brand-gradient:linear-gradient(135deg,#f59e0b 0%,#d97706 100%);
+      --bg-page:#f8fafc; --card-bg:#ffffff; --muted:#64748b; --border:#e2e8f0;
+      --shadow:0 10px 25px -5px rgba(0,0,0,0.08);
+    }
+    *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,system-ui,-apple-system,sans-serif}
+    body{background:var(--bg-page); color:var(--primary); min-height:100vh; padding-bottom:40px;}
+    header{
+      background:var(--primary); color:#fff; padding:1rem 1.5rem; display:flex; align-items:center;
+      justify-content:space-between; box-shadow:0 4px 20px rgba(0,0,0,0.12);
+    }
+    .header-title h1{font-size:1.2rem; font-weight:800}
+    .header-title p{font-size:.78rem; color:#cbd5e1}
+    .kanban-board{
+      display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:1rem;
+      padding:1.5rem; max-width:1400px; margin:0 auto;
+    }
+    .kanban-column{
+      background:#f1f5f9; border-radius:12px; border:1px solid var(--border); padding:1rem; min-height:500px;
+      display:flex; flex-direction:column;
+    }
+    .column-header{
+      font-weight:800; font-size:.9rem; text-transform:uppercase; margin-bottom:1rem; display:flex;
+      justify-content:space-between; align-items:center; padding-bottom:.5rem; border-bottom:2px solid var(--border);
+    }
+    .column-badge{background:var(--primary); color:#fff; padding:.15rem .5rem; border-radius:20px; font-size:.75rem}
+    .order-card{
+      background:#fff; border-radius:10px; border:1px solid var(--border); padding:.9rem; margin-bottom:.85rem;
+      box-shadow:var(--shadow); display:flex; flex-direction:column; justify-content:space-between; gap:.5rem;
+    }
+    .order-card-header{display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:.4rem}
+    .order-id{font-weight:800; font-size:.9rem; color:var(--primary)}
+    .order-time{font-size:.72rem; color:var(--muted)}
+    .order-customer{font-size:.82rem; font-weight:700; color:#334155}
+    .order-items{font-size:.82rem; background:#f8fafc; padding:.5rem; border-radius:6px; margin:.2rem 0; list-style:none}
+    .order-items li{display:flex; justify-content:space-between; margin-bottom:.2rem}
+    .order-notes{font-size:.75rem; background:#fffbeb; color:#b45309; padding:.4rem; border-radius:6px; border-left:3px solid var(--brand)}
+    .stage-btn-group{display:flex; gap:.4rem; margin-top:.5rem; flex-wrap:wrap}
+    .stage-btn{
+      flex:1; padding:.4rem; border:none; border-radius:6px; font-weight:700; font-size:.72rem;
+      cursor:pointer; color:#fff; text-align:center;
+    }
+    .btn-received{background:#64748b}
+    .btn-pending{background:#d97706}
+    .btn-prep{background:#2563eb}
+    .btn-ready{background:#059669}
+    .btn-completed{background:#16a34a}
+    .btn-cancel{background:#dc2626}
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen font-sans text-gray-800 pb-12">
-
-  <!-- Header -->
-  <header class="bg-gray-900 text-white p-4 shadow-md sticky top-0 z-30">
-    <div class="max-w-7xl mx-auto flex justify-between items-center">
-      <div>
-        <h1 class="text-xl font-bold">Davidsonville Community Store</h1>
-        <p class="text-xs text-gray-400">Staff Dashboard & 7-Stage Unified Order Flow</p>
-      </div>
-      <div class="flex items-center gap-3">
-        <span id="realtimeStatus" class="text-[10px] bg-emerald-900/80 text-emerald-300 border border-emerald-700 px-2 py-1 rounded-full flex items-center gap-1">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Live Sync Active
-        </span>
-        <button onclick="playChime()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-2.5 py-2 rounded-lg border border-gray-700 transition">🔔 Test Chime</button>
-        <button onclick="loadAllData(true)" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg font-medium transition flex items-center gap-1.5"><span>🔄</span> Refresh Board</button>
-        <a href="index.html" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-2 rounded-lg border border-gray-700 transition">Storefront</a>
-      </div>
+<body>
+  <header>
+    <div class="header-title">
+      <h1>👨‍🍳 Staff Kitchen Workflow Dashboard</h1>
+      <p>Davidsonville Community Store | Live Kitchen Order Kanban</p>
+    </div>
+    <div>
+      <button onclick="fetchStaffOrders()" style="padding:.5rem 1rem; border-radius:8px; border:none; background:var(--brand); color:#fff; font-weight:700; cursor:pointer;">🔄 Refresh Orders</button>
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto p-4 md:p-6 space-y-8">
-
-    <div id="staffNotificationBanner" class="hidden bg-amber-50 border-l-4 border-amber-500 p-4 rounded-xl shadow-sm text-sm text-amber-800 flex justify-between items-center">
-      <div class="flex items-center gap-2">
-        <span>⚠️</span>
-        <span id="staffNotificationText">System Notice: Stale pending orders older than 24 hours were automatically removed.</span>
+  <div class="kanban-board">
+    <div class="kanban-column">
+      <div class="column-header">
+        <span>📥 Received</span>
+        <span id="badge-received" class="column-badge">0</span>
       </div>
-      <button onclick="document.getElementById('staffNotificationBanner').classList.add('hidden')" class="text-amber-600 hover:text-amber-900 font-bold text-lg">&times;</button>
+      <div id="col-received" class="column-orders"></div>
     </div>
 
-    <!-- 7-STAGE KANBAN BOARD -->
-    <section>
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-        <div>
-          <h2 class="text-2xl font-bold text-gray-800">Unified 7-Stage Order Flow</h2>
-          <p class="text-xs text-gray-500">Received → Pending → Kitchen Prep → Ready → Ready for Pick up → Order Completed → Cancelled</p>
-        </div>
+    <div class="kanban-column">
+      <div class="column-header">
+        <span>⏳ Pending</span>
+        <span id="badge-pending" class="column-badge">0</span>
       </div>
+      <div id="col-pending" class="column-orders"></div>
+    </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-        <!-- 1. Received -->
-        <div class="bg-blue-50/80 p-2.5 rounded-xl border border-blue-200 flex flex-col min-h-[420px]">
-          <div class="flex justify-between items-center mb-2 px-1">
-            <h3 class="font-bold text-blue-900 text-[11px] uppercase tracking-wider flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-600"></span> Received</h3>
-            <span id="count-received" class="bg-blue-200 text-blue-900 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
-          </div>
-          <div id="kanban-received" class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh]"></div>
-        </div>
-
-        <!-- 2. Pending -->
-        <div class="bg-gray-200/70 p-2.5 rounded-xl border border-gray-300 flex flex-col min-h-[420px]">
-          <div class="flex justify-between items-center mb-2 px-1">
-            <h3 class="font-bold text-gray-700 text-[11px] uppercase tracking-wider flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-gray-500"></span> Pending</h3>
-            <span id="count-pending" class="bg-gray-300 text-gray-700 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
-          </div>
-          <div id="kanban-pending" class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh]"></div>
-        </div>
-
-        <!-- 3. Kitchen Prep -->
-        <div class="bg-yellow-50/80 p-2.5 rounded-xl border border-yellow-200 flex flex-col min-h-[420px]">
-          <div class="flex justify-between items-center mb-2 px-1">
-            <h3 class="font-bold text-yellow-900 text-[11px] uppercase tracking-wider flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-yellow-500"></span> Kitchen Prep</h3>
-            <span id="count-kitchen-prep" class="bg-yellow-200 text-yellow-900 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
-          </div>
-          <div id="kanban-kitchen-prep" class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh]"></div>
-        </div>
-
-        <!-- 4. Ready -->
-        <div class="bg-teal-50/80 p-2.5 rounded-xl border border-teal-200 flex flex-col min-h-[420px]">
-          <div class="flex justify-between items-center mb-2 px-1">
-            <h3 class="font-bold text-teal-900 text-[11px] uppercase tracking-wider flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-teal-500"></span> Ready</h3>
-            <span id="count-ready" class="bg-teal-200 text-teal-900 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
-          </div>
-          <div id="kanban-ready" class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh]"></div>
-        </div>
-
-        <!-- 5. Ready for Pick up -->
-        <div class="bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-200 flex flex-col min-h-[420px]">
-          <div class="flex justify-between items-center mb-2 px-1">
-            <h3 class="font-bold text-emerald-900 text-[11px] uppercase tracking-wider flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Pick up</h3>
-            <span id="count-ready-for-pick-up" class="bg-emerald-200 text-emerald-900 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
-          </div>
-          <div id="kanban-ready-for-pick-up" class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh]"></div>
-        </div>
-
-        <!-- 6. Order Completed -->
-        <div class="bg-green-50/80 p-2.5 rounded-xl border border-green-200 flex flex-col min-h-[420px]">
-          <div class="flex justify-between items-center mb-2 px-1">
-            <h3 class="font-bold text-green-900 text-[11px] uppercase tracking-wider flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-600"></span> Completed</h3>
-            <span id="count-order-completed" class="bg-green-200 text-green-900 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
-          </div>
-          <div id="kanban-order-completed" class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh]"></div>
-        </div>
-
-        <!-- 7. Cancelled -->
-        <div class="bg-red-50/80 p-2.5 rounded-xl border border-red-200 flex flex-col min-h-[420px]">
-          <div class="flex justify-between items-center mb-2 px-1">
-            <h3 class="font-bold text-red-900 text-[11px] uppercase tracking-wider flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> Cancelled</h3>
-            <span id="count-cancelled" class="bg-red-200 text-red-900 text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
-          </div>
-          <div id="kanban-cancelled" class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh]"></div>
-        </div>
+    <div class="kanban-column">
+      <div class="column-header">
+        <span>🍳 Kitchen Prep</span>
+        <span id="badge-kitchen-prep" class="column-badge">0</span>
       </div>
-    </section>
+      <div id="col-kitchen-prep" class="column-orders"></div>
+    </div>
 
-    <hr class="border-gray-200 my-6">
-
-    <!-- AUDIT LOG & SEARCH SECTION -->
-    <section class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4">
-        <div>
-          <h2 class="text-xl font-bold text-gray-800">Order Audit Log</h2>
-          <p class="text-xs text-gray-500">Search historical orders, filter by stage, or export reports</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <button onclick="exportAuditLogToCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs md:text-sm px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-1.5"><span>📥</span> Export CSV</button>
-          <button onclick="clearAuditLog()" class="bg-red-600 hover:bg-red-700 text-white text-xs md:text-sm px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-1.5"><span>🗑️</span> Clear Audit Log</button>
-        </div>
+    <div class="kanban-column">
+      <div class="column-header">
+        <span>✅ Ready for Pickup</span>
+        <span id="badge-ready" class="column-badge">0</span>
       </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-        <div class="md:col-span-2">
-          <input type="text" id="auditSearchInput" placeholder="Search by Order ID, Customer Name, or Phone..." class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" onkeyup="filterAuditLog()"/>
-        </div>
-        <div>
-          <select id="auditDateFilter" onchange="filterAuditLog()" class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-            <option value="all">All Time</option>
-            <option value="today">Today</option>
-            <option value="yesterday">Yesterday</option>
-            <option value="this-week">This Week</option>
-            <option value="this-month">This Month</option>
-          </select>
-        </div>
-        <div>
-          <select id="auditStageFilter" onchange="filterAuditLog()" class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-            <option value="all">All Stages</option>
-            <option value="received">Received</option>
-            <option value="pending">Pending</option>
-            <option value="kitchen-prep">Kitchen Prep</option>
-            <option value="ready">Ready</option>
-            <option value="ready-for-pick-up">Ready for Pick up</option>
-            <option value="order-completed">Order Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="overflow-x-auto rounded-lg border border-gray-100">
-        <table class="w-full text-left text-sm text-gray-600">
-          <thead class="bg-gray-50 text-xs font-semibold text-gray-500 uppercase border-b">
-            <tr>
-              <th class="p-3">Date & Time</th>
-              <th class="p-3">Order ID</th>
-              <th class="p-3">Customer</th>
-              <th class="p-3">Phone</th>
-              <th class="p-3">Total</th>
-              <th class="p-3">Status</th>
-              <th class="p-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="auditLogTableBody">
-            <tr><td colspan="7" class="p-4 text-center text-gray-400">Loading order history...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-  </main>
-
-  <!-- ORDER DETAIL MODAL -->
-  <div id="orderDetailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden flex flex-col max-h-[90vh]">
-      <div class="bg-gray-900 text-white p-4 flex justify-between items-center">
-        <div>
-          <h3 class="font-bold text-lg" id="modalOrderId">Order Receipt</h3>
-          <p class="text-xs text-gray-300" id="modalOrderDate"></p>
-        </div>
-        <button onclick="closeOrderDetailModal()" class="text-gray-400 hover:text-white text-2xl font-bold p-1 leading-none">&times;</button>
-      </div>
-
-      <div id="printableArea" class="p-5 overflow-y-auto space-y-4 text-sm text-gray-700">
-        <div class="text-center border-b pb-3">
-          <h2 class="text-xl font-bold text-gray-900">Davidsonville Community Store</h2>
-          <p class="text-xs text-gray-500">Official Kitchen & Customer Order Receipt</p>
-        </div>
-        <div class="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-3 rounded-lg border border-gray-100">
-          <div><span class="font-semibold text-gray-600">Customer:</span> <span id="modalCustomer" class="font-medium text-gray-900"></span></div>
-          <div><span class="font-semibold text-gray-600">Phone:</span> <span id="modalPhone" class="font-medium text-gray-900"></span></div>
-          <div><span class="font-semibold text-gray-600">Payment:</span> <span id="modalPayment" class="font-medium text-gray-900"></span></div>
-          <div><span class="font-semibold text-gray-600">Fulfillment:</span> <span id="modalFulfillment" class="font-medium text-gray-900"></span></div>
-          <div class="col-span-2"><span class="font-semibold text-gray-600">Status:</span> <span id="modalStatus" class="font-bold"></span></div>
-          <div class="col-span-2" id="modalInstructionsWrapper" style="display:none;">
-            <span class="font-semibold text-amber-700">Kitchen Notes / Instructions:</span>
-            <div id="modalInstructions" class="bg-amber-50 text-amber-900 p-2 rounded mt-1 text-xs border border-amber-200"></div>
-          </div>
-        </div>
-        <div>
-          <h4 class="font-bold text-gray-800 mb-2 border-b pb-1 text-xs uppercase tracking-wider">Items Ordered</h4>
-          <table class="w-full text-left text-xs">
-            <thead class="bg-gray-100 text-gray-600 border-b">
-              <tr>
-                <th class="p-2">Item</th>
-                <th class="p-2 text-center">Qty</th>
-                <th class="p-2 text-right">Price</th>
-                <th class="p-2 text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody id="modalItemsTableBody"></tbody>
-          </table>
-        </div>
-        <div class="border-t pt-3 flex justify-between items-center font-bold text-base text-gray-900">
-          <span>Grand Total:</span>
-          <span id="modalGrandTotal" class="text-blue-600 text-lg"></span>
-        </div>
-      </div>
-
-      <div class="bg-gray-50 p-4 border-t flex justify-end gap-2">
-        <button onclick="printOrderReceipt()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-lg font-medium transition flex items-center gap-1.5"><span>🖨️</span> Print Receipt</button>
-        <button onclick="closeOrderDetailModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm px-4 py-2 rounded-lg font-medium transition">Close</button>
-      </div>
+      <div id="col-ready" class="column-orders"></div>
     </div>
   </div>
 
@@ -233,343 +105,99 @@
     const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU';
 
-    let supabaseClient = null;
-    function getSupabaseClient() {
-      if (!supabaseClient && window.supabase) {
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      }
-      return supabaseClient;
-    }
+    let staffOrders = [];
 
-    let audioCtx = null;
-    function initAudioOnUserInteraction() {
-      if (!audioCtx) {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (AudioContext) audioCtx = new AudioContext();
-      }
-      if (audioCtx && audioCtx.state === 'suspended') { audioCtx.resume(); }
-    }
-    document.addEventListener('click', initAudioOnUserInteraction, { once: true });
-
-    function playChime() {
+    async function fetchStaffOrders() {
       try {
-        initAudioOnUserInteraction();
-        if (!audioCtx) return;
-        const osc1 = audioCtx.createOscillator();
-        const gain1 = audioCtx.createGain();
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-        gain1.gain.setValueAtTime(0.3, audioCtx.currentTime);
-        gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
-        osc1.connect(gain1); gain1.connect(audioCtx.destination);
-        osc1.start(audioCtx.currentTime); osc1.stop(audioCtx.currentTime + 0.35);
-      } catch (e) {}
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/orders?select=*&order=created_at.desc`, {
+          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          staffOrders = data;
+          renderKanbanBoard();
+        }
+      } catch(e) {}
     }
 
-    let allOrdersCache = [];
-    let previousPendingIds = new Set();
-
-    function normalizeStage(rawStage) {
-      const st = (rawStage || 'received').toLowerCase().trim().replace(/_/g, '-');
-      if (st === 'pending') return 'pending';
-      if (st === 'kitchen-prep' || st === 'preparing' || st === 'in-progress' || st === 'processing') return 'kitchen-prep';
-      if (st === 'ready') return 'ready';
-      if (st === 'ready-for-pick-up' || st === 'ready-for-pickup' || st === 'pickup') return 'ready-for-pick-up';
-      if (st === 'order-completed' || st === 'completed') return 'order-completed';
-      if (st === 'cancelled' || st === 'cancel' || st === 'failed') return 'cancelled';
-      return 'received';
+    async function updateOrderStatus(orderId, newStage) {
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/orders?order_id=eq.${encodeURIComponent(orderId)}`, {
+          method: 'PATCH',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({ stage: newStage })
+        });
+        fetchStaffOrders();
+      } catch(e) {}
     }
 
-    async function loadAllData(isManualTrigger = false) {
-      const client = getSupabaseClient();
-      if (!client) return;
-      const { data, error } = await client.from('orders').select('*').order('created_at', { ascending: false });
-      if (error) return;
-      allOrdersCache = data || [];
-      renderKanbanBoard();
-      filterAuditLog();
-    }
-
-    function setupRealtimeListener() {
-      const client = getSupabaseClient();
-      if (!client) return;
-      client
-        .channel('schema-db-changes')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, () => { playChime(); loadAllData(); })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => { loadAllData(); })
-        .subscribe();
-      setInterval(() => { loadAllData(); }, 4000);
+    function parseOrderItems(rawItems) {
+      if (!rawItems) return [];
+      if (Array.isArray(rawItems)) return rawItems;
+      try { const p = JSON.parse(rawItems); if (Array.isArray(p)) return p; return [p]; } catch (e) { return [{ name: rawItems, qty: 1, price: 0 }]; }
     }
 
     function renderKanbanBoard() {
-      const columns = {
-        'received': document.getElementById('kanban-received'),
-        'pending': document.getElementById('kanban-pending'),
-        'kitchen-prep': document.getElementById('kanban-kitchen-prep'),
-        'ready': document.getElementById('kanban-ready'),
-        'ready-for-pick-up': document.getElementById('kanban-ready-for-pick-up'),
-        'order-completed': document.getElementById('kanban-order-completed'),
-        'cancelled': document.getElementById('kanban-cancelled')
-      };
+      const stages = ['received', 'pending', 'kitchen-prep', 'ready'];
+      
+      stages.forEach(st => {
+        const col = document.getElementById(`col-${st}`);
+        const badge = document.getElementById(`badge-${st}`);
+        
+        const filtered = staffOrders.filter(o => {
+          const stage = (o.stage || o.status || 'received').toLowerCase().trim().replace(/_/g, '-');
+          if (st === 'ready') return stage === 'ready' || stage === 'ready-for-pick-up';
+          return stage === st;
+        });
 
-      const counts = { 'received': 0, 'pending': 0, 'kitchen-prep': 0, 'ready': 0, 'ready-for-pick-up': 0, 'order-completed': 0, 'cancelled': 0 };
-      Object.values(columns).forEach(col => { if(col) col.innerHTML = ''; });
+        badge.innerText = filtered.length;
 
-      allOrdersCache.forEach(order => {
-        const stageKey = normalizeStage(order.stage || order.status);
-        counts[stageKey] = (counts[stageKey] || 0) + 1;
-        const targetCol = columns[stageKey];
-        if (targetCol) targetCol.appendChild(createKanbanCard(order, stageKey));
-      });
-
-      Object.keys(counts).forEach(key => {
-        const badge = document.getElementById(`count-${key}`);
-        if (badge) badge.innerText = counts[key];
-      });
-
-      Object.keys(columns).forEach(key => {
-        if (counts[key] === 0 && columns[key]) {
-          columns[key].innerHTML = `<div class="text-center text-[10px] text-gray-400 py-6 border border-dashed border-gray-200 rounded-lg">No orders</div>`;
+        if (filtered.length === 0) {
+          col.innerHTML = '<p style="font-size:0.8rem; color:var(--muted); text-align:center; padding:1rem 0;">No orders</p>';
+          return;
         }
-      });
-    }
 
-    function createKanbanCard(order, stageKey) {
-      const card = document.createElement('div');
-      card.className = "bg-white p-3 rounded-xl shadow-sm border border-gray-200 space-y-2 hover:shadow-md transition text-xs";
+        col.innerHTML = filtered.map(o => {
+          const oid = o.order_id || o.id;
+          const items = parseOrderItems(o.items);
+          const time = o.created_at ? new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
-      const orderId = order.order_id || order.id || 'N/A';
-      const name = order.customer_name || order.client_name || order.name || 'Guest';
-      const phone = order.phone || '-';
-      const total = order.total ? `R${Number(order.total).toFixed(2)}` : 'R0.00';
-      const time = order.created_at ? new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
-      const isReorder = order.is_reorder || order.order_type === 'REORDER';
-      const instructions = order.instructions || order.notes || '';
-
-      let itemSummary = 'Items ordered';
-      try {
-        const itemsArr = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
-        if (Array.isArray(itemsArr)) itemSummary = `${itemsArr.length} item(s)`;
-      } catch (e) {}
-
-      let actionButtonsHtml = '';
-      if (stageKey === 'received') {
-        actionButtonsHtml = `
-          <button onclick="updateOrderStage('${orderId}', 'pending')" class="flex-1 bg-gray-700 hover:bg-gray-800 text-white py-1 rounded font-medium transition">Pending</button>
-          <button onclick="updateOrderStage('${orderId}', 'kitchen-prep')" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-1 rounded font-medium transition">Prep</button>
-        `;
-      } else if (stageKey === 'pending') {
-        actionButtonsHtml = `
-          <button onclick="updateOrderStage('${orderId}', 'kitchen-prep')" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-1 rounded font-medium transition">Prep</button>
-          <button onclick="updateOrderStage('${orderId}', 'cancelled')" class="bg-red-50 text-red-600 px-2 py-1 rounded font-medium transition">Cancel</button>
-        `;
-      } else if (stageKey === 'kitchen-prep') {
-        actionButtonsHtml = `<button onclick="updateOrderStage('${orderId}', 'ready')" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-1 rounded font-medium transition">Ready</button>`;
-      } else if (stageKey === 'ready') {
-        actionButtonsHtml = `<button onclick="updateOrderStage('${orderId}', 'ready-for-pick-up')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-1 rounded font-medium transition">Pick up</button>`;
-      } else if (stageKey === 'ready-for-pick-up') {
-        actionButtonsHtml = `<button onclick="updateOrderStage('${orderId}', 'order-completed')" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-1 rounded font-medium transition">Complete</button>`;
-      } else if (stageKey === 'order-completed') {
-        actionButtonsHtml = `<span class="text-gray-400 italic text-[10px]">Archived</span>`;
-      } else if (stageKey === 'cancelled') {
-        actionButtonsHtml = `<button onclick="updateOrderStage('${orderId}', 'received')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-1 rounded font-medium transition">Restore</button>`;
-      }
-
-      card.innerHTML = `
-        <div class="flex justify-between items-start">
-          <div>
-            <div class="flex items-center gap-1">
-              <span class="font-mono font-bold text-blue-600">#${orderId}</span>
-              ${isReorder ? '<span class="bg-purple-100 text-purple-800 text-[9px] font-bold px-1 rounded">REORDER</span>' : ''}
+          return `
+            <div class="order-card">
+              <div class="order-card-header">
+                <span class="order-id">#${oid}</span>
+                <span class="order-time">${time}</span>
+              </div>
+              <div class="order-customer">👤 ${o.client_name || 'Customer'} (${o.phone || 'N/A'})</div>
+              <ul class="order-items">
+                ${items.map(i => `<li><span>${i.qty || 1}x ${i.name \vert{}\vert{} i.title}</span> <strong>R${((i.qty||1)*Number(i.price||0)).toFixed(2)}</strong></li>`).join('')}
+              </ul>
+              ${o.instructions ? `<div class="order-notes"><strong>Notes:</strong> ${o.instructions}</div>` : ''}
+              <div style="font-weight:bold; font-size:0.85rem; color:var(--brand); display:flex; justify-content:space-between; align-items:center;">
+                <span>Total:</span> <span>R${Number(o.total || 0).toFixed(2)}</span>
+              </div>
+              <div class="stage-btn-group">
+                ${st !== 'pending' ? `<button onclick="updateOrderStatus('${oid}', 'pending')" class="stage-btn btn-pending">Pending</button>` : ''}
+                ${st !== 'kitchen-prep' ? `<button onclick="updateOrderStatus('${oid}', 'kitchen-prep')" class="stage-btn btn-prep">Prep</button>` : ''}
+                ${st !== 'ready' ? `<button onclick="updateOrderStatus('${oid}', 'ready')" class="stage-btn btn-ready">Ready</button>` : ''}
+                <button onclick="updateOrderStatus('${oid}', 'order-completed')" class="stage-btn btn-completed">Complete</button>
+                <button onclick="updateOrderStatus('${oid}', 'cancelled')" class="stage-btn btn-cancel">Cancel</button>
+              </div>
             </div>
-            <h4 class="font-bold text-gray-900 leading-snug">${name}</h4>
-          </div>
-          <span class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">${time}</span>
-        </div>
-        <div class="text-gray-500 flex justify-between items-center bg-gray-50 p-1.5 rounded border border-gray-100">
-          <span>📞 ${phone}</span>
-          <span class="font-medium text-gray-700">${itemSummary}</span>
-        </div>
-        ${instructions ? `<div class="bg-amber-50 text-amber-900 p-1.5 rounded border border-amber-200 text-[11px]"><strong>Note:</strong> ${instructions}</div>` : ''}
-        <div class="flex justify-between items-center pt-0.5">
-          <span class="text-gray-400">Total:</span>
-          <span class="font-extrabold text-sm text-gray-900">${total}</span>
-        </div>
-        <div class="flex gap-1.5 pt-1.5 border-t border-gray-100">
-          <button onclick="openOrderDetailModal('${orderId}')" class="bg-blue-50 hover:bg-blue-100 text-blue-600 px-2 py-1 rounded font-medium border border-blue-200 transition">👁️</button>
-          ${actionButtonsHtml}
-        </div>
-      `;
-      return card;
-    }
-
-    async function updateOrderStage(orderId, newStage) {
-      const client = getSupabaseClient();
-      if (!client) return;
-      await client.from('orders').update({ stage: newStage, status: newStage }).or(`id.eq.${orderId},order_id.eq.${orderId}`);
-      loadAllData();
-    }
-
-    function isSameDay(d1, d2) {
-      return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
-    }
-
-    function matchesDateRange(orderCreatedAt, range) {
-      if (range === 'all' || !orderCreatedAt) return true;
-      const date = new Date(orderCreatedAt);
-      if (isNaN(date.getTime())) return true;
-      const now = new Date();
-      if (range === 'today') return isSameDay(date, now);
-      if (range === 'yesterday') {
-        const yest = new Date(now); yest.setDate(now.getDate() - 1);
-        return isSameDay(date, yest);
-      }
-      if (range === 'this-month') return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
-      return true;
-    }
-
-    function getFilteredOrders() {
-      const query = document.getElementById('auditSearchInput')?.value.toLowerCase().trim() || '';
-      const dateFilter = document.getElementById('auditDateFilter')?.value || 'all';
-      const stageFilter = document.getElementById('auditStageFilter')?.value || 'all';
-
-      return allOrdersCache.filter(order => {
-        const orderId = String(order.order_id || order.id || '').toLowerCase();
-        const name = (order.customer_name || order.client_name || order.name || '').toLowerCase();
-        const phone = (order.phone || '').toLowerCase();
-        const stage = normalizeStage(order.stage || order.status);
-
-        const matchesQuery = !query || orderId.includes(query) || name.includes(query) || phone.includes(query);
-        const matchesStage = stageFilter === 'all' || stage === stageFilter;
-        const matchesDate = matchesDateRange(order.created_at, dateFilter);
-        return matchesQuery && matchesStage && matchesDate;
+          `;
+        }).join('');
       });
     }
 
-    function filterAuditLog() {
-      renderAuditTable(getFilteredOrders());
-    }
-
-    function renderAuditTable(orders) {
-      const tbody = document.getElementById('auditLogTableBody');
-      if (!tbody) return;
-      if (!orders || orders.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">No matching orders found.</td></tr>`;
-        return;
-      }
-      tbody.innerHTML = orders.map(order => {
-        const orderId = order.order_id || order.id || 'N/A';
-        const name = order.customer_name || order.client_name || order.name || 'Guest';
-        const phone = order.phone || '-';
-        const total = order.total ? `R${Number(order.total).toFixed(2)}` : 'R0.00';
-        const stage = normalizeStage(order.stage || order.status);
-        const date = order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A';
-
-        return `
-          <tr class="border-b hover:bg-gray-50 transition">
-            <td class="p-3 whitespace-nowrap text-xs text-gray-500">${date}</td>
-            <td class="p-3 font-mono font-bold text-blue-600">#${orderId}</td>
-            <td class="p-3 font-medium text-gray-800">${name}</td>
-            <td class="p-3 text-gray-600">${phone}</td>
-            <td class="p-3 font-semibold text-gray-800">${total}</td>
-            <td class="p-3"><span class="px-2.5 py-1 text-xs rounded-full font-semibold bg-gray-100 text-gray-800">${stage.replace(/-/g, ' ').toUpperCase()}</span></td>
-            <td class="p-3 text-right">
-              <button onclick="openOrderDetailModal('${orderId}')" class="bg-gray-100 hover:bg-blue-50 text-blue-600 text-xs px-3 py-1.5 rounded-lg font-medium border border-gray-200 transition">👁️ Details</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
-
-    async function clearAuditLog() {
-      const filtered = getFilteredOrders();
-      if (!filtered || filtered.length === 0) { alert('No orders to clear.'); return; }
-      if (!confirm(`Permanently clear ${filtered.length} order(s)?`)) return;
-      const client = getSupabaseClient();
-      if (!client) return;
-      const ids = filtered.map(o => o.id).filter(Boolean);
-      await client.from('orders').delete().in('id', ids);
-      loadAllData();
-    }
-
-    function exportAuditLogToCSV() {
-      const filtered = getFilteredOrders();
-      if (!filtered || filtered.length === 0) { alert('No orders to export.'); return; }
-      const headers = ['Date', 'Order ID', 'Customer', 'Phone', 'Total', 'Stage', 'Payment'];
-      const csvRows = [headers.join(',')];
-      filtered.forEach(o => {
-        csvRows.push([
-          `"${new Date(o.created_at).toLocaleString()}"`,
-          `"${o.order_id || o.id}"`,
-          `"${o.customer_name || o.client_name || o.name || 'Guest'}"`,
-          `"${o.phone || ''}"`,
-          `"${o.total || 0}"`,
-          `"${normalizeStage(o.stage || o.status).toUpperCase()}"`,
-          `"${o.payment_method || 'Cash'}"`
-        ].join(','));
-      });
-      const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `dcs_audit_log_${new Date().toISOString().slice(0, 10)}.csv`;
-      document.body.appendChild(link); link.click(); document.body.removeChild(link);
-    }
-
-    function openOrderDetailModal(orderIdRef) {
-      const order = allOrdersCache.find(o => String(o.order_id) === String(orderIdRef) || String(o.id) === String(orderIdRef));
-      if (!order) return;
-
-      document.getElementById('modalOrderId').innerText = `Order #${order.order_id || order.id}`;
-      document.getElementById('modalOrderDate').innerText = order.created_at ? new Date(order.created_at).toLocaleString() : '';
-      document.getElementById('modalCustomer').innerText = order.customer_name || order.client_name || order.name || 'Guest';
-      document.getElementById('modalPhone').innerText = order.phone || '-';
-      document.getElementById('modalPayment').innerText = order.payment_method || 'Cash';
-      document.getElementById('modalFulfillment').innerText = order.fulfillment || 'Pickup';
-      document.getElementById('modalStatus').innerText = normalizeStage(order.stage || order.status).toUpperCase();
-      document.getElementById('modalGrandTotal').innerText = order.total ? `R${Number(order.total).toFixed(2)}` : 'R0.00';
-
-      const instr = order.instructions || order.notes || '';
-      const instrWrapper = document.getElementById('modalInstructionsWrapper');
-      if (instr) {
-        document.getElementById('modalInstructions').innerText = instr;
-        instrWrapper.style.display = 'block';
-      } else {
-        instrWrapper.style.display = 'none';
-      }
-
-      let items = [];
-      try { items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items; } catch (e) {}
-
-      const tbody = document.getElementById('modalItemsTableBody');
-      if (Array.isArray(items) && items.length > 0) {
-        tbody.innerHTML = items.map(item => `
-          <tr class="border-b">
-            <td class="p-2 font-medium">${item.name || item.title || 'Item'}</td>
-            <td class="p-2 text-center">${item.qty || item.quantity || 1}</td>
-            <td class="p-2 text-right">R${Number(item.price || 0).toFixed(2)}</td>
-            <td class="p-2 text-right font-semibold">R${((item.qty || 1) * Number(item.price || 0)).toFixed(2)}</td>
-          </tr>
-        `).join('');
-      } else {
-        tbody.innerHTML = `<tr><td colspan="4" class="p-2 text-center text-gray-400">No items breakdown</td></tr>`;
-      }
-      document.getElementById('orderDetailModal').classList.remove('hidden');
-    }
-
-    function closeOrderDetailModal() {
-      document.getElementById('orderDetailModal').classList.add('hidden');
-    }
-
-    function printOrderReceipt() {
-      const printContents = document.getElementById('printableArea').innerHTML;
-      const win = window.open('', '_blank', 'width=500,height=700');
-      win.document.write(`<html><head><title>Receipt</title><style>body{font-family:sans-serif;padding:20px;}</style></head><body>${printContents}</body></html>`);
-      win.document.close(); win.focus();
-      setTimeout(() => { win.print(); win.close(); }, 300);
-    }
-
-    document.addEventListener('DOMContentLoaded', () => { loadAllData(); setupRealtimeListener(); });
+    window.addEventListener('DOMContentLoaded', () => {
+      fetchStaffOrders();
+      setInterval(fetchStaffOrders, 4000);
+    });
   </script>
 </body>
 </html>

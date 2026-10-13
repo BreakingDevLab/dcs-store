@@ -12,7 +12,6 @@
       --bg-page:#f8fafc; --card-bg:#ffffff; --muted:#64748b; --border:#e2e8f0;
       --shadow:0 10px 25px -5px rgba(0,0,0,0.08),0 8px 10px -6px rgba(0,0,0,0.04);
       --radius:14px; --focus: 0 0 0 4px rgba(217,119,6,0.12);
-      --loyalty-points-required:1000;
     }
     *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,system-ui,-apple-system,sans-serif}
     body{background:var(--bg-page); color:var(--primary); min-height:100vh; padding-bottom:90px;}
@@ -45,6 +44,7 @@
     input:focus,select:focus,textarea:focus{box-shadow:var(--focus);border-color:var(--brand)}
     .btn-primary{width:100%;padding:.72rem;background:var(--brand-gradient);color:#fff;border:none;border-radius:10px;font-weight:800;cursor:pointer}
     .btn-primary.small{padding:.45rem .6rem;font-size:.88rem}
+    .btn-danger{padding:.4rem .8rem;background:#ef4444;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:.78rem;cursor:pointer}
     .filter-chip{padding:0.4rem 0.85rem; border-radius:20px; border:1px solid var(--border); background:#fff; font-size:0.8rem; font-weight:700; cursor:pointer; color:var(--muted)}
     .filter-chip.active, .filter-chip:hover{background:var(--primary); color:#fff; border-color:var(--primary)}
     .menu-category-dropdown{margin-bottom:1rem;border-radius:12px;overflow:hidden;border:1px solid var(--border);background:#fff;box-shadow:var(--shadow)}
@@ -152,9 +152,10 @@
 
       <details id="order-history-panel" class="menu-category-dropdown card" style="display:none" open>
         <summary><span>📜 Order History</span><span style="font-size:.8rem;color:var(--muted)"></span></summary>
-        <div class="dropdown-content-grid" style="padding:0.75rem; grid-template-columns:1fr;">
+        <div style="padding:0.75rem;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
             <strong style="font-size:0.95rem;color:var(--primary)">All Past Orders</strong>
+            <button onclick="clearOrderHistory()" class="btn-danger">🗑️ Clear History</button>
           </div>
           <div id="order-history-list" style="padding:0.25rem 0;"></div>
         </div>
@@ -199,9 +200,6 @@
           <label><input type="radio" name="payment" value="Cash on Pickup" checked> Cash</label>
           <label><input type="radio" name="payment" value="Card / Speedpoint"> Card</label>
         </div>
-      </div>
-      <div style="margin-top:0.75rem;">
-        <label style="font-size:0.82rem;"><input type="checkbox" id="use-loyalty" onchange="renderCart()"> Redeem 1000 Points (R25 Off)</label>
       </div>
     </div>
     <div class="cart-footer">
@@ -260,20 +258,45 @@
     let favorites = JSON.parse(localStorage.getItem('dcs_favorites')) || [];
     let activeCategoryFilter = 'ALL';
 
+    // Official Davidsonville Community Store Menu Catalog with Real Kasi Food Imagery
     const catalog = [
+      // CHIPS (SMALL, MEDIUM, LARGE)
+      { id: 'ch1', name: 'SMALL CHIPS', category: 'Chips', price: 15, img: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80' },
+      { id: 'ch2', name: 'MEDIUM CHIPS', category: 'Chips', price: 25, img: 'https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?auto=format&fit=crop&w=500&q=80' },
+      { id: 'ch3', name: 'LARGE CHIPS', category: 'Chips', price: 35, img: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=500&q=80' },
+
+      // CHICKEN COMBOS
       { id: 'cc1', name: 'FULL HOUSE COMBO 1', category: 'Chicken Combos', price: 155, img: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=500&q=80' },
       { id: 'cc2', name: 'FULL CHICKEN', category: 'Chicken Combos', price: 95, img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=80' },
       { id: 'cc3', name: 'HALF CHICKEN', category: 'Chicken Combos', price: 50, img: 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&w=500&q=80' },
       { id: 'cc4', name: '½ CHICKEN & CHIPS', category: 'Chicken Combos', price: 60, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=500&q=80' },
       { id: 'cc5', name: '¼ CHICKEN & CHIPS', category: 'Chicken Combos', price: 45, img: 'https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&w=500&q=80' },
       { id: 'cc6', name: 'WINGS & CHIPS (SPECIAL)', category: 'Chicken Combos', price: 35, img: 'https://images.unsplash.com/photo-1567620832903-9fc6debc209f?auto=format&fit=crop&w=500&q=80' },
+
+      // BUNNY CHOWS (KOTA)
       { id: 'bc1', name: 'CHIP BUNNY', category: 'Bunny Chows', price: 20, img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=500&q=80' },
       { id: 'bc2', name: 'POLONY BUNNY', category: 'Bunny Chows', price: 38, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
       { id: 'bc3', name: 'RUSSIAN BUNNY', category: 'Bunny Chows', price: 43, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?auto=format&fit=crop&w=500&q=80' },
+      { id: 'bc4', name: 'PATTY BUNNY', category: 'Bunny Chows', price: 50, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=500&q=80' },
+      { id: 'bc5', name: 'STEAK BUNNY', category: 'Bunny Chows', price: 55, img: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=500&q=80' },
+      { id: 'bc6', name: 'BACON BUNNY', category: 'Bunny Chows', price: 40, img: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?auto=format&fit=crop&w=500&q=80' },
+
+      // SPECIALS
       { id: 'sp1', name: 'FOOTLONG FRANKFURTER', category: 'Specials', price: 40, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?auto=format&fit=crop&w=500&q=80' },
-      { id: 'sp2', name: 'STEAK ROLL', category: 'Specials', price: 50, img: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=500&q=80' },
-      { id: 'ts1', name: 'CHEESE & TOMATO', category: 'Toasted Sandwiches', price: 15, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=900&q=80' },
-      { id: 'ts2', name: 'SCHOOL BOY', category: 'Toasted Sandwiches', price: 35, img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=900&q=80' }
+      { id: 'sp2', name: 'FOOTLONG FRANK & CHIPS', category: 'Specials', price: 45, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=500&q=80' },
+      { id: 'sp3', name: 'STEAK ROLL', category: 'Specials', price: 50, img: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=500&q=80' },
+      { id: 'sp4', name: 'FOOTLONG STEAKROLL / CHIPS', category: 'Specials', price: 80, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
+      { id: 'sp5', name: 'X-LARGE RUSSIAN & CHIPS', category: 'Specials', price: 48, img: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=500&q=80' },
+      { id: 'sp6', name: 'BOEREWORS ROLL', category: 'Specials', price: 25, img: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=500&q=80' },
+      { id: 'sp7', name: 'PREGO ROLL', category: 'Specials', price: 35, img: 'https://images.unsplash.com/photo-1603064752734-4c48eff53d05?auto=format&fit=crop&w=500&q=80' },
+      { id: 'sp8', name: 'CHICKEN MAYO ROLL', category: 'Specials', price: 15, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
+
+      // TOASTED SANDWICHES
+      { id: 'ts1', name: 'CHIP BREAD', category: 'Toasted Sandwiches', price: 8, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
+      { id: 'ts2', name: 'TOASTED CHIP BREAD', category: 'Toasted Sandwiches', price: 10, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
+      { id: 'ts3', name: 'SCHOOL BOY', category: 'Toasted Sandwiches', price: 35, img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=500&q=80' },
+      { id: 'ts4', name: 'CHEESE & TOMATO', category: 'Toasted Sandwiches', price: 15, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
+      { id: 'ts5', name: 'BACON, EGG & CHEESE', category: 'Toasted Sandwiches', price: 38, img: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?auto=format&fit=crop&w=500&q=80' }
     ];
 
     let audioCtx = null;
@@ -486,7 +509,7 @@
     function renderCategoryChips() {
       const c = document.getElementById('category-filter-chips');
       if (!c) return;
-      const cats = ['ALL', 'Chicken Combos', 'Bunny Chows', 'Specials', 'Toasted Sandwiches'];
+      const cats = ['ALL', 'Chips', 'Chicken Combos', 'Bunny Chows', 'Specials', 'Toasted Sandwiches'];
       c.innerHTML = cats.map(cat => `<button onclick="setCategoryFilter('${cat}')" class="filter-chip ${activeCategoryFilter === cat ? 'active' : ''}">${cat}</button>`).join('');
     }
 
@@ -543,7 +566,7 @@
       const container = document.getElementById('catalog-dropdowns-container');
       if (!container) return;
       const q = (document.getElementById('search-input')?.value || '').toLowerCase();
-      const cats = ['Chicken Combos', 'Bunny Chows', 'Specials', 'Toasted Sandwiches'];
+      const cats = ['Chips', 'Chicken Combos', 'Bunny Chows', 'Specials', 'Toasted Sandwiches'];
       const filteredCats = activeCategoryFilter === 'ALL' ? cats : [activeCategoryFilter];
 
       container.innerHTML = filteredCats.map(cat => {
@@ -714,6 +737,17 @@
       }
     }
 
+    function clearOrderHistory() {
+      if (!client) return;
+      if (!confirm('Are you sure you want to clear your order history?')) return;
+      let state = getSharedState();
+      state.orders = (state.orders || []).filter(o => o.phone !== client.phone);
+      saveSharedState(state);
+      renderOrderHistory();
+      renderLiveOrderTrackers();
+      alert('Order history cleared.');
+    }
+
     function renderOrderHistory() {
       const container = document.getElementById('order-history-list');
       if (!container) return;
@@ -730,7 +764,7 @@
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <div>
               <strong style="color:var(--primary);">#${o.id}</strong> (${o.date})<br>
-              <span style="font-size:0.72rem; color:var(--brand); font-weight:bold;">Status: ${o.stage.toUpperCase()}</span>
+              <span style="font-size:0.72rem; color:var(--brand); font-weight:bold;">Status: ${(o.stage || 'received').toUpperCase()}</span>
             </div>
             <div style="display:flex; gap:4px;">
               <button onclick="saveOrderAsFavorite('${o.id}')" style="font-size:0.7rem; font-weight:700; padding:0.3rem 0.5rem; background:#059669; color:white; border:none; border-radius:4px; cursor:pointer;" title="Save to Favorites">⭐ Fav</button>
@@ -750,7 +784,6 @@
       const state = getSharedState();
       const myOrders = (state.orders || []).filter(o => client && o.phone === client.phone);
       
-      // Filter out completed and cancelled orders from the active list
       const active = myOrders.filter(o => o.stage !== 'order-completed' && o.stage !== 'cancelled');
 
       document.getElementById('header-orders-badge').innerText = active.length;
