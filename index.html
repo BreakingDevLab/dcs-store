@@ -242,7 +242,7 @@
   <script>
     const SHARED_KEY = 'davidsonville_app_state_v15';
     const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjE0NjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU';
 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -259,7 +259,6 @@
     let cart = JSON.parse(localStorage.getItem('dcs_cart')) || [];
     let favorites = JSON.parse(localStorage.getItem('dcs_favorites')) || [];
     let activeCategoryFilter = 'ALL';
-    let lastFetchedSignature = '';
 
     const catalog = [
       { id: 'ch1', name: 'SMALL CHIPS', category: 'Chips', price: 15, img: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80' },
@@ -295,12 +294,8 @@
     let audioCtx = null;
     function playCustomerChime() {
       try {
-        if (!audioCtx) {
-          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (audioCtx.state === 'suspended') {
-          audioCtx.resume();
-        }
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
         const now = audioCtx.currentTime;
         const osc1 = audioCtx.createOscillator();
         const gain1 = audioCtx.createGain();
@@ -308,10 +303,8 @@
         osc1.frequency.setValueAtTime(659.25, now);
         gain1.gain.setValueAtTime(0.4, now);
         gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-        osc1.connect(gain1);
-        gain1.connect(audioCtx.destination);
-        osc1.start(now);
-        osc1.stop(now + 0.4);
+        osc1.connect(gain1); gain1.connect(audioCtx.destination);
+        osc1.start(now); osc1.stop(now + 0.4);
 
         const osc2 = audioCtx.createOscillator();
         const gain2 = audioCtx.createGain();
@@ -319,20 +312,14 @@
         osc2.frequency.setValueAtTime(880.00, now + 0.2);
         gain2.gain.setValueAtTime(0.5, now + 0.2);
         gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
-        osc2.connect(gain2);
-        gain2.connect(audioCtx.destination);
-        osc2.start(now + 0.2);
-        osc2.stop(now + 0.8);
+        osc2.connect(gain2); gain2.connect(audioCtx.destination);
+        osc2.start(now + 0.2); osc2.stop(now + 0.8);
       } catch (err) {}
     }
 
     document.addEventListener('click', () => {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
     }, { once: true });
 
     function showStageNotification(orderId, stage) {
@@ -495,7 +482,7 @@
       checkStoreOperatingHours();
       renderCategoryChips(); renderClientProfile(); renderCatalog(); renderCart(); renderFavorites(); renderOrderHistory(); renderLiveOrderTrackers();
       subscribeToRealtimeCustomer();
-      setInterval(verifyAndFetchSupabaseOrders, 5000);
+      setInterval(verifyAndFetchSupabaseOrders, 4000);
     });
 
     function checkStoreOperatingHours() {
