@@ -422,6 +422,7 @@
 
     async function verifyAndFetchSupabaseOrders() {
       if (!client || !client.phone) return;
+      let state = getSharedState();
       try {
         const { data: remoteOrders, error } = await supabaseClient
           .from('orders')
@@ -429,9 +430,7 @@
           .eq('phone', client.phone.trim())
           .order('created_at', { ascending: false });
 
-        if (error || !remoteOrders) return;
-        if (Array.isArray(remoteOrders) && remoteOrders.length > 0) {
-          let state = getSharedState();
+        if (!error && remoteOrders && remoteOrders.length > 0) {
           let prevStages = JSON.parse(localStorage.getItem('dcs_prev_stages') || '{}');
           let newStages = {};
 
@@ -460,9 +459,9 @@
           localStorage.setItem('dcs_prev_stages', JSON.stringify(newStages));
           state.orders = mapped;
           saveSharedState(state);
-          renderLiveOrderTrackersUI();
         }
       } catch (e) {}
+      renderLiveOrderTrackersUI();
     }
 
     function subscribeToRealtimeCustomer() {
@@ -480,7 +479,8 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       checkStoreOperatingHours();
-      renderCategoryChips(); renderClientProfile(); renderCatalog(); renderCart(); renderFavorites(); renderOrderHistory(); renderLiveOrderTrackers();
+      renderCategoryChips(); renderClientProfile(); renderCatalog(); renderCart(); renderFavorites(); renderOrderHistory(); renderLiveOrderTrackersUI();
+      verifyAndFetchSupabaseOrders();
       subscribeToRealtimeCustomer();
       setInterval(verifyAndFetchSupabaseOrders, 4000);
     });
@@ -533,7 +533,7 @@
       const found = (state.clients || []).find(c => c.phone === phone);
       if (!found) { alert('Account not found. Please register.'); return; }
       client = found; localStorage.setItem('dcs_client', JSON.stringify(client));
-      renderClientProfile(); renderLiveOrderTrackers(); renderOrderHistory(); alert('Welcome back, ' + client.name + '!');
+      renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Welcome back, ' + client.name + '!');
     }
 
     function handleRegisterClient() {
@@ -544,12 +544,12 @@
       client = { name, phone, address, points: 50 };
       localStorage.setItem('dcs_client', JSON.stringify(client));
       let state = getSharedState(); state.clients.push(client); saveSharedState(state);
-      renderClientProfile(); renderLiveOrderTrackers(); renderOrderHistory(); alert('Registered with 50 bonus points!');
+      renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Registered with 50 bonus points!');
     }
 
     function logoutClient() {
       client = null; localStorage.removeItem('dcs_client');
-      renderClientProfile(); renderLiveOrderTrackers(); renderOrderHistory(); alert('Logged out');
+      renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Logged out');
     }
 
     function renderClientProfile() {
@@ -818,11 +818,6 @@
       if (container) container.innerHTML = active.length ? active.map(buildOrderCardHTML).join('') : '<p style="font-size:0.8rem; color:var(--muted);">No active orders.</p>';
       if (trackerBody) trackerBody.innerHTML = active.length ? active.map(buildOrderCardHTML).join('') : '<p style="font-size:0.85rem; color:var(--muted); text-align:center; padding:1rem 0;">No active orders found.</p>';
       renderOrderHistory();
-    }
-
-    async function renderLiveOrderTrackers() {
-      if (client) await verifyAndFetchSupabaseOrders();
-      else renderLiveOrderTrackersUI();
     }
   </script>
 </body>

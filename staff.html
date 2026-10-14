@@ -92,7 +92,10 @@
     const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjE0NjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU';
 
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false },
+      global: { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY } }
+    });
 
     let audioCtx = null;
     let knownOrderCount = -1;
@@ -105,7 +108,7 @@
         const osc1 = audioCtx.createOscillator();
         const gain1 = audioCtx.createGain();
         osc1.type = 'triangle';
-        osc1.frequency.setValueAtTime(523.25, now); // C5
+        osc1.frequency.setValueAtTime(523.25, now);
         gain1.gain.setValueAtTime(0.5, now);
         gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
         osc1.connect(gain1); gain1.connect(audioCtx.destination);
@@ -114,7 +117,7 @@
         const osc2 = audioCtx.createOscillator();
         const gain2 = audioCtx.createGain();
         osc2.type = 'triangle';
-        osc2.frequency.setValueAtTime(659.25, now + 0.15); // E5
+        osc2.frequency.setValueAtTime(659.25, now + 0.15);
         gain2.gain.setValueAtTime(0.5, now + 0.15);
         gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
         osc2.connect(gain2); gain2.connect(audioCtx.destination);
@@ -157,13 +160,13 @@
     }
 
     async function fetchOrders() {
+      let state = getSharedState();
       try {
         const { data, error } = await supabaseClient
           .from('orders')
           .select('*')
           .order('created_at', { ascending: false });
 
-        let state = getSharedState();
         let combined = [...(data || [])];
 
         if (state.orders && Array.isArray(state.orders)) {
@@ -192,10 +195,10 @@
         }));
 
         saveSharedState(state);
-        renderKanban();
       } catch (e) {
-        renderKanban();
+        // Fallback to local state if offline or auth glitch
       }
+      renderKanban();
     }
 
     async function updateOrderStatus(orderId, newStage) {
@@ -204,17 +207,15 @@
           .from('orders')
           .update({ stage: newStage, status: newStage })
           .or(`id.eq.${orderId},order_id.eq.${orderId}`);
+      } catch (e) {}
 
-        let state = getSharedState();
-        let ord = (state.orders || []).find(o => String(o.id) === String(orderId));
-        if (ord) {
-          ord.stage = newStage;
-          saveSharedState(state);
-        }
-        fetchOrders();
-      } catch (e) {
-        alert('Error updating order status.');
+      let state = getSharedState();
+      let ord = (state.orders || []).find(o => String(o.id) === String(orderId));
+      if (ord) {
+        ord.stage = newStage;
+        saveSharedState(state);
       }
+      fetchOrders();
     }
 
     function renderKanban() {
@@ -311,17 +312,19 @@
     }
 
     function subscribeToRealtimeStaff() {
-      supabaseClient
-        .channel('staff-realtime-orders')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'orders' },
-          (payload) => {
-            playKitchenChime();
-            fetchOrders();
-          }
-        )
-        .subscribe();
+      try {
+        supabaseClient
+          .channel('staff-realtime-orders')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'orders' },
+            (payload) => {
+              playKitchenChime();
+              fetchOrders();
+            }
+          )
+          .subscribe();
+      } catch (e) {}
     }
 
     window.addEventListener('DOMContentLoaded', () => {
