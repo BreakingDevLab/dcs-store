@@ -415,15 +415,16 @@
     async function postOrderToSupabase(order) {
       setTimeout(async () => {
         try {
-          await fetch(SUPABASE_URL + '/rest/v1/orders', {
-            method: 'POST',
-            headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-            body: JSON.stringify({
-              order_id: order.id, id: order.id, client_name: order.clientName, customer_name: order.clientName, phone: order.phone, customer_phone: order.phone, address: order.address,
-              items: JSON.stringify(order.items), instructions: order.instructions, notes: order.instructions, fulfillment: order.fulfillment,
-              payment_method: order.paymentMethod, subtotal: order.subtotal, total: order.total, total_amount: order.total, stage: order.stage, status: order.stage,
-              created_at: new Date(order.timestamp).toISOString()
-            })
+          await supabaseClient.from('orders').upsert({
+            id: order.id,
+            customer_name: order.clientName,
+            phone: order.phone,
+            address: client?.address || '',
+            items: JSON.stringify(order.items),
+            notes: order.instructions || '',
+            total: Number(order.total || 0),
+            stage: order.stage || 'received',
+            created_at: new Date(order.timestamp).toISOString()
           });
         } catch (e) {}
       }, 10);
@@ -432,11 +433,13 @@
     async function verifyAndFetchSupabaseOrders() {
       if (!client || !client.phone) return;
       try {
-        const res = await fetch(SUPABASE_URL + '/rest/v1/orders?select=*&phone=eq.' + encodeURIComponent(client.phone.trim()) + '&order=created_at.desc', {
-          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json' }
-        });
-        if (!res.ok) return;
-        const remoteOrders = await res.json();
+        const { data: remoteOrders, error } = await supabaseClient
+          .from('orders')
+          .select('*')
+          .eq('phone', client.phone.trim())
+          .order('created_at', { ascending: false });
+
+        if (error || !remoteOrders) return;
         if (Array.isArray(remoteOrders) && remoteOrders.length > 0) {
           const newSignature = JSON.stringify(remoteOrders.map(o => o.id + (o.stage || o.status)));
           if (newSignature === lastFetchedSignature) return;
