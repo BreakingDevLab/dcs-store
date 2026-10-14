@@ -66,9 +66,9 @@
     .toast-alert{position:fixed;bottom:90px;right:22px;background:var(--primary);color:#fff;padding:.85rem 1.15rem;border-radius:12px;display:flex;gap:.65rem;z-index:300;box-shadow:0 10px 25px rgba(0,0,0,0.22)}
     .modal-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.7);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;z-index:300;padding:1rem}
     .modal-content{background:#fff;border-radius:12px;max-width:520px;width:100%;padding:1.25rem;max-height:90vh;overflow-y:auto}
-    .receipt-box{font-family:'Courier New',Courier,monospace;font-size:.88rem;background:#fffdfa;padding:1rem;border:1px dashed #cbd5e1;border-radius:8px;color:var(--primary)}
+    .receipt-box{font-family:'Courier New',Courier,monospace;font-size:.85rem;background:#fff;padding:1.25rem;border:1px dashed #94a3b8;border-radius:8px;color:#0f172a;box-shadow:0 4px 12px rgba(0,0,0,0.06)}
     .receipt-row{display:flex;justify-content:space-between;margin-bottom:.35rem}
-    .receipt-total{font-weight:800;border-top:1px solid #000;margin-top:.5rem;padding-top:.5rem}
+    .receipt-total{font-weight:800;border-top:1px dashed #000;margin-top:.5rem;padding-top:.5rem}
     #live-tracker-panel{position:fixed; left:18px; bottom:24px; width:340px; max-width:calc(100% - 36px); z-index:220; background:#fff;border-radius:12px;border:1px solid var(--border);box-shadow:0 12px 30px rgba(15,23,42,0.12); overflow:hidden}
     #live-tracker-panel.hidden{transform:translateY(20px) scale(.98); opacity:0; pointer-events:none}
     #live-tracker-header{background:linear-gradient(90deg,#0f172a,#1e293b); color:#fff; padding:.75rem .9rem; display:flex; align-items:center; justify-content:space-between}
@@ -318,18 +318,17 @@
     }
 
     function showStageNotification(orderId, stage) {
-      const messages = {
-        'received': 'Order successfully received! We have logged your request.',
-        'pending': 'Your order is currently under review by our team.',
-        'kitchen-prep': 'Your food is now sizzling in the kitchen!',
-        'preparing': 'Your food is now being prepared in the kitchen!',
-        'ready': 'Your order is ready! Come collect it hot and fresh.',
-        'ready-for-pick-up': 'Your order is ready for pickup!',
-        'order-completed': 'Order completed. Thank you for choosing Davidsonville Community Store!',
-        'cancelled': 'Your order was cancelled. Feel free to reorder anytime.'
-      };
+      let msg = '';
+      if (stage === 'preparing' || stage === 'kitchen-prep') {
+        msg = 'Your order is now being freshly prepared in the kitchen!';
+      } else if (stage === 'ready' || stage === 'ready-for-pick-up') {
+        msg = 'Your order is ready! Come collect it hot and fresh.';
+      } else if (stage === 'completed' || stage === 'order-completed') {
+        msg = '⭐ Thank you for shopping with Davidsonville Community Store! We hope your meal brings warmth to your home. We look forward to serving you again soon! ⭐';
+      } else {
+        msg = 'Order #' + orderId + ' status updated to ' + stage.toUpperCase() + '.';
+      }
 
-      const msg = messages[stage] || ('Order #' + orderId + ' stage updated to ' + stage.toUpperCase());
       const existing = document.getElementById('status-toast');
       if (existing) existing.remove();
 
@@ -339,21 +338,7 @@
       toast.innerHTML = '<span>🔔</span><div><strong>Order #' + orderId + '</strong><br>' + msg + '</div>';
       document.body.appendChild(toast);
       playStageChime(stage);
-      setTimeout(() => toast.remove(), 6000);
-    }
-
-    function showPendingConfirmationModal(orderId) {
-      const modal = document.getElementById('pending-confirm-modal');
-      const text = document.getElementById('pending-confirm-text');
-      if (modal && text) {
-        text.innerHTML = 'Hello ' + (client?.name || 'Customer') + ', our team is reviewing Order #' + orderId + '. Please double-check your items and instructions. Are you completely sure everything is correct before we send it to kitchen prep?';
-        modal.style.display = 'flex';
-      }
-    }
-
-    function closePendingConfirmModal() {
-      const modal = document.getElementById('pending-confirm-modal');
-      if (modal) modal.style.display = 'none';
+      setTimeout(() => toast.remove(), 7000);
     }
 
     function parseOrderItems(rawItems) {
@@ -455,9 +440,6 @@
             newStages[oid] = st;
             if (prevStages[oid] && prevStages[oid] !== st) {
               showStageNotification(oid, st);
-              if (st === 'pending') {
-                showPendingConfirmationModal(oid);
-              }
             }
             return {
               id: oid,
@@ -499,7 +481,7 @@
       checkStoreOperatingHours();
       renderCategoryChips(); renderClientProfile(); renderCatalog(); renderCart(); renderFavorites(); renderOrderHistory(); renderLiveOrderTrackers();
       subscribeToRealtimeCustomer();
-      setInterval(verifyAndFetchSupabaseOrders, 10000);
+      setInterval(verifyAndFetchSupabaseOrders, 6000);
     });
 
     function checkStoreOperatingHours() {
@@ -620,6 +602,12 @@
       renderCart();
     }
 
+    function removeCartItem(index) {
+      cart.splice(index, 1);
+      localStorage.setItem('dcs_cart', JSON.stringify(cart));
+      renderCart();
+    }
+
     function renderCart() {
       const list = document.getElementById('cart-list');
       const sum = document.getElementById('checkout-summary-box');
@@ -627,9 +615,9 @@
       document.getElementById('header-cart-badge').innerText = totalItems;
       document.getElementById('fab-cart-badge').innerText = totalItems;
 
-      if (cart.length === 0) { list.innerHTML = 'Cart is empty'; sum.innerHTML = ''; return; }
+      if (cart.length === 0) { list.innerHTML = '<p style="font-size:0.85rem; color:var(--muted); text-align:center; padding:1rem 0;">Your cart is empty</p>'; sum.innerHTML = ''; return; }
       let sub = cart.reduce((a, b) => a + (b.price * b.qty), 0);
-      list.innerHTML = cart.map(i => '<div class="cart-row"><span>' + i.qty + 'x ' + i.name + '</span><strong>R' + (i.price * i.qty).toFixed(2) + '</strong></div>').join('');
+      list.innerHTML = cart.map((i, idx) => '<div class="cart-row"><span>' + i.qty + 'x ' + i.name + ' (R' + (i.price * i.qty).toFixed(2) + ')</span><button onclick="removeCartItem(' + idx + ')" style="background:#ef4444; color:#fff; border:none; padding:0.2rem 0.5rem; border-radius:4px; font-size:0.75rem; cursor:pointer;">Delete</button></div>').join('');
       sum.innerHTML = '<div><strong>Total: R' + sub.toFixed(2) + '</strong></div>';
     }
 
@@ -685,13 +673,23 @@
     function showDigitalReceipt(order) {
       document.getElementById('receipt-details-container').innerHTML = 
         '<div class="receipt-box">' +
-          '<div style="text-align:center"><strong>Davidsonville Community Store</strong><br>Order Slip #' + order.id + '</div>' +
-          '<hr style="margin:10px 0">' +
-          '<div>Customer: ' + order.clientName + '</div>' +
-          '<div>Instructions: ' + (order.instructions || 'None') + '</div>' +
-          renderOrderItemsList(order.items) +
-          '<hr style="margin:10px 0">' +
-          '<div class="receipt-row receipt-total"><span>Total:</span> <span>R' + Number(order.total).toFixed(2) + '</span></div>' +
+          '<div style="text-align:center; font-weight:800; font-size:1.05rem; margin-bottom:2px;">DAVIDSONVILLE COMMUNITY STORE</div>' +
+          '<div style="text-align:center; font-size:0.75rem; color:#64748b; margin-bottom:2px;">3 Wagenaar St, Davidsonville</div>' +
+          '<div style="text-align:center; font-size:0.72rem; color:#64748b; margin-bottom:10px;">Tel: 064 629 7453 | VAT: 4890219382</div>' +
+          '<div style="font-size:0.78rem; border-bottom:1px dashed #cbd5e1; padding-bottom:6px; margin-bottom:8px;">' +
+            '<div><strong>Order ID:</strong> #' + order.id + '</div>' +
+            '<div><strong>Date:</strong> ' + new Date(order.timestamp).toLocaleString() + '</div>' +
+            '<div><strong>Customer:</strong> ' + order.clientName + '</div>' +
+            '<div><strong>Payment:</strong> ' + order.paymentMethod + '</div>' +
+          '</div>' +
+          '<div style="font-size:0.82rem; margin-bottom:8px;">' + renderOrderItemsList(order.items) + '</div>' +
+          '<div style="border-top:1px dashed #cbd5e1; padding-top:6px; font-size:0.85rem;">' +
+            '<div class="receipt-row"><span>Subtotal:</span><span>R' + Number(order.total).toFixed(2) + '</span></div>' +
+            '<div class="receipt-row receipt-total"><span>TOTAL DUE:</span> <span>R' + Number(order.total).toFixed(2) + '</span></div>' +
+          '</div>' +
+          '<div style="text-align:center; font-size:0.72rem; color:#64748b; margin-top:12px; border-top:1px dashed #cbd5e1; padding-top:8px;">' +
+            '⭐ Thank you for shopping with Davidsonville Community Store! We hope your meal brings warmth to your home. See you again soon! ⭐' +
+          '</div>' +
         '</div>';
       document.getElementById('receipt-modal').style.display = 'flex';
     }
