@@ -161,6 +161,7 @@
   <script>
     const SUPABASE_URL = "https://qbmszgddepljxqxynyxv.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU";
+    const SHARED_KEY = 'davidsonville_app_state_v15';
 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -172,6 +173,14 @@
     document.addEventListener('DOMContentLoaded', () => {
       fetchOrders();
       subscribeToRealtime();
+      // Listen for local storage updates when orders are placed on index.html
+      window.addEventListener('storage', (e) => {
+        if (e.key === SHARED_KEY) {
+          playChime();
+          fetchOrders();
+        }
+      });
+      setInterval(fetchOrders, 4000);
     });
 
     function switchView(view) {
@@ -261,41 +270,95 @@
     }
 
     async function fetchOrders() {
-      const { data: orders, error } = await supabaseClient
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let remoteOrders = [];
+      try {
+        const { data, error } = await supabaseClient
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (!error && data) {
+          remoteOrders = data;
+        }
+      } catch (e) {}
 
-      if (error) return;
+      // Fallback / sync with local storage state
+      let localState = { orders: [] };
+      try {
+        const stored = localStorage.getItem(SHARED_KEY);
+        if (stored) localState = JSON.parse(stored);
+      } catch (e) {}
 
-      ordersCache = orders || [];
+      const combinedMap = new Map();
+
+      // Add local orders first
+      (localState.orders || []).forEach(o => {
+        combinedMap.set(String(o.id || o.order_id), {
+          order_id: o.id,
+          id: o.id,
+          customer_name: o.clientName,
+          client_name: o.clientName,
+          phone: o.phone,
+          customer_phone: o.phone,
+          address: o.address,
+          items: o.items,
+          notes: o.instructions,
+          instructions: o.instructions,
+          total: o.total,
+          total_amount: o.total,
+          stage: o.stage || 'received',
+          status: o.stage || 'received',
+          created_at: new Date(o.timestamp || Date.now()).toISOString()
+        });
+      });
+
+      // Merge remote Supabase orders
+      remoteOrders.forEach(o => {
+        const oid = String(o.order_id || o.id);
+        combinedMap.set(oid, o);
+      });
+
+      ordersCache = Array.from(combinedMap.values()).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       renderOrders();
       if (currentView === 'audit') renderAuditLog();
     }
 
     async function updateOrderStatus(orderId, newStatus) {
       setTimeout(async () => {
-        const { error } = await supabaseClient
-          .from('orders')
-          .update({ stage: newStatus, status: newStatus, updated_at: new Date().toISOString() })
-          .eq('id', orderId);
-
-        if (error) {
+        // Update Supabase
+        try {
           await supabaseClient
             .from('orders')
             .update({ stage: newStatus, status: newStatus, updated_at: new Date().toISOString() })
-            .eq('order_id', orderId);
-        }
+            .eq('id', orderId);
+        } catch (e) {}
+
+        // Update LocalStorage State as well
+        try {
+          const stored = localStorage.getItem(SHARED_KEY);
+          if (stored) {
+            let state = JSON.parse(stored);
+            if (state.orders) {
+              state.orders = state.orders.map(o => {
+                if (String(o.id) === String(orderId)) {
+                  o.stage = newStatus;
+                }
+                return o;
+              });
+              localStorage.setItem(SHARED_KEY, JSON.stringify(state));
+            }
+          }
+        } catch (e) {}
+
         fetchOrders();
       }, 10);
     }
 
     async function clearAllAuditOrders() {
       if (!confirm('Are you sure you want to clear all orders from the audit log?')) return;
-      const { error } = await supabaseClient.from('orders').delete().neq('id', 0);
-      if (error) {
-        await supabaseClient.from('orders').delete().not('order_id', 'is', null);
-      }
+      try {
+        await supabaseClient.from('orders').delete().neq('id', 0);
+      } catch (e) {}
+      localStorage.removeItem(SHARED_KEY);
       ordersCache = [];
       renderOrders();
       renderAuditLog();
@@ -325,9 +388,12 @@
         if (rawStage === 'kitchen-prep') stage = 'preparing';
         if (rawStage === 'ready-for-pick-up') stage = 'ready';
 
-        if (stage === 'completed' || stage === 'order-completed' || stage === 'cancelled') {
-          counts.completed++;
-          return;
+        if (stage === 'completed' || stage === 'order-completed' || stage === 'cancelled' || stage === 'received') {
+          if (stage === 'received') stage = 'pending'; // Treat received as pending on kanban
+          if (stage === 'completed' || stage === 'order-completed' || stage === 'cancelled') {
+            counts.completed++;
+            return;
+          }
         }
 
         if (counts[stage] !== undefined) counts[stage]++;
@@ -448,7 +514,7 @@
         const st = (o.stage || o.status || 'pending').toLowerCase();
 
         let badgeColor = 'bg-slate-100 text-slate-700';
-        if (st === 'pending') badgeColor = 'bg-amber-100 text-amber-800';
+        if (st === 'pending' || st === 'received') badgeColor = 'bg-amber-100 text-amber-800';
         else if (st === 'preparing' || st === 'kitchen-prep') badgeColor = 'bg-blue-100 text-blue-800';
         else if (st === 'ready' || st === 'ready-for-pick-up') badgeColor = 'bg-indigo-100 text-indigo-800';
         else if (st === 'completed' || st === 'order-completed') badgeColor = 'bg-emerald-100 text-emerald-800';
