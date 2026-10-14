@@ -41,8 +41,6 @@
     .audit-section{background:#fff; border-radius:var(--radius); padding:1.25rem; margin-top:2rem; border:1px solid var(--border); box-shadow:var(--shadow);}
     .audit-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:1rem;}
     input[type="text"]{padding:0.55rem 0.85rem; border:1px solid var(--border); border-radius:8px; font-size:0.88rem; width:300px; outline:none;}
-    input[type="text"]:focus{border-color:var(--brand); box-shadow:0 0 0 3px rgba(217,119,6,0.15);}
-    .toast-alert{position:fixed;bottom:24px;right:24px;background:var(--primary);color:#fff;padding:1rem 1.25rem;border-radius:12px;z-index:999;box-shadow:0 10px 25px rgba(0,0,0,0.25);display:flex;gap:.75rem;align-items:center}
   </style>
 </head>
 <body>
@@ -62,49 +60,19 @@
 
   <div class="container">
     <div class="stats-grid">
-      <div class="stat-card">
-        <h3>Incoming Orders</h3>
-        <div id="stat-received" class="value">0</div>
-      </div>
-      <div class="stat-card">
-        <h3>In Preparation</h3>
-        <div id="stat-prep" class="value">0</div>
-      </div>
-      <div class="stat-card">
-        <h3>Ready for Pickup</h3>
-        <div id="stat-ready" class="value">0</div>
-      </div>
-      <div class="stat-card">
-        <h3>Completed Today</h3>
-        <div id="stat-completed" class="value">0</div>
-      </div>
-      <div class="stat-card">
-        <h3>Cancelled Orders</h3>
-        <div id="stat-cancelled" class="value">0</div>
-      </div>
+      <div class="stat-card"><h3>Incoming Orders</h3><div id="stat-received" class="value">0</div></div>
+      <div class="stat-card"><h3>In Preparation</h3><div id="stat-prep" class="value">0</div></div>
+      <div class="stat-card"><h3>Ready for Pickup</h3><div id="stat-ready" class="value">0</div></div>
+      <div class="stat-card"><h3>Completed Today</h3><div id="stat-completed" class="value">0</div></div>
+      <div class="stat-card"><h3>Cancelled Orders</h3><div id="stat-cancelled" class="value">0</div></div>
     </div>
 
     <div class="kanban-grid">
-      <div class="kanban-column">
-        <div class="kanban-header"><span>📥 Received</span><span id="count-received" style="background:#cbd5e1;padding:.1rem .5rem;border-radius:12px;font-size:.75rem">0</span></div>
-        <div id="col-received"></div>
-      </div>
-      <div class="kanban-column">
-        <div class="kanban-header"><span>🔥 Preparing</span><span id="count-prep" style="background:#cbd5e1;padding:.1rem .5rem;border-radius:12px;font-size:.75rem">0</span></div>
-        <div id="col-preparing"></div>
-      </div>
-      <div class="kanban-column">
-        <div class="kanban-header"><span>✅ Ready</span><span id="count-ready" style="background:#cbd5e1;padding:.1rem .5rem;border-radius:12px;font-size:.75rem">0</span></div>
-        <div id="col-ready"></div>
-      </div>
-      <div class="kanban-column">
-        <div class="kanban-header"><span>🏁 Completed</span><span id="count-completed" style="background:#cbd5e1;padding:.1rem .5rem;border-radius:12px;font-size:.75rem">0</span></div>
-        <div id="col-completed"></div>
-      </div>
-      <div class="kanban-column">
-        <div class="kanban-header"><span>❌ Cancelled</span><span id="count-cancelled" style="background:#cbd5e1;padding:.1rem .5rem;border-radius:12px;font-size:.75rem">0</span></div>
-        <div id="col-cancelled"></div>
-      </div>
+      <div class="kanban-column"><div class="kanban-header"><span>📥 Received</span><span id="count-received">0</span></div><div id="col-received"></div></div>
+      <div class="kanban-column"><div class="kanban-header"><span>🔥 Preparing</span><span id="count-prep">0</span></div><div id="col-preparing"></div></div>
+      <div class="kanban-column"><div class="kanban-header"><span>✅ Ready</span><span id="count-ready">0</span></div><div id="col-ready"></div></div>
+      <div class="kanban-column"><div class="kanban-header"><span>🏁 Completed</span><span id="count-completed">0</span></div><div id="col-completed"></div></div>
+      <div class="kanban-column"><div class="kanban-header"><span>❌ Cancelled</span><span id="count-cancelled">0</span></div><div id="col-cancelled"></div></div>
     </div>
 
     <div class="audit-section">
@@ -180,23 +148,35 @@
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (!error && data) {
-          let state = getSharedState();
-          state.orders = data.map(o => ({
-            id: o.order_id || o.id,
-            date: o.created_at ? new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-            timestamp: o.created_at ? new Date(o.created_at).getTime() : Date.now(),
-            items: parseOrderItems(o.items),
-            instructions: o.instructions || o.notes || '',
-            total: Number(o.total || o.total_amount || 0),
-            stage: (o.stage || o.status || 'received').toLowerCase().trim().replace(/_/g, '-'),
-            clientName: o.client_name || o.customer_name || 'Customer',
-            phone: o.phone || o.customer_phone || ''
-          }));
-          saveSharedState(state);
-          renderKanban();
+        let state = getSharedState();
+        let combined = [...(data || [])];
+
+        // Also merge local storage orders as fallback if offline
+        if (state.orders && Array.isArray(state.orders)) {
+          state.orders.forEach(lo => {
+            if (!combined.some(o => (o.id || o.order_id) === lo.id)) {
+              combined.push(lo);
+            }
+          });
         }
-      } catch (e) {}
+
+        state.orders = combined.map(o => ({
+          id: o.order_id || o.id,
+          date: o.created_at ? new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (o.date || ''),
+          timestamp: o.created_at ? new Date(o.created_at).getTime() : (o.timestamp || Date.now()),
+          items: parseOrderItems(o.items),
+          instructions: o.instructions || o.notes || '',
+          total: Number(o.total || o.total_amount || 0),
+          stage: (o.stage || o.status || 'received').toLowerCase().trim().replace(/_/g, '-'),
+          clientName: o.client_name || o.customer_name || 'Customer',
+          phone: o.phone || o.customer_phone || ''
+        }));
+
+        saveSharedState(state);
+        renderKanban();
+      } catch (e) {
+        renderKanban();
+      }
     }
 
     async function updateOrderStatus(orderId, newStage) {
@@ -204,7 +184,7 @@
         await supabaseClient
           .from('orders')
           .update({ stage: newStage, status: newStage })
-          .eq('id', orderId);
+          .or(`id.eq.${orderId},order_id.eq.${orderId}`);
 
         let state = getSharedState();
         let ord = (state.orders || []).find(o => String(o.id) === String(orderId));
@@ -328,7 +308,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       fetchOrders();
       subscribeToRealtimeStaff();
-      setInterval(fetchOrders, 8000);
+      setInterval(fetchOrders, 4000);
     });
   </script>
 </body>
