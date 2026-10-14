@@ -16,13 +16,20 @@
   <div id="dashboard" class="min-h-screen flex flex-col">
     
     <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center space-x-3">
           <div class="h-3 w-3 rounded-full bg-emerald-500 animate-pulse" id="status-indicator"></div>
           <h1 class="text-xl font-bold tracking-tight">Store Ops <span class="text-indigo-400">Dashboard</span></h1>
         </div>
 
-        <div class="flex items-center space-x-3">
+        <div class="flex flex-wrap items-center space-x-3">
+          <!-- Staff Accountability Identifier -->
+          <div class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-semibold flex items-center space-x-2">
+            <span>👤 Staff:</span>
+            <span id="current-staff-display" class="text-indigo-300 font-bold">Manager</span>
+            <button onclick="changeStaffMember()" class="text-slate-400 hover:text-white underline ml-1">[Change]</button>
+          </div>
+
           <div class="bg-slate-800 p-1 rounded-lg border border-slate-700 flex space-x-1 text-xs font-medium">
             <button onclick="switchView('kanban')" id="btn-view-kanban" class="px-3 py-1.5 rounded-md bg-indigo-600 text-white transition-colors">Kitchen Kanban</button>
             <button onclick="switchView('audit')" id="btn-view-audit" class="px-3 py-1.5 rounded-md text-slate-300 hover:text-white transition-colors">Audit Log</button>
@@ -136,12 +143,13 @@
                 <th class="py-3 px-4">Phone</th>
                 <th class="py-3 px-4">Items Summary</th>
                 <th class="py-3 px-4">Total</th>
+                <th class="py-3 px-4">Handled By / Staff</th>
                 <th class="py-3 px-4">Status</th>
                 <th class="py-3 px-4">Action</th>
               </tr>
             </thead>
             <tbody id="audit-table-body" class="divide-y divide-slate-100">
-              <tr><td colspan="8" class="text-center py-8 text-slate-400">Loading audit records...</td></tr>
+              <tr><td colspan="9" class="text-center py-8 text-slate-400">Loading audit records...</td></tr>
             </tbody>
           </table>
         </div>
@@ -169,11 +177,12 @@
     let audioCtx = null;
     let ordersCache = [];
     let currentView = 'kanban';
+    let currentStaff = localStorage.getItem('dcs_staff_name') || 'Manager';
 
     document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('current-staff-display').textContent = currentStaff;
       fetchOrders();
       subscribeToRealtime();
-      // Listen for local storage updates when orders are placed on index.html
       window.addEventListener('storage', (e) => {
         if (e.key === SHARED_KEY) {
           playChime();
@@ -182,6 +191,15 @@
       });
       setInterval(fetchOrders, 4000);
     });
+
+    function changeStaffMember() {
+      const name = prompt('Enter staff member name for accountability:', currentStaff);
+      if (name && name.trim()) {
+        currentStaff = name.trim();
+        localStorage.setItem('dcs_staff_name', currentStaff);
+        document.getElementById('current-staff-display').textContent = currentStaff;
+      }
+    }
 
     function switchView(view) {
       currentView = view;
@@ -281,7 +299,6 @@
         }
       } catch (e) {}
 
-      // Fallback / sync with local storage state
       let localState = { orders: [] };
       try {
         const stored = localStorage.getItem(SHARED_KEY);
@@ -290,7 +307,6 @@
 
       const combinedMap = new Map();
 
-      // Add local orders first
       (localState.orders || []).forEach(o => {
         combinedMap.set(String(o.id || o.order_id), {
           order_id: o.id,
@@ -307,14 +323,14 @@
           total_amount: o.total,
           stage: o.stage || 'received',
           status: o.stage || 'received',
+          processed_by: o.processed_by || 'Store Manager',
           created_at: new Date(o.timestamp || Date.now()).toISOString()
         });
       });
 
-      // Merge remote Supabase orders
       remoteOrders.forEach(o => {
         const oid = String(o.order_id || o.id);
-        combinedMap.set(oid, o);
+        combinedMap.set(oid, { ...o, processed_by: o.processed_by || o.staff_name || 'Store Manager' });
       });
 
       ordersCache = Array.from(combinedMap.values()).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -324,15 +340,13 @@
 
     async function updateOrderStatus(orderId, newStatus) {
       setTimeout(async () => {
-        // Update Supabase
         try {
           await supabaseClient
             .from('orders')
-            .update({ stage: newStatus, status: newStatus, updated_at: new Date().toISOString() })
+            .update({ stage: newStatus, status: newStatus, processed_by: currentStaff, updated_at: new Date().toISOString() })
             .eq('id', orderId);
         } catch (e) {}
 
-        // Update LocalStorage State as well
         try {
           const stored = localStorage.getItem(SHARED_KEY);
           if (stored) {
@@ -341,6 +355,7 @@
               state.orders = state.orders.map(o => {
                 if (String(o.id) === String(orderId)) {
                   o.stage = newStatus;
+                  o.processed_by = currentStaff;
                 }
                 return o;
               });
@@ -389,7 +404,7 @@
         if (rawStage === 'ready-for-pick-up') stage = 'ready';
 
         if (stage === 'completed' || stage === 'order-completed' || stage === 'cancelled' || stage === 'received') {
-          if (stage === 'received') stage = 'pending'; // Treat received as pending on kanban
+          if (stage === 'received') stage = 'pending';
           if (stage === 'completed' || stage === 'order-completed' || stage === 'cancelled') {
             counts.completed++;
             return;
@@ -499,7 +514,7 @@
       }
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-slate-400">No orders match the selected filters.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-slate-400">No orders match the selected filters.</td></tr>`;
         return;
       }
 
@@ -512,6 +527,7 @@
         const itemSummary = items.map(i => `${i.quantity || i.qty || 1}x ${i.name || i.title}`).join(', ');
         const total = Number(o.total || o.total_amount || 0);
         const st = (o.stage || o.status || 'pending').toLowerCase();
+        const handledBy = o.processed_by || 'Store Manager';
 
         let badgeColor = 'bg-slate-100 text-slate-700';
         if (st === 'pending' || st === 'received') badgeColor = 'bg-amber-100 text-amber-800';
@@ -528,6 +544,7 @@
             <td class="py-3 px-4 text-slate-600">${phone}</td>
             <td class="py-3 px-4 text-slate-600 max-w-xs truncate" title="${itemSummary}">${itemSummary}</td>
             <td class="py-3 px-4 font-bold text-slate-900">R${total.toFixed(2)}</td>
+            <td class="py-3 px-4 font-medium text-indigo-700">${handledBy}</td>
             <td class="py-3 px-4"><span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase ${badgeColor}">${st.replace('_', ' ')}</span></td>
             <td class="py-3 px-4">
               <button onclick="viewAuditOrderModal('${orderIdKey}')" class="text-xs text-indigo-600 hover:underline font-semibold">View</button>
@@ -545,6 +562,7 @@
       const content = document.getElementById('audit-modal-content');
 
       const notes = o.notes || o.instructions || '';
+      const handledBy = o.processed_by || 'Store Manager';
       let itemsHtml = items.map(i => {
         const q = i.quantity || i.qty || 1;
         const n = i.name || i.title || 'Item';
@@ -555,7 +573,8 @@
       content.innerHTML = `
         <h3 class="text-lg font-bold text-slate-900 mb-3">Order Details #${o.order_id || o.id}</h3>
         <p class="text-sm text-slate-600 mb-1"><strong>Customer:</strong> ${o.customer_name || o.client_name || 'Walk-in'} (${o.customer_phone || o.phone || 'N/A'})</p>
-        <p class="text-sm text-slate-600 mb-3"><strong>Address:</strong> ${o.address || 'N/A'}</p>
+        <p class="text-sm text-slate-600 mb-1"><strong>Address:</strong> ${o.address || 'N/A'}</p>
+        <p class="text-sm text-indigo-700 font-semibold mb-3"><strong>Processed/Handled By:</strong> ${handledBy}</p>
         ${notes ? `<div class="mb-3 p-2 bg-amber-50 text-amber-800 text-xs rounded border border-amber-200"><strong>Notes:</strong> ${notes}</div>` : ''}
         <h4 class="font-bold text-sm text-slate-700 mb-2">Items:</h4>
         <ul class="space-y-1 mb-4 text-sm">${itemsHtml}</ul>
@@ -575,15 +594,16 @@
 
     function exportAuditCSV() {
       if (ordersCache.length === 0) { alert('No orders to export'); return; }
-      let csv = 'OrderID,Date,Customer,Phone,Total,Status\n';
+      let csv = 'OrderID,Date,Customer,Phone,Total,HandledBy,Status\n';
       ordersCache.forEach(o => {
         const oid = o.order_id || o.id || 'DCS-01';
         const date = o.created_at ? new Date(o.created_at).toISOString() : '';
         const name = (o.customer_name || o.client_name || '').replace(/,/g, '');
         const phone = o.customer_phone || o.phone || '';
         const total = Number(o.total || o.total_amount || 0).toFixed(2);
+        const staff = (o.processed_by || 'Store Manager').replace(/,/g, '');
         const stage = o.stage || o.status || 'pending';
-        csv += `${oid},${date},${name},${phone},${total},${stage}\n`;
+        csv += `${oid},${date},${name},${phone},${total},${staff},${stage}\n`;
       });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
