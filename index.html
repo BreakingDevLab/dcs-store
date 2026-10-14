@@ -246,7 +246,10 @@
     const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjE0NjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU';
 
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false },
+      global: { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY } }
+    });
 
     function getSharedState() {
       try { const stored = localStorage.getItem(SHARED_KEY); if (stored) return JSON.parse(stored); } catch (e) {}
@@ -348,7 +351,6 @@
       document.body.appendChild(toast);
       playCustomerChime();
       
-      // Gentle fade away after 7 seconds
       setTimeout(() => {
         toast.style.transition = 'opacity 0.6s ease';
         toast.style.opacity = '0';
@@ -475,16 +477,18 @@
     }
 
     function subscribeToRealtimeCustomer() {
-      supabaseClient
-        .channel('customer-realtime-updates')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'orders' },
-          (payload) => {
-            verifyAndFetchSupabaseOrders();
-          }
-        )
-        .subscribe();
+      try {
+        supabaseClient
+          .channel('customer-realtime-updates')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'orders' },
+            (payload) => {
+              verifyAndFetchSupabaseOrders();
+            }
+          )
+          .subscribe();
+      } catch (e) {}
     }
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -679,9 +683,7 @@
       toggleCartDrawer();
       renderCart(); renderLiveOrderTrackersUI(); renderOrderHistory();
       
-      // Professional gentle order placed notification popup that fades away
       showOrderPlacedNotification(newOrder.id);
-      
       showDigitalReceipt(newOrder);
     }
 
