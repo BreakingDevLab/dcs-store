@@ -133,8 +133,8 @@
         <button onclick="handleRegisterClient()" class="btn-primary" style="background:linear-gradient(135deg,#059669 0%,#047857 100%)">Register Account</button>
       </div>
 
-      <details id="customer-tracker-panel" class="menu-category-dropdown card" style="display:none" open>
-        <summary><span>🚀 Active Orders</span><span style="font-size:.8rem;color:var(--muted)"></span></summary>
+      <details id="customer-tracker-panel" class="menu-category-dropdown card" style="display:none">
+        <summary><span>🚀 Active Orders</span><span style="font-size:0.75rem; color:var(--muted); font-weight:normal;">▼ Show / Hide</span></summary>
         <div class="dropdown-content-grid" style="padding:0.75rem; grid-template-columns:1fr;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
             <strong style="font-size:0.95rem;color:var(--primary)">Active Orders</strong>
@@ -143,15 +143,15 @@
         </div>
       </details>
 
-      <details id="favorites-panel" class="menu-category-dropdown card" open>
-        <summary><span>⭐ Quick Favorites</span><span style="font-size:.8rem;color:var(--muted)"></span></summary>
+      <details id="favorites-panel" class="menu-category-dropdown card">
+        <summary><span>⭐ Quick Favorites</span><span style="font-size:0.75rem; color:var(--muted); font-weight:normal;">▼ Show / Hide</span></summary>
         <div class="dropdown-content-grid" style="padding:0.75rem; grid-template-columns:1fr;">
           <div id="favorites-list" style="padding:0.5rem 0;"></div>
         </div>
       </details>
 
-      <details id="order-history-panel" class="menu-category-dropdown card" style="display:none" open>
-        <summary><span>📜 Order History</span><span style="font-size:.8rem;color:var(--muted)"></span></summary>
+      <details id="order-history-panel" class="menu-category-dropdown card" style="display:none">
+        <summary><span>📜 Order History</span><span style="font-size:0.75rem; color:var(--muted); font-weight:normal;">▼ Show / Hide</span></summary>
         <div style="padding:0.75rem;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
             <strong style="font-size:0.95rem;color:var(--primary)">All Past Orders</strong>
@@ -293,29 +293,40 @@
     ];
 
     let audioCtx = null;
-    function initAudio() {
-      if (!audioCtx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) audioCtx = new AC(); }
-      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-    }
-    document.addEventListener('click', initAudio, { once: true });
-
-    function playStageChime(stage) {
+    function playChime() {
       try {
-        initAudio();
-        if (!audioCtx) return;
-        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-        let freq = 659.25;
-        if (stage === 'pending') freq = 523.25;
-        else if (stage === 'kitchen-prep' || stage === 'preparing') freq = 587.33;
-        else if (stage === 'ready' || stage === 'ready-for-pick-up') freq = 783.99;
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        
+        const now = audioCtx.currentTime;
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(587.33, now);
+        gain1.gain.setValueAtTime(0.3, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.3);
 
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.4);
-      } catch (e) {}
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(880.00, now + 0.15);
+        gain2.gain.setValueAtTime(0.4, now + 0.15);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+        osc2.start(now + 0.15);
+        osc2.stop(now + 0.7);
+      } catch (err) {}
     }
+    document.addEventListener('click', () => { if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } }, { once: true });
 
     function showStageNotification(orderId, stage) {
       let msg = '';
@@ -337,7 +348,7 @@
       toast.className = 'toast-alert';
       toast.innerHTML = '<span>🔔</span><div><strong>Order #' + orderId + '</strong><br>' + msg + '</div>';
       document.body.appendChild(toast);
-      playStageChime(stage);
+      playChime();
       setTimeout(() => toast.remove(), 7000);
     }
 
@@ -426,10 +437,6 @@
 
         if (error || !remoteOrders) return;
         if (Array.isArray(remoteOrders) && remoteOrders.length > 0) {
-          const newSignature = JSON.stringify(remoteOrders.map(o => o.id + (o.stage || o.status)));
-          if (newSignature === lastFetchedSignature) return;
-          lastFetchedSignature = newSignature;
-
           let state = getSharedState();
           let prevStages = JSON.parse(localStorage.getItem('dcs_prev_stages') || '{}');
           let newStages = {};
@@ -481,7 +488,7 @@
       checkStoreOperatingHours();
       renderCategoryChips(); renderClientProfile(); renderCatalog(); renderCart(); renderFavorites(); renderOrderHistory(); renderLiveOrderTrackers();
       subscribeToRealtimeCustomer();
-      setInterval(verifyAndFetchSupabaseOrders, 6000);
+      setInterval(verifyAndFetchSupabaseOrders, 5000);
     });
 
     function checkStoreOperatingHours() {
@@ -581,7 +588,7 @@
       container.innerHTML = filteredCats.map(cat => {
         const items = catalog.filter(i => i.category === cat && i.name.toLowerCase().includes(q));
         if (items.length === 0) return '';
-        return '<details class="menu-category-dropdown" open><summary><span>' + cat + '</span></summary><div class="dropdown-content-grid">' + items.map(i => 
+        return '<details class="menu-category-dropdown"><summary><span>' + cat + '</span><span style="font-size:0.75rem; color:var(--muted); font-weight:normal;">▼ Show / Hide</span></summary><div class="dropdown-content-grid">' + items.map(i => 
           '<div class="item-card">' +
             '<div class="item-img-container"><img src="' + i.img + '" class="item-img"></div>' +
             '<div class="item-details">' +
