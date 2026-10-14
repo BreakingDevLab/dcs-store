@@ -1,617 +1,329 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Staff Dashboard - Store Management & Audit Log</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👨‍🍳</text></svg>">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Davidsonville Store | Kitchen & Staff Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    .order-card { transition: all 0.2s ease-in-out; }
-    .order-card:hover { transform: translateY(-2px); }
+    :root{
+      --primary:#0f172a; --brand:#d97706; --brand-gradient:linear-gradient(135deg,#f59e0b 0%,#d97706 100%);
+      --bg-page:#f1f5f9; --card-bg:#ffffff; --muted:#64748b; --border:#cbd5e1;
+      --shadow:0 10px 25px -5px rgba(0,0,0,0.08),0 8px 10px -6px rgba(0,0,0,0.04);
+      --radius:12px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,system-ui,-apple-system,sans-serif}
+    body{background:var(--bg-page); color:var(--primary); min-height:100vh; padding-bottom:40px;}
+    header{
+      background:var(--primary); color:#fff; padding:1rem 1.5rem; position:sticky; top:0; z-index:100;
+      display:flex; align-items:center; justify-content:space-between; box-shadow:0 4px 20px rgba(0,0,0,0.15);
+    }
+    .header-left{display:flex;align-items:center;gap:.75rem}
+    .header-icon{width:42px;height:42px;border-radius:10px;background:var(--brand-gradient);display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+    .header-title h1{font-size:1.1rem;font-weight:800;color:#fff}
+    .header-title p{font-size:.75rem;color:#cbd5e1}
+    .container{max-width:1400px;margin:1.5rem auto;padding:0 1rem}
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem}
+    .stat-card{background:#fff;border-radius:var(--radius);padding:1.1rem;border:1px solid var(--border);box-shadow:var(--shadow)}
+    .stat-card h3{font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.3rem}
+    .stat-card .value{font-size:1.6rem;font-weight:900;color:var(--primary)}
+    .kanban-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.25rem;align-items:start}
+    .kanban-column{background:#e2e8f0;border-radius:var(--radius);padding:1rem;min-height:550px;border:1px solid var(--border)}
+    .kanban-header{font-weight:800;font-size:.9rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;color:var(--primary);padding-bottom:.5rem;border-bottom:2px solid var(--border)}
+    .order-card{background:#fff;border-radius:10px;padding:1rem;margin-bottom:1rem;border:1px solid var(--border);box-shadow:0 4px 12px rgba(0,0,0,0.05);position:relative}
+    .order-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;padding-bottom:.5rem;border-bottom:1px dashed var(--border)}
+    .btn-action{width:100%;padding:.5rem;margin-top:.4rem;border:none;border-radius:6px;font-weight:700;font-size:.8rem;cursor:pointer;color:#fff}
+    .btn-prep{background:#d97706}
+    .btn-ready{background:#2563eb}
+    .btn-complete{background:#16a34a}
+    .btn-cancel{background:#dc2626}
+    .audit-section{background:#fff; border-radius:var(--radius); padding:1.25rem; margin-top:2rem; border:1px solid var(--border); box-shadow:var(--shadow);}
+    .audit-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:1rem;}
+    input[type="text"]{padding:0.5rem 0.75rem; border:1px solid var(--border); border-radius:8px; font-size:0.85rem; width:280px;}
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-12">
-
-  <div id="dashboard" class="min-h-screen flex flex-col">
-    
-    <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center space-x-3">
-          <div class="h-3 w-3 rounded-full bg-emerald-500 animate-pulse" id="status-indicator"></div>
-          <h1 class="text-xl font-bold tracking-tight">Store Ops <span class="text-indigo-400">Dashboard</span></h1>
-        </div>
-
-        <div class="flex flex-wrap items-center space-x-3">
-          <!-- Staff Accountability Identifier -->
-          <div class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-semibold flex items-center space-x-2">
-            <span>👤 Staff:</span>
-            <span id="current-staff-display" class="text-indigo-300 font-bold">Manager</span>
-            <button onclick="changeStaffMember()" class="text-slate-400 hover:text-white underline ml-1">[Change]</button>
-          </div>
-
-          <div class="bg-slate-800 p-1 rounded-lg border border-slate-700 flex space-x-1 text-xs font-medium">
-            <button onclick="switchView('kanban')" id="btn-view-kanban" class="px-3 py-1.5 rounded-md bg-indigo-600 text-white transition-colors">Kitchen Kanban</button>
-            <button onclick="switchView('audit')" id="btn-view-audit" class="px-3 py-1.5 rounded-md text-slate-300 hover:text-white transition-colors">Audit Log</button>
-          </div>
-
-          <button id="audio-toggle" onclick="toggleAudio()" 
-            class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-lg border border-slate-700 flex items-center space-x-2 transition-colors">
-            <span id="audio-icon">🔔</span>
-            <span id="audio-label" class="hidden sm:inline">Chime Enabled</span>
-          </button>
-
-          <button onclick="fetchOrders()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs">
-            ↻ Refresh
-          </button>
-        </div>
+<body>
+  <header>
+    <div class="header-left">
+      <div class="header-icon">👨‍🍳</div>
+      <div class="header-title">
+        <h1>Davidsonville Store | Kitchen Dashboard</h1>
+        <p>Live Order Management & Kanban Workflow</p>
       </div>
-    </header>
+    </div>
+    <div style="display:flex; gap:0.75rem; align-items:center;">
+      <button onclick="fetchOrders()" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:0.5rem 1rem; border-radius:8px; font-weight:700; cursor:pointer;">🔄 Refresh</button>
+      <span id="live-status-indicator" style="background:#22c55e; width:12px; height:12px; border-radius:50%; display:inline-block;" title="Live Sync Active"></span>
+    </div>
+  </header>
 
-    <div class="bg-white border-b border-slate-200">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-        <div class="p-3 bg-amber-50 rounded-xl border border-amber-100">
-          <p class="text-xs text-amber-700 font-semibold uppercase">Pending</p>
-          <p id="count-pending" class="text-2xl font-black text-amber-900">0</p>
-        </div>
-        <div class="p-3 bg-blue-50 rounded-xl border border-blue-100">
-          <p class="text-xs text-blue-700 font-semibold uppercase">Preparing</p>
-          <p id="count-preparing" class="text-2xl font-black text-blue-900">0</p>
-        </div>
-        <div class="p-3 bg-indigo-50 rounded-xl border border-indigo-100">
-          <p class="text-xs text-indigo-700 font-semibold uppercase">Ready</p>
-          <p id="count-ready" class="text-2xl font-black text-indigo-900">0</p>
-        </div>
-        <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-          <p class="text-xs text-emerald-700 font-semibold uppercase">Completed Today</p>
-          <p id="count-completed" class="text-2xl font-black text-emerald-900">0</p>
-        </div>
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>Incoming Orders</h3>
+        <div id="stat-received" class="value">0</div>
+      </div>
+      <div class="stat-card">
+        <h3>In Preparation</h3>
+        <div id="stat-prep" class="value">0</div>
+      </div>
+      <div class="stat-card">
+        <h3>Ready for Pickup</h3>
+        <div id="stat-ready" class="value">0</div>
+      </div>
+      <div class="stat-card">
+        <h3>Completed Today</h3>
+        <div id="stat-completed" class="value">0</div>
+      </div>
+      <div class="stat-card">
+        <h3>Cancelled Orders</h3>
+        <div id="stat-cancelled" class="value">0</div>
       </div>
     </div>
 
-    <main id="view-kanban" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-        <section class="flex flex-col bg-slate-200/60 p-4 rounded-2xl min-h-[500px]">
-          <h2 class="font-bold text-slate-700 text-sm uppercase tracking-wide mb-4 flex items-center justify-between">
-            <span>New Orders</span>
-            <span id="badge-pending" class="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">0</span>
-          </h2>
-          <div id="col-pending" class="space-y-4 flex-1"></div>
-        </section>
-
-        <section class="flex flex-col bg-slate-200/60 p-4 rounded-2xl min-h-[500px]">
-          <h2 class="font-bold text-slate-700 text-sm uppercase tracking-wide mb-4 flex items-center justify-between">
-            <span>In Preparation</span>
-            <span id="badge-preparing" class="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">0</span>
-          </h2>
-          <div id="col-preparing" class="space-y-4 flex-1"></div>
-        </section>
-
-        <section class="flex flex-col bg-slate-200/60 p-4 rounded-2xl min-h-[500px]">
-          <h2 class="font-bold text-slate-700 text-sm uppercase tracking-wide mb-4 flex items-center justify-between">
-            <span>Ready for Pickup / Dispatch</span>
-            <span id="badge-ready" class="bg-indigo-500 text-white text-xs px-2 py-0.5 rounded-full">0</span>
-          </h2>
-          <div id="col-ready" class="space-y-4 flex-1"></div>
-        </section>
-
+    <div class="kanban-grid">
+      <div class="kanban-column">
+        <div class="kanban-header"><span>📥 Received</span><span id="count-received" style="background:#cbd5e1;padding:.1rem .5rem;border-radius:12px;font-size:.75rem">0</span></div>
+        <div id="col-received"></div>
       </div>
-    </main>
-
-    <main id="view-audit" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 hidden">
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-        <div class="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
-          <div class="flex flex-wrap items-center gap-3">
-            <div>
-              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Status Filter</label>
-              <select id="audit-status-filter" onchange="renderAuditLog()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none">
-                <option value="ALL">All Orders</option>
-                <option value="pending">Pending</option>
-                <option value="preparing">Preparing</option>
-                <option value="ready">Ready</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">From Date</label>
-              <input type="date" id="audit-start-date" onchange="renderAuditLog()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">To Date</label>
-              <input type="date" id="audit-end-date" onchange="renderAuditLog()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none">
-            </div>
-          </div>
-          <div class="flex items-center gap-2">
-            <button onclick="exportAuditCSV()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center space-x-2">
-              <span>📥 Export CSV</span>
-            </button>
-            <button onclick="clearAllAuditOrders()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center space-x-2">
-              <span>🗑️ Clear All</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse text-sm">
-            <thead>
-              <tr class="bg-slate-50 text-slate-600 uppercase text-xs tracking-wider border-b border-slate-200">
-                <th class="py-3 px-4">Order ID</th>
-                <th class="py-3 px-4">Date / Time</th>
-                <th class="py-3 px-4">Customer</th>
-                <th class="py-3 px-4">Phone</th>
-                <th class="py-3 px-4">Items Summary</th>
-                <th class="py-3 px-4">Total</th>
-                <th class="py-3 px-4">Handled By / Staff</th>
-                <th class="py-3 px-4">Status</th>
-                <th class="py-3 px-4">Action</th>
-              </tr>
-            </thead>
-            <tbody id="audit-table-body" class="divide-y divide-slate-100">
-              <tr><td colspan="9" class="text-center py-8 text-slate-400">Loading audit records...</td></tr>
-            </tbody>
-          </table>
-        </div>
+      <div class="kanban-column">
+        <div class="kanban-header"><span>🔥 Preparing</span><span id="count-prep" style="background:#cbd5e1;padding:.1rem .5rem;border-radius:12px;font-size:.75rem">0</span></div>
+        <div id="col-preparing"></div>
       </div>
-    </main>
-  </div>
-
-  <div id="audit-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-      <div id="audit-modal-content"></div>
-      <div class="mt-6 flex justify-end">
-        <button onclick="closeAuditModal()" class="px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-semibold">Close</button>
+      <div class="kanban-column">
+        <div class="kanban-header"><span>✅ Ready</span><span id="count-ready" style="background:#cbd5e1;padding:.1rem .5rem;border-radius:12px;font-size:.75rem">0</span></div>
+        <div id="col-ready"></div>
       </div>
+      <div class="kanban-column">
+        <div class="kanban-header"><span>🏁 Completed</span><span id="count-completed" style="background:#cbd5e1;padding:.1rem .5rem;border-radius:12px;font-size:.75rem">0</span></div>
+        <div id="col-completed"></div>
+      </div>
+      <div class="kanban-column">
+        <div class="kanban-header"><span>❌ Cancelled</span><span id="count-cancelled" style="background:#cbd5e1;padding:.1rem .5rem;border-radius:12px;font-size:.75rem">0</span></div>
+        <div id="col-cancelled"></div>
+      </div>
+    </div>
+
+    <div class="audit-section">
+      <div class="audit-header">
+        <h3 style="font-size:1rem; font-weight:800;">📋 Audit Log & Order Search (Find Lost Orders)</h3>
+        <input type="text" id="audit-search-input" placeholder="🔍 Search Order ID (e.g. DCS-15)..." oninput="renderKanban()">
+      </div>
+      <div id="audit-log-container" style="max-height:280px; overflow-y:auto; font-size:0.85rem;"></div>
     </div>
   </div>
 
   <script>
-    const SUPABASE_URL = "https://qbmszgddepljxqxynyxv.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU";
     const SHARED_KEY = 'davidsonville_app_state_v15';
+    const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU';
 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    let audioEnabled = true;
     let audioCtx = null;
-    let ordersCache = [];
-    let currentView = 'kanban';
-    let currentStaff = localStorage.getItem('dcs_staff_name') || 'Manager';
-
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('current-staff-display').textContent = currentStaff;
-      fetchOrders();
-      subscribeToRealtime();
-      window.addEventListener('storage', (e) => {
-        if (e.key === SHARED_KEY) {
-          playChime();
-          fetchOrders();
-        }
-      });
-      setInterval(fetchOrders, 4000);
-    });
-
-    function changeStaffMember() {
-      const name = prompt('Enter staff member name for accountability:', currentStaff);
-      if (name && name.trim()) {
-        currentStaff = name.trim();
-        localStorage.setItem('dcs_staff_name', currentStaff);
-        document.getElementById('current-staff-display').textContent = currentStaff;
-      }
-    }
-
-    function switchView(view) {
-      currentView = view;
-      const kanbanEl = document.getElementById('view-kanban');
-      const auditEl = document.getElementById('view-audit');
-      const btnKanban = document.getElementById('btn-view-kanban');
-      const btnAudit = document.getElementById('btn-view-audit');
-
-      if (view === 'kanban') {
-        kanbanEl.classList.remove('hidden');
-        auditEl.classList.add('hidden');
-        btnKanban.className = 'px-3 py-1.5 rounded-md bg-indigo-600 text-white transition-colors';
-        btnAudit.className = 'px-3 py-1.5 rounded-md text-slate-300 hover:text-white transition-colors';
-      } else {
-        kanbanEl.classList.add('hidden');
-        auditEl.classList.remove('hidden');
-        btnAudit.className = 'px-3 py-1.5 rounded-md bg-indigo-600 text-white transition-colors';
-        btnKanban.className = 'px-3 py-1.5 rounded-md text-slate-300 hover:text-white transition-colors';
-        renderAuditLog();
-      }
-    }
-
-    function playChime() {
-      if (!audioEnabled) return;
+    function playKitchenChime() {
       try {
-        if (!audioCtx) {
-          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (audioCtx.state === 'suspended') {
-          audioCtx.resume();
-        }
-        
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
         const now = audioCtx.currentTime;
-        const osc1 = audioCtx.createOscillator();
-        const gain1 = audioCtx.createGain();
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(587.33, now);
-        gain1.gain.setValueAtTime(0.3, now);
-        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-        osc1.connect(gain1);
-        gain1.connect(audioCtx.destination);
-        osc1.start(now);
-        osc1.stop(now + 0.3);
-
-        const osc2 = audioCtx.createOscillator();
-        const gain2 = audioCtx.createGain();
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(880.00, now + 0.15);
-        gain2.gain.setValueAtTime(0.4, now + 0.15);
-        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
-        osc2.connect(gain2);
-        gain2.connect(audioCtx.destination);
-        osc2.start(now + 0.15);
-        osc2.stop(now + 0.7);
-      } catch (err) {}
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.setValueAtTime(659.25, now);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(now); osc.stop(now + 0.5);
+      } catch (e) {}
     }
 
-    function toggleAudio() {
-      audioEnabled = !audioEnabled;
-      document.getElementById('audio-icon').textContent = audioEnabled ? '🔔' : '🔕';
-      document.getElementById('audio-label').textContent = audioEnabled ? 'Chime Enabled' : 'Muted';
-      if (audioEnabled) playChime();
+    function getSharedState() {
+      try { const stored = localStorage.getItem(SHARED_KEY); if (stored) return JSON.parse(stored); } catch (e) {}
+      return { clients: [], orders: [] };
     }
 
-    function subscribeToRealtime() {
-      supabaseClient
-        .channel('dashboard-orders')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'orders' },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              playChime();
-            }
-            fetchOrders();
-          }
-        )
-        .subscribe((status) => {
-          const indicator = document.getElementById('status-indicator');
-          if (status === 'SUBSCRIBED') {
-            indicator.className = 'h-3 w-3 rounded-full bg-emerald-500 animate-pulse';
-          } else {
-            indicator.className = 'h-3 w-3 rounded-full bg-amber-500';
-          }
-        });
+    function saveSharedState(state) {
+      try { localStorage.setItem(SHARED_KEY, JSON.stringify(state)); } catch (e) {}
+    }
+
+    function parseOrderItems(rawItems) {
+      if (!rawItems) return [];
+      if (Array.isArray(rawItems)) return rawItems;
+      try { const p = JSON.parse(rawItems); if (Array.isArray(p)) return p; return [p]; } catch (e) { return [{ name: rawItems, qty: 1, price: 0 }]; }
+    }
+
+    function renderOrderItemsList(itemsInput) {
+      const items = parseOrderItems(itemsInput);
+      let html = '<ul style="list-style:none; padding:0; margin:0.35rem 0; font-size:0.8rem;">';
+      for (let i = 0; i < items.length; i++) {
+        let item = items[i];
+        let q = item.qty || item.quantity || 1;
+        let n = item.name || item.title || 'Item';
+        let p = Number(item.price || 0);
+        html += '<li style="display:flex; justify-content:space-between; padding:0.15rem 0; border-bottom:1px dotted var(--border);"><span><strong>' + q + 'x</strong> ' + n + '</span><span style="font-weight:700;">R' + (q * p).toFixed(2) + '</span></li>';
+      }
+      html += '</ul>';
+      return html;
     }
 
     async function fetchOrders() {
-      let remoteOrders = [];
       try {
         const { data, error } = await supabaseClient
           .from('orders')
           .select('*')
           .order('created_at', { ascending: false });
+
         if (!error && data) {
-          remoteOrders = data;
+          let state = getSharedState();
+          state.orders = data.map(o => ({
+            id: o.order_id || o.id,
+            date: o.created_at ? new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+            timestamp: o.created_at ? new Date(o.created_at).getTime() : Date.now(),
+            items: parseOrderItems(o.items),
+            instructions: o.instructions || o.notes || '',
+            total: Number(o.total || o.total_amount || 0),
+            stage: (o.stage || o.status || 'received').toLowerCase().trim().replace(/_/g, '-'),
+            clientName: o.client_name || o.customer_name || 'Customer',
+            phone: o.phone || o.customer_phone || ''
+          }));
+          saveSharedState(state);
+          renderKanban();
         }
       } catch (e) {}
-
-      let localState = { orders: [] };
-      try {
-        const stored = localStorage.getItem(SHARED_KEY);
-        if (stored) localState = JSON.parse(stored);
-      } catch (e) {}
-
-      const combinedMap = new Map();
-
-      (localState.orders || []).forEach(o => {
-        combinedMap.set(String(o.id || o.order_id), {
-          order_id: o.id,
-          id: o.id,
-          customer_name: o.clientName,
-          client_name: o.clientName,
-          phone: o.phone,
-          customer_phone: o.phone,
-          address: o.address,
-          items: o.items,
-          notes: o.instructions,
-          instructions: o.instructions,
-          total: o.total,
-          total_amount: o.total,
-          stage: o.stage || 'received',
-          status: o.stage || 'received',
-          processed_by: o.processed_by || 'Store Manager',
-          created_at: new Date(o.timestamp || Date.now()).toISOString()
-        });
-      });
-
-      remoteOrders.forEach(o => {
-        const oid = String(o.order_id || o.id);
-        combinedMap.set(oid, { ...o, processed_by: o.processed_by || o.staff_name || 'Store Manager' });
-      });
-
-      ordersCache = Array.from(combinedMap.values()).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      renderOrders();
-      if (currentView === 'audit') renderAuditLog();
     }
 
-    async function updateOrderStatus(orderId, newStatus) {
-      setTimeout(async () => {
-        try {
-          await supabaseClient
-            .from('orders')
-            .update({ stage: newStatus, status: newStatus, processed_by: currentStaff, updated_at: new Date().toISOString() })
-            .eq('id', orderId);
-        } catch (e) {}
+    async function updateOrderStatus(orderId, newStage) {
+      try {
+        await supabaseClient
+          .from('orders')
+          .update({ stage: newStage, status: newStage })
+          .eq('id', orderId);
 
-        try {
-          const stored = localStorage.getItem(SHARED_KEY);
-          if (stored) {
-            let state = JSON.parse(stored);
-            if (state.orders) {
-              state.orders = state.orders.map(o => {
-                if (String(o.id) === String(orderId)) {
-                  o.stage = newStatus;
-                  o.processed_by = currentStaff;
-                }
-                return o;
-              });
-              localStorage.setItem(SHARED_KEY, JSON.stringify(state));
-            }
-          }
-        } catch (e) {}
-
+        let state = getSharedState();
+        let ord = (state.orders || []).find(o => String(o.id) === String(orderId));
+        if (ord) {
+          ord.stage = newStage;
+          saveSharedState(state);
+        }
         fetchOrders();
-      }, 10);
+      } catch (e) {
+        alert('Error updating order status.');
+      }
     }
 
-    async function clearAllAuditOrders() {
-      if (!confirm('Are you sure you want to clear all orders from the audit log?')) return;
-      try {
-        await supabaseClient.from('orders').delete().neq('id', 0);
-      } catch (e) {}
-      localStorage.removeItem(SHARED_KEY);
-      ordersCache = [];
-      renderOrders();
-      renderAuditLog();
-      alert('All orders cleared.');
-    }
+    function renderKanban() {
+      const state = getSharedState();
+      const orders = state.orders || [];
+      const searchQuery = (document.getElementById('audit-search-input')?.value || '').toLowerCase().trim();
 
-    function parseItems(rawItems) {
-      if (!rawItems) return [];
-      if (Array.isArray(rawItems)) return rawItems;
-      try { const p = JSON.parse(rawItems); if (Array.isArray(p)) return p; return [p]; } catch (e) { return [{ name: rawItems, quantity: 1, price: 0 }]; }
-    }
-
-    function renderOrders() {
-      const columns = {
-        pending: document.getElementById('col-pending'),
-        preparing: document.getElementById('col-preparing'),
-        ready: document.getElementById('col-ready')
+      const cols = {
+        'received': document.getElementById('col-received'),
+        'preparing': document.getElementById('col-preparing'),
+        'ready': document.getElementById('col-ready'),
+        'completed': document.getElementById('col-completed'),
+        'cancelled': document.getElementById('col-cancelled')
       };
 
-      Object.values(columns).forEach(col => col.innerHTML = '');
+      const counts = { 'received': 0, 'preparing': 0, 'ready': 0, 'completed': 0, 'cancelled': 0 };
 
-      const counts = { pending: 0, preparing: 0, ready: 0, completed: 0 };
+      for (let k in cols) { if (cols[k]) cols[k].innerHTML = ''; }
 
-      ordersCache.forEach(order => {
-        const rawStage = (order.stage || order.status || 'pending').toLowerCase().trim().replace(/_/g, '-');
-        let stage = rawStage;
-        if (rawStage === 'kitchen-prep') stage = 'preparing';
-        if (rawStage === 'ready-for-pick-up') stage = 'ready';
+      let auditHtml = '<table style="width:100%; border-collapse:collapse;"><tr style="background:#f1f5f9; text-align:left; border-bottom:1px solid var(--border);"><th style="padding:8px;">Order ID</th><th style="padding:8px;">Customer</th><th style="padding:8px;">Phone</th><th style="padding:8px;">Status</th><th style="padding:8px;">Total</th><th style="padding:8px;">Time</th></tr>';
 
-        if (stage === 'completed' || stage === 'order-completed' || stage === 'cancelled' || stage === 'received') {
-          if (stage === 'received') stage = 'pending';
-          if (stage === 'completed' || stage === 'order-completed' || stage === 'cancelled') {
-            counts.completed++;
-            return;
+      let filteredAuditCount = 0;
+
+      orders.forEach(o => {
+        let st = (o.stage || 'received').toLowerCase().trim();
+        if (st === 'kitchen-prep') st = 'preparing';
+        if (st === 'ready-for-pick-up') st = 'ready';
+        if (st === 'order-completed') st = 'completed';
+        if (!cols[st]) st = 'received';
+
+        counts[st]++;
+
+        // Audit log search matching
+        const matchesSearch = !searchQuery || String(o.id).toLowerCase().includes(searchQuery) || String(o.clientName).toLowerCase().includes(searchQuery) || String(o.phone).includes(searchQuery);
+
+        if (matchesSearch) {
+          filteredAuditCount++;
+          auditHtml += '<tr style="border-bottom:1px solid #f1f5f9;">' +
+            '<td style="padding:8px; font-weight:800; color:var(--brand);">#' + o.id + '</td>' +
+            '<td style="padding:8px;">' + o.clientName + '</td>' +
+            '<td style="padding:8px;">' + o.phone + '</td>' +
+            '<td style="padding:8px; font-weight:bold; text-transform:uppercase; font-size:0.75rem;">' + st + '</td>' +
+            '<td style="padding:8px; font-weight:bold;">R' + Number(o.total).toFixed(2) + '</td>' +
+            '<td style="padding:8px; color:var(--muted);">' + (o.date || new Date(o.timestamp).toLocaleTimeString()) + '</td>' +
+          '</tr>';
+        }
+
+        let notesHtml = o.instructions ? '<div style="font-size:0.72rem; background:#fffbeb; padding:0.25rem 0.5rem; border-left:3px solid var(--brand); margin-bottom:0.4rem;"><strong>Note:</strong> ' + o.instructions + '</div>' : '';
+
+        let btnHtml = '';
+        if (st === 'received') {
+          btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'preparing\')" class="btn-action btn-prep">🔥 Start Preparing</button>';
+        } else if (st === 'preparing') {
+          btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'ready\')" class="btn-action btn-ready">✅ Mark Ready for Pickup</button>';
+        } else if (st === 'ready') {
+          btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'completed\')" class="btn-action btn-complete">🏁 Complete Order</button>';
+        }
+
+        let cancelBtn = (st !== 'completed' && st !== 'cancelled') ? '<button onclick="updateOrderStatus(\'' + o.id + '\', \'cancelled\')" class="btn-action btn-cancel" style="padding:0.3rem; font-size:0.7rem;">Cancel Order</button>' : '';
+
+        const card = document.createElement('div');
+        card.className = 'order-card';
+        card.innerHTML = 
+          '<div class="order-card-header">' +
+            '<div><strong>#' + o.id + '</strong><div style="font-size:0.72rem; color:var(--muted);">' + o.clientName + ' (' + o.phone + ')</div></div>' +
+            '<span style="font-size:0.72rem; font-weight:800; color:var(--brand);">' + o.date + '</span>' +
+          '</div>' +
+          '<div style="background:#f8fafc; padding:0.5rem; border-radius:8px; margin-bottom:0.5rem;">' + renderOrderItemsList(o.items) + '</div>' +
+          notesHtml +
+          '<div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; font-weight:800; margin-bottom:0.5rem;"><span>Total:</span><span style="color:var(--brand);">R' + Number(o.total).toFixed(2) + '</span></div>' +
+          btnHtml + cancelBtn;
+
+        if (cols[st]) cols[st].appendChild(card);
+      });
+
+      auditHtml += '</table>';
+      if (filteredAuditCount === 0) {
+        auditHtml = '<p style="text-align:center; padding:1.5rem; color:var(--muted);">No matching order ID or record found.</p>';
+      }
+
+      const auditContainer = document.getElementById('audit-log-container');
+      if (auditContainer) auditContainer.innerHTML = auditHtml;
+
+      document.getElementById('stat-received').innerText = counts.received;
+      document.getElementById('stat-prep').innerText = counts.preparing;
+      document.getElementById('stat-ready').innerText = counts.ready;
+      document.getElementById('stat-completed').innerText = counts.completed;
+      document.getElementById('stat-cancelled').innerText = counts.cancelled;
+
+      document.getElementById('count-received').innerText = counts.received;
+      document.getElementById('count-prep').innerText = counts.preparing;
+      document.getElementById('count-ready').innerText = counts.ready;
+      document.getElementById('count-completed').innerText = counts.completed;
+      document.getElementById('count-cancelled').innerText = counts.cancelled;
+    }
+
+    function subscribeToRealtimeStaff() {
+      supabaseClient
+        .channel('staff-realtime-orders')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'orders' },
+          (payload) => {
+            playKitchenChime();
+            fetchOrders();
           }
-        }
-
-        if (counts[stage] !== undefined) counts[stage]++;
-
-        const card = createOrderCard(order, stage);
-        if (columns[stage]) {
-          columns[stage].appendChild(card);
-        }
-      });
-
-      document.getElementById('count-pending').textContent = counts.pending;
-      document.getElementById('count-preparing').textContent = counts.preparing;
-      document.getElementById('count-ready').textContent = counts.ready;
-      document.getElementById('count-completed').textContent = counts.completed;
-
-      document.getElementById('badge-pending').textContent = counts.pending;
-      document.getElementById('badge-preparing').textContent = counts.preparing;
-      document.getElementById('badge-ready').textContent = counts.ready;
+        )
+        .subscribe();
     }
 
-    function createOrderCard(order, stage) {
-      const card = document.createElement('div');
-      card.className = "order-card bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between space-y-3";
-
-      const timeFormatted = order.created_at ? new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-      const items = parseItems(order.items);
-      const orderIdKey = order.order_id || order.id || 'DCS-01';
-      const customerName = order.customer_name || order.client_name || 'Walk-in Customer';
-      const customerPhone = order.customer_phone || order.phone || '';
-      const totalAmount = Number(order.total || order.total_amount || 0);
-      const notes = order.notes || order.instructions || '';
-
-      let itemsListHtml = items.map(item => {
-        const qty = item.quantity || item.qty || 1;
-        const name = item.name || item.title || 'Item';
-        const price = Number(item.price || 0);
-        return `<div class="flex justify-between text-xs text-slate-600"><span><strong class="text-slate-800">${qty}x</strong> ${name}</span><span>R${(price * qty).toFixed(2)}</span></div>`;
-      }).join('');
-
-      let actionButtonsHtml = '';
-      if (stage === 'pending') {
-        actionButtonsHtml = `<button onclick="updateOrderStatus('${orderIdKey}', 'kitchen-prep')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-3 rounded-lg text-xs transition-colors">Start Preparing →</button>`;
-      } else if (stage === 'preparing') {
-        actionButtonsHtml = `<button onclick="updateOrderStatus('${orderIdKey}', 'ready')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-1.5 px-3 rounded-lg text-xs transition-colors">Mark Ready →</button>`;
-      } else if (stage === 'ready') {
-        actionButtonsHtml = `<div class="flex space-x-2">
-          <button onclick="updateOrderStatus('${orderIdKey}', 'order-completed')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-1.5 px-2 rounded-lg text-xs transition-colors">Complete ✓</button>
-          <button onclick="updateOrderStatus('${orderIdKey}', 'cancelled')" class="bg-red-500 hover:bg-red-600 text-white font-medium py-1.5 px-2 rounded-lg text-xs transition-colors">Cancel ✕</button>
-        </div>`;
-      }
-
-      card.innerHTML = `
-        <div>
-          <div class="flex justify-between items-start border-b border-slate-100 pb-2 mb-2">
-            <div>
-              <span class="text-xs font-bold text-slate-400">#${orderIdKey}</span>
-              <h3 class="font-bold text-slate-900 text-sm">${customerName}</h3>
-              <p class="text-[11px] text-slate-500">${customerPhone}</p>
-            </div>
-            <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">${timeFormatted}</span>
-          </div>
-          <div class="space-y-1 my-2 max-h-36 overflow-y-auto">${itemsListHtml}</div>
-          ${notes ? `<div class="mt-2 text-[11px] bg-amber-50 text-amber-800 p-2 rounded border border-amber-200 font-medium">⚠️ ${notes}</div>` : ''}
-        </div>
-        <div class="pt-2 border-t border-slate-100">
-          <div class="flex justify-between items-center mb-2">
-            <span class="text-xs font-semibold text-slate-500">Total:</span>
-            <span class="text-sm font-black text-slate-900">R${totalAmount.toFixed(2)}</span>
-          </div>
-          ${actionButtonsHtml}
-        </div>
-      `;
-
-      return card;
-    }
-
-    function renderAuditLog() {
-      const tbody = document.getElementById('audit-table-body');
-      const statusFilter = document.getElementById('audit-status-filter').value;
-      const startDate = document.getElementById('audit-start-date').value;
-      const endDate = document.getElementById('audit-end-date').value;
-
-      let filtered = [...ordersCache];
-
-      if (statusFilter !== 'ALL') {
-        filtered = filtered.filter(o => {
-          const st = (o.stage || o.status || 'pending').toLowerCase().trim();
-          if (statusFilter === 'completed') return st === 'completed' || st === 'order-completed';
-          if (statusFilter === 'preparing') return st === 'preparing' || st === 'kitchen-prep';
-          if (statusFilter === 'ready') return st === 'ready' || st === 'ready-for-pick-up';
-          return st === statusFilter;
-        });
-      }
-
-      if (startDate) {
-        const start = new Date(startDate).setHours(0,0,0,0);
-        filtered = filtered.filter(o => o.created_at && new Date(o.created_at).setHours(0,0,0,0) >= start);
-      }
-
-      if (endDate) {
-        const end = new Date(endDate).setHours(23,59,59,999);
-        filtered = filtered.filter(o => o.created_at && new Date(o.created_at).setHours(0,0,0,0) <= end);
-      }
-
-      if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-slate-400">No orders match the selected filters.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = filtered.map(o => {
-        const orderIdKey = o.order_id || o.id || 'DCS-01';
-        const dateStr = o.created_at ? new Date(o.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '';
-        const customerName = o.customer_name || o.client_name || 'Walk-in';
-        const phone = o.customer_phone || o.phone || 'N/A';
-        const items = parseItems(o.items);
-        const itemSummary = items.map(i => `${i.quantity || i.qty || 1}x ${i.name || i.title}`).join(', ');
-        const total = Number(o.total || o.total_amount || 0);
-        const st = (o.stage || o.status || 'pending').toLowerCase();
-        const handledBy = o.processed_by || 'Store Manager';
-
-        let badgeColor = 'bg-slate-100 text-slate-700';
-        if (st === 'pending' || st === 'received') badgeColor = 'bg-amber-100 text-amber-800';
-        else if (st === 'preparing' || st === 'kitchen-prep') badgeColor = 'bg-blue-100 text-blue-800';
-        else if (st === 'ready' || st === 'ready-for-pick-up') badgeColor = 'bg-indigo-100 text-indigo-800';
-        else if (st === 'completed' || st === 'order-completed') badgeColor = 'bg-emerald-100 text-emerald-800';
-        else if (st === 'cancelled') badgeColor = 'bg-red-100 text-red-800';
-
-        return `
-          <tr class="hover:bg-slate-50">
-            <td class="py-3 px-4 font-bold text-slate-900">#${orderIdKey}</td>
-            <td class="py-3 px-4 text-slate-600">${dateStr}</td>
-            <td class="py-3 px-4 font-semibold text-slate-800">${customerName}</td>
-            <td class="py-3 px-4 text-slate-600">${phone}</td>
-            <td class="py-3 px-4 text-slate-600 max-w-xs truncate" title="${itemSummary}">${itemSummary}</td>
-            <td class="py-3 px-4 font-bold text-slate-900">R${total.toFixed(2)}</td>
-            <td class="py-3 px-4 font-medium text-indigo-700">${handledBy}</td>
-            <td class="py-3 px-4"><span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase ${badgeColor}">${st.replace('_', ' ')}</span></td>
-            <td class="py-3 px-4">
-              <button onclick="viewAuditOrderModal('${orderIdKey}')" class="text-xs text-indigo-600 hover:underline font-semibold">View</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
-
-    function viewAuditOrderModal(orderId) {
-      const o = ordersCache.find(x => String(x.order_id || x.id) === String(orderId));
-      if (!o) return;
-      const items = parseItems(o.items);
-      const modal = document.getElementById('audit-modal');
-      const content = document.getElementById('audit-modal-content');
-
-      const notes = o.notes || o.instructions || '';
-      const handledBy = o.processed_by || 'Store Manager';
-      let itemsHtml = items.map(i => {
-        const q = i.quantity || i.qty || 1;
-        const n = i.name || i.title || 'Item';
-        const p = Number(i.price || 0);
-        return `<li class="flex justify-between py-1 border-b border-slate-100"><span>${q}x ${n}</span><span class="font-bold">R${(q * p).toFixed(2)}</span></li>`;
-      }).join('');
-
-      content.innerHTML = `
-        <h3 class="text-lg font-bold text-slate-900 mb-3">Order Details #${o.order_id || o.id}</h3>
-        <p class="text-sm text-slate-600 mb-1"><strong>Customer:</strong> ${o.customer_name || o.client_name || 'Walk-in'} (${o.customer_phone || o.phone || 'N/A'})</p>
-        <p class="text-sm text-slate-600 mb-1"><strong>Address:</strong> ${o.address || 'N/A'}</p>
-        <p class="text-sm text-indigo-700 font-semibold mb-3"><strong>Processed/Handled By:</strong> ${handledBy}</p>
-        ${notes ? `<div class="mb-3 p-2 bg-amber-50 text-amber-800 text-xs rounded border border-amber-200"><strong>Notes:</strong> ${notes}</div>` : ''}
-        <h4 class="font-bold text-sm text-slate-700 mb-2">Items:</h4>
-        <ul class="space-y-1 mb-4 text-sm">${itemsHtml}</ul>
-        <div class="flex justify-between text-base font-bold text-slate-900 pt-2 border-t border-slate-200">
-          <span>Total:</span> <span class="text-amber-600">R${Number(o.total || o.total_amount || 0).toFixed(2)}</span>
-        </div>
-      `;
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-
-    function closeAuditModal() {
-      const modal = document.getElementById('audit-modal');
-      modal.classList.remove('flex');
-      modal.classList.add('hidden');
-    }
-
-    function exportAuditCSV() {
-      if (ordersCache.length === 0) { alert('No orders to export'); return; }
-      let csv = 'OrderID,Date,Customer,Phone,Total,HandledBy,Status\n';
-      ordersCache.forEach(o => {
-        const oid = o.order_id || o.id || 'DCS-01';
-        const date = o.created_at ? new Date(o.created_at).toISOString() : '';
-        const name = (o.customer_name || o.client_name || '').replace(/,/g, '');
-        const phone = o.customer_phone || o.phone || '';
-        const total = Number(o.total || o.total_amount || 0).toFixed(2);
-        const staff = (o.processed_by || 'Store Manager').replace(/,/g, '');
-        const stage = o.stage || o.status || 'pending';
-        csv += `${oid},${date},${name},${phone},${total},${staff},${stage}\n`;
-      });
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `store_audit_log_${new Date().toISOString().slice(0,10)}.csv`;
-      a.click();
-    }
+    window.addEventListener('DOMContentLoaded', () => {
+      fetchOrders();
+      subscribeToRealtimeStaff();
+      setInterval(fetchOrders, 8000);
+    });
   </script>
 </body>
 </html>
