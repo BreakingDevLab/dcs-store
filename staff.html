@@ -14,7 +14,7 @@
       --radius:12px;
     }
     *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,system-ui,-apple-system,sans-serif}
-    body{background:var(--bg-page); color:var(--primary); min-height:100vh; padding-bottom:40px;}
+    body{background:var(--bg-page); color:var(--primary); min-height:100vh; padding-bottom:50px;}
     header{
       background:var(--primary); color:#fff; padding:1rem 1.5rem; position:sticky; top:0; z-index:100;
       display:flex; align-items:center; justify-content:space-between; box-shadow:0 4px 20px rgba(0,0,0,0.15);
@@ -23,14 +23,14 @@
     .header-icon{width:42px;height:42px;border-radius:10px;background:var(--brand-gradient);display:flex;align-items:center;justify-content:center;font-size:1.2rem}
     .header-title h1{font-size:1.1rem;font-weight:800;color:#fff}
     .header-title p{font-size:.75rem;color:#cbd5e1}
-    .container{max-width:1400px;margin:1.5rem auto;padding:0 1rem}
-    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:1.5rem}
+    .container{max-width:1450px;margin:1.5rem auto;padding:0 1rem}
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem}
     .stat-card{background:#fff;border-radius:var(--radius);padding:1.1rem;border:1px solid var(--border);box-shadow:var(--shadow)}
-    .stat-card h3{font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.3rem}
-    .stat-card .value{font-size:1.6rem;font-weight:900;color:var(--primary)}
-    .kanban-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem;align-items:start}
+    .stat-card h3{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.3rem}
+    .stat-card .value{font-size:1.5rem;font-weight:900;color:var(--primary)}
+    .kanban-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;align-items:start}
     .kanban-column{background:#e2e8f0;border-radius:var(--radius);padding:1rem;min-height:550px;border:1px solid var(--border)}
-    .kanban-header{font-weight:800;font-size:.92rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;color:var(--primary);padding-bottom:.5rem;border-bottom:2px solid var(--border)}
+    .kanban-header{font-weight:800;font-size:.9rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;color:var(--primary);padding-bottom:.5rem;border-bottom:2px solid var(--border)}
     .order-card{background:#fff;border-radius:10px;padding:1rem;margin-bottom:1rem;border:1px solid var(--border);box-shadow:0 4px 12px rgba(0,0,0,0.05);position:relative}
     .order-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;padding-bottom:.5rem;border-bottom:1px dashed var(--border)}
     .btn-action{width:100%;padding:.5rem;margin-top:.4rem;border:none;border-radius:6px;font-weight:700;font-size:.8rem;cursor:pointer;color:#fff}
@@ -38,6 +38,10 @@
     .btn-ready{background:#2563eb}
     .btn-complete{background:#16a34a}
     .btn-cancel{background:#dc2626}
+    .audit-section{background:#fff; border-radius:var(--radius); padding:1.25rem; margin-top:2rem; border:1px solid var(--border); box-shadow:var(--shadow);}
+    .audit-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:1rem;}
+    input[type="text"]{padding:0.55rem 0.85rem; border:1px solid var(--border); border-radius:8px; font-size:0.88rem; width:300px; outline:none;}
+    input[type="text"]:focus{border-color:var(--brand); box-shadow:0 0 0 3px rgba(217,119,6,0.15);}
     .toast-alert{position:fixed;bottom:24px;right:24px;background:var(--primary);color:#fff;padding:1rem 1.25rem;border-radius:12px;z-index:999;box-shadow:0 10px 25px rgba(0,0,0,0.25);display:flex;gap:.75rem;align-items:center}
   </style>
 </head>
@@ -74,6 +78,10 @@
         <h3>Completed Today</h3>
         <div id="stat-completed" class="value">0</div>
       </div>
+      <div class="stat-card">
+        <h3>Cancelled Orders</h3>
+        <div id="stat-cancelled" class="value">0</div>
+      </div>
     </div>
 
     <div class="kanban-grid">
@@ -93,6 +101,18 @@
         <div class="kanban-header"><span>🏁 Completed</span><span id="count-completed" style="background:#cbd5e1;padding:.1rem .5rem;border-radius:12px;font-size:.75rem">0</span></div>
         <div id="col-completed"></div>
       </div>
+      <div class="kanban-column">
+        <div class="kanban-header"><span>❌ Cancelled</span><span id="count-cancelled" style="background:#cbd5e1;padding:.1rem .5rem;border-radius:12px;font-size:.75rem">0</span></div>
+        <div id="col-cancelled"></div>
+      </div>
+    </div>
+
+    <div class="audit-section">
+      <div class="audit-header">
+        <h3 style="font-size:1.05rem; font-weight:800;">📋 Audit Log & Order Search (Find Lost Orders)</h3>
+        <input type="text" id="audit-search-input" placeholder="🔍 Search Order ID, Customer, or Phone..." oninput="renderKanban()">
+      </div>
+      <div id="audit-log-container" style="max-height:300px; overflow-y:auto; font-size:0.85rem;"></div>
     </div>
   </div>
 
@@ -118,6 +138,11 @@
         osc.start(now); osc.stop(now + 0.5);
       } catch (e) {}
     }
+
+    document.addEventListener('click', () => {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }, { once: true });
 
     function getSharedState() {
       try { const stored = localStorage.getItem(SHARED_KEY); if (stored) return JSON.parse(stored); } catch (e) {}
@@ -176,19 +201,10 @@
 
     async function updateOrderStatus(orderId, newStage) {
       try {
-        // Try updating using both 'stage' and 'status' columns to guarantee compatibility
-        const { error } = await supabaseClient
+        await supabaseClient
           .from('orders')
           .update({ stage: newStage, status: newStage })
           .eq('id', orderId);
-
-        if (error) {
-          // Fallback if order_id is used instead of id
-          await supabaseClient
-            .from('orders')
-            .update({ stage: newStage, status: newStage })
-            .eq('order_id', orderId);
-        }
 
         let state = getSharedState();
         let ord = (state.orders || []).find(o => String(o.id) === String(orderId));
@@ -205,17 +221,23 @@
     function renderKanban() {
       const state = getSharedState();
       const orders = state.orders || [];
+      const searchQuery = (document.getElementById('audit-search-input')?.value || '').toLowerCase().trim();
 
       const cols = {
         'received': document.getElementById('col-received'),
         'preparing': document.getElementById('col-preparing'),
         'ready': document.getElementById('col-ready'),
-        'completed': document.getElementById('col-completed')
+        'completed': document.getElementById('col-completed'),
+        'cancelled': document.getElementById('col-cancelled')
       };
 
-      const counts = { 'received': 0, 'preparing': 0, 'ready': 0, 'completed': 0 };
+      const counts = { 'received': 0, 'preparing': 0, 'ready': 0, 'completed': 0, 'cancelled': 0 };
 
       for (let k in cols) { if (cols[k]) cols[k].innerHTML = ''; }
+
+      let auditHtml = '<table style="width:100%; border-collapse:collapse;"><tr style="background:#f1f5f9; text-align:left; border-bottom:1px solid var(--border);"><th style="padding:8px;">Order ID</th><th style="padding:8px;">Customer</th><th style="padding:8px;">Phone</th><th style="padding:8px;">Status</th><th style="padding:8px;">Total</th><th style="padding:8px;">Time</th></tr>';
+
+      let filteredAuditCount = 0;
 
       orders.forEach(o => {
         let st = (o.stage || 'received').toLowerCase().trim();
@@ -225,6 +247,20 @@
         if (!cols[st]) st = 'received';
 
         counts[st]++;
+
+        const matchesSearch = !searchQuery || String(o.id).toLowerCase().includes(searchQuery) || String(o.clientName).toLowerCase().includes(searchQuery) || String(o.phone).includes(searchQuery);
+
+        if (matchesSearch) {
+          filteredAuditCount++;
+          auditHtml += '<tr style="border-bottom:1px solid #f1f5f9;">' +
+            '<td style="padding:8px; font-weight:800; color:var(--brand);">#' + o.id + '</td>' +
+            '<td style="padding:8px;">' + o.clientName + '</td>' +
+            '<td style="padding:8px;">' + o.phone + '</td>' +
+            '<td style="padding:8px; font-weight:bold; text-transform:uppercase; font-size:0.75rem;">' + st + '</td>' +
+            '<td style="padding:8px; font-weight:bold;">R' + Number(o.total).toFixed(2) + '</td>' +
+            '<td style="padding:8px; color:var(--muted);">' + (o.date || new Date(o.timestamp).toLocaleTimeString()) + '</td>' +
+          '</tr>';
+        }
 
         let notesHtml = o.instructions ? '<div style="font-size:0.72rem; background:#fffbeb; padding:0.25rem 0.5rem; border-left:3px solid var(--brand); margin-bottom:0.4rem;"><strong>Note:</strong> ' + o.instructions + '</div>' : '';
 
@@ -237,7 +273,7 @@
           btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'completed\')" class="btn-action btn-complete">🏁 Complete Order</button>';
         }
 
-        let cancelBtn = st !== 'completed' ? '<button onclick="updateOrderStatus(\'' + o.id + '\', \'cancelled\')" class="btn-action btn-cancel" style="padding:0.3rem; font-size:0.7rem;">Cancel</button>' : '';
+        let cancelBtn = (st !== 'completed' && st !== 'cancelled') ? '<button onclick="updateOrderStatus(\'' + o.id + '\', \'cancelled\')" class="btn-action btn-cancel" style="padding:0.3rem; font-size:0.7rem;">Cancel Order</button>' : '';
 
         const card = document.createElement('div');
         card.className = 'order-card';
@@ -254,15 +290,25 @@
         if (cols[st]) cols[st].appendChild(card);
       });
 
+      auditHtml += '</table>';
+      if (filteredAuditCount === 0) {
+        auditHtml = '<p style="text-align:center; padding:1.5rem; color:var(--muted);">No matching order ID or record found.</p>';
+      }
+
+      const auditContainer = document.getElementById('audit-log-container');
+      if (auditContainer) auditContainer.innerHTML = auditHtml;
+
       document.getElementById('stat-received').innerText = counts.received;
       document.getElementById('stat-prep').innerText = counts.preparing;
       document.getElementById('stat-ready').innerText = counts.ready;
       document.getElementById('stat-completed').innerText = counts.completed;
+      document.getElementById('stat-cancelled').innerText = counts.cancelled;
 
       document.getElementById('count-received').innerText = counts.received;
       document.getElementById('count-prep').innerText = counts.preparing;
       document.getElementById('count-ready').innerText = counts.ready;
       document.getElementById('count-completed').innerText = counts.completed;
+      document.getElementById('count-cancelled').innerText = counts.cancelled;
     }
 
     function subscribeToRealtimeStaff() {
