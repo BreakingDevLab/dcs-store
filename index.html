@@ -71,7 +71,11 @@
     .cart-body{flex:1;overflow-y:auto;padding:1.25rem}
     .cart-footer{padding:1.25rem;border-top:1px solid var(--border);background:#f8fafc}
     .cart-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px dashed var(--border)}
-    .toast-alert{position:fixed;bottom:24px;right:24px;background:var(--primary);color:#fff;padding:1rem 1.35rem;border-radius:var(--radius);display:flex;gap:.85rem;align-items:center;z-index:300;box-shadow:0 15px 35px rgba(0,0,0,0.25);animation:slideUp .3s ease}
+    .toast-alert{
+      position:fixed; bottom:24px; right:24px; background:var(--primary); color:#fff; padding:1.1rem 1.4rem;
+      border-radius:var(--radius); display:flex; gap:.85rem; align-items:center; z-index:300;
+      box-shadow:0 15px 35px rgba(0,0,0,0.25); animation:slideUp .3s ease; border-left:4px solid var(--brand);
+    }
     @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
     .modal-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.75);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:300;padding:1rem}
     .modal-content{background:#fff;border-radius:var(--radius);max-width:540px;width:100%;padding:1.5rem;max-height:90vh;overflow-y:auto;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25)}
@@ -323,11 +327,13 @@
     function showStageNotification(orderId, stage) {
       let msg = '';
       if (stage === 'preparing' || stage === 'kitchen-prep') {
-        msg = 'Your order is now being freshly prepared in the kitchen!';
+        msg = '🔥 Your order is currently being freshly prepared by our kitchen team!';
       } else if (stage === 'ready' || stage === 'ready-for-pick-up') {
-        msg = 'Your order is ready! Come collect it hot and fresh.';
+        msg = '✅ Your order is ready! Come collect it hot and fresh from the counter.';
       } else if (stage === 'completed' || stage === 'order-completed') {
-        msg = '⭐ Thank you for shopping with Davidsonville Community Store! We hope your meal brings warmth to your home. We look forward to serving you again soon! ⭐';
+        msg = '⭐ Thank you for shopping with Davidsonville Community Store! We hope your meal brings warmth to your home. See you again soon! ⭐';
+      } else if (stage === 'cancelled') {
+        msg = '❌ Order #' + orderId + ' has been cancelled.';
       } else {
         msg = 'Order #' + orderId + ' status updated to ' + stage.toUpperCase() + '.';
       }
@@ -341,7 +347,13 @@
       toast.innerHTML = '<span>🔔</span><div><strong>Order #' + orderId + '</strong><br>' + msg + '</div>';
       document.body.appendChild(toast);
       playCustomerChime();
-      setTimeout(() => toast.remove(), 7000);
+      
+      // Gentle fade away after 7 seconds
+      setTimeout(() => {
+        toast.style.transition = 'opacity 0.6s ease';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 600);
+      }, 7000);
     }
 
     function parseOrderItems(rawItems) {
@@ -666,7 +678,29 @@
       document.getElementById('special-instructions').value = '';
       toggleCartDrawer();
       renderCart(); renderLiveOrderTrackersUI(); renderOrderHistory();
+      
+      // Professional gentle order placed notification popup that fades away
+      showOrderPlacedNotification(newOrder.id);
+      
       showDigitalReceipt(newOrder);
+    }
+
+    function showOrderPlacedNotification(orderId) {
+      const existing = document.getElementById('order-placed-toast');
+      if (existing) existing.remove();
+
+      const toast = document.createElement('div');
+      toast.id = 'order-placed-toast';
+      toast.className = 'toast-alert';
+      toast.innerHTML = '<span>🛒</span><div><strong>Order #' + orderId + ' Placed!</strong><br>Your order has been sent to the kitchen and is currently being reviewed.</div>';
+      document.body.appendChild(toast);
+      playCustomerChime();
+      
+      setTimeout(() => {
+        toast.style.transition = 'opacity 0.6s ease';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 600);
+      }, 7000);
     }
 
     function showDigitalReceipt(order) {
