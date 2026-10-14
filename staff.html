@@ -9,51 +9,54 @@
   <style>
     :root{
       --primary:#0f172a; --brand:#d97706; --brand-gradient:linear-gradient(135deg,#f59e0b 0%,#d97706 100%);
-      --bg-page:#f1f5f9; --card-bg:#ffffff; --muted:#64748b; --border:#cbd5e1;
+      --bg-page:#f8fafc; --card-bg:#ffffff; --muted:#64748b; --border:#e2e8f0;
       --shadow:0 10px 25px -5px rgba(0,0,0,0.08),0 8px 10px -6px rgba(0,0,0,0.04);
-      --radius:12px;
+      --radius:14px; --focus: 0 0 0 4px rgba(217,119,6,0.12);
     }
     *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,system-ui,-apple-system,sans-serif}
     body{background:var(--bg-page); color:var(--primary); min-height:100vh; padding-bottom:50px;}
     header{
-      background:var(--primary); color:#fff; padding:1rem 1.5rem; position:sticky; top:0; z-index:100;
-      display:flex; align-items:center; justify-content:space-between; box-shadow:0 4px 20px rgba(0,0,0,0.15);
+      background:rgba(15,23,42,0.95); color:#fff; padding:.85rem 1.25rem; position:sticky; top:0; z-index:120;
+      display:flex; align-items:center; justify-content:space-between; gap:1rem; border-bottom:1px solid rgba(255,255,255,0.06);
+      box-shadow:0 4px 20px rgba(0,0,0,0.12); backdrop-filter:blur(8px);
     }
-    .header-left{display:flex;align-items:center;gap:.75rem}
-    .header-icon{width:42px;height:42px;border-radius:10px;background:var(--brand-gradient);display:flex;align-items:center;justify-content:center;font-size:1.2rem}
-    .header-title h1{font-size:1.1rem;font-weight:800;color:#fff}
-    .header-title p{font-size:.75rem;color:#cbd5e1}
+    .brand-header{display:flex;align-items:center;gap:.75rem}
+    .brand-icon{width:44px;height:44px;border-radius:10px;background:var(--brand-gradient);display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+    .header-title h1{font-size:1.05rem;font-weight:800;color:#fff;line-height:1}
+    .header-title p{font-size:.72rem;color:#cbd5e1;margin-top:2px}
     .container{max-width:1450px;margin:1.5rem auto;padding:0 1rem}
     .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem}
-    .stat-card{background:#fff;border-radius:var(--radius);padding:1.1rem;border:1px solid var(--border);box-shadow:var(--shadow)}
-    .stat-card h3{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.3rem}
+    .stat-card{background:#fff;border-radius:12px;padding:1.1rem;border:1px solid var(--border);box-shadow:var(--shadow)}
+    .stat-card h3{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.3rem;font-weight:700}
     .stat-card .value{font-size:1.5rem;font-weight:900;color:var(--primary)}
     .kanban-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;align-items:start}
-    .kanban-column{background:#e2e8f0;border-radius:var(--radius);padding:1rem;min-height:550px;border:1px solid var(--border)}
+    .kanban-column{background:#f1f5f9;border-radius:var(--radius);padding:1rem;min-height:550px;border:1px solid var(--border)}
     .kanban-header{font-weight:800;font-size:.9rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;color:var(--primary);padding-bottom:.5rem;border-bottom:2px solid var(--border)}
-    .order-card{background:#fff;border-radius:10px;padding:1rem;margin-bottom:1rem;border:1px solid var(--border);box-shadow:0 4px 12px rgba(0,0,0,0.05);position:relative}
-    .order-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;padding-bottom:.5rem;border-bottom:1px dashed var(--border)}
-    .btn-action{width:100%;padding:.5rem;margin-top:.4rem;border:none;border-radius:6px;font-weight:700;font-size:.8rem;cursor:pointer;color:#fff}
-    .btn-prep{background:#d97706}
+    .order-card{background:#fff;border-radius:12px;padding:1rem;margin-bottom:1rem;border:1px solid var(--border);box-shadow:0 4px 12px rgba(0,0,0,0.05);position:relative}
+    .order-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+    .btn-action{width:100%;padding:.55rem;margin-top:.4rem;border:none;border-radius:8px;font-weight:800;font-size:.8rem;cursor:pointer;color:#fff;transition:transform .1s}
+    .btn-action:active{transform:scale(.98)}
+    .btn-prep{background:var(--brand-gradient)}
     .btn-ready{background:#2563eb}
-    .btn-complete{background:#16a34a}
-    .btn-cancel{background:#dc2626}
-    .audit-section{background:#fff; border-radius:var(--radius); padding:1.25rem; margin-top:2rem; border:1px solid var(--border); box-shadow:var(--shadow);}
+    .btn-complete{background:#059669}
+    .btn-cancel{background:#ef4444}
+    .audit-section{background:#fff; border-radius:12px; padding:1.25rem; margin-top:2rem; border:1px solid var(--border); box-shadow:var(--shadow);}
     .audit-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:1rem;}
-    input[type="text"]{padding:0.55rem 0.85rem; border:1px solid var(--border); border-radius:8px; font-size:0.88rem; width:300px; outline:none;}
+    input[type="text"]{padding:0.65rem 0.9rem; border:1px solid var(--border); border-radius:10px; font-size:0.88rem; width:300px; outline:none; color:var(--primary);}
+    input[type="text"]:focus{box-shadow:var(--focus); border-color:var(--brand);}
   </style>
 </head>
 <body>
   <header>
-    <div class="header-left">
-      <div class="header-icon">👨‍🍳</div>
+    <div class="brand-header">
+      <div class="brand-icon">🍗</div>
       <div class="header-title">
-        <h1>Davidsonville Store | Kitchen Dashboard</h1>
-        <p>Live Order Management & Kanban Workflow</p>
+        <h1>Davidsonville Store</h1>
+        <p>Kitchen & Staff Dashboard</p>
       </div>
     </div>
     <div style="display:flex; gap:0.75rem; align-items:center;">
-      <button onclick="fetchOrders()" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:0.5rem 1rem; border-radius:8px; font-weight:700; cursor:pointer;">🔄 Refresh</button>
+      <button onclick="fetchOrders()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:0.45rem .85rem; border-radius:10px; font-weight:700; cursor:pointer;">🔄 Refresh</button>
       <span id="live-status-indicator" style="background:#22c55e; width:12px; height:12px; border-radius:50%; display:inline-block;" title="Live Sync Active"></span>
     </div>
   </header>
@@ -68,11 +71,11 @@
     </div>
 
     <div class="kanban-grid">
-      <div class="kanban-column"><div class="kanban-header"><span>📥 Received</span><span id="count-received">0</span></div><div id="col-received"></div></div>
-      <div class="kanban-column"><div class="kanban-header"><span>🔥 Preparing</span><span id="count-prep">0</span></div><div id="col-preparing"></div></div>
-      <div class="kanban-column"><div class="kanban-header"><span>✅ Ready</span><span id="count-ready">0</span></div><div id="col-ready"></div></div>
-      <div class="kanban-column"><div class="kanban-header"><span>🏁 Completed</span><span id="count-completed">0</span></div><div id="col-completed"></div></div>
-      <div class="kanban-column"><div class="kanban-header"><span>❌ Cancelled</span><span id="count-cancelled">0</span></div><div id="col-cancelled"></div></div>
+      <div class="kanban-column"><div class="kanban-header"><span>📥 Received</span><span id="count-received" style="background:#e2e8f0;padding:.15rem .5rem;border-radius:12px;font-size:.75rem">0</span></div><div id="col-received"></div></div>
+      <div class="kanban-column"><div class="kanban-header"><span>🔥 Preparing</span><span id="count-prep" style="background:#e2e8f0;padding:.15rem .5rem;border-radius:12px;font-size:.75rem">0</span></div><div id="col-preparing"></div></div>
+      <div class="kanban-column"><div class="kanban-header"><span>✅ Ready</span><span id="count-ready" style="background:#e2e8f0;padding:.15rem .5rem;border-radius:12px;font-size:.75rem">0</span></div><div id="col-ready"></div></div>
+      <div class="kanban-column"><div class="kanban-header"><span>🏁 Completed</span><span id="count-completed" style="background:#e2e8f0;padding:.15rem .5rem;border-radius:12px;font-size:.75rem">0</span></div><div id="col-completed"></div></div>
+      <div class="kanban-column"><div class="kanban-header"><span>❌ Cancelled</span><span id="count-cancelled" style="background:#e2e8f0;padding:.15rem .5rem;border-radius:12px;font-size:.75rem">0</span></div><div id="col-cancelled"></div></div>
     </div>
 
     <div class="audit-section">
@@ -151,7 +154,6 @@
         let state = getSharedState();
         let combined = [...(data || [])];
 
-        // Also merge local storage orders as fallback if offline
         if (state.orders && Array.isArray(state.orders)) {
           state.orders.forEach(lo => {
             if (!combined.some(o => (o.id || o.order_id) === lo.id)) {
@@ -242,7 +244,7 @@
           '</tr>';
         }
 
-        let notesHtml = o.instructions ? '<div style="font-size:0.72rem; background:#fffbeb; padding:0.25rem 0.5rem; border-left:3px solid var(--brand); margin-bottom:0.4rem;"><strong>Note:</strong> ' + o.instructions + '</div>' : '';
+        let notesHtml = o.instructions ? '<div style="font-size:0.72rem; background:#fffbeb; padding:0.25rem 0.5rem; border-left:3px solid var(--brand); margin-bottom:0.4rem; margin-top:0.4rem;"><strong>Note:</strong> ' + o.instructions + '</div>' : '';
 
         let btnHtml = '';
         if (st === 'received') {
@@ -253,7 +255,7 @@
           btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'completed\')" class="btn-action btn-complete">🏁 Complete Order</button>';
         }
 
-        let cancelBtn = (st !== 'completed' && st !== 'cancelled') ? '<button onclick="updateOrderStatus(\'' + o.id + '\', \'cancelled\')" class="btn-action btn-cancel" style="padding:0.3rem; font-size:0.7rem;">Cancel Order</button>' : '';
+        let cancelBtn = (st !== 'completed' && st !== 'cancelled') ? '<button onclick="updateOrderStatus(\'' + o.id + '\', \'cancelled\')" class="btn-action btn-cancel" style="padding:0.35rem; font-size:0.75rem;">Cancel Order</button>' : '';
 
         const card = document.createElement('div');
         card.className = 'order-card';
