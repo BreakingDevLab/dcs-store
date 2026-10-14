@@ -164,7 +164,7 @@
     <main>
       <div class="card" style="margin-bottom:1.25rem; padding:1rem;">
         <div style="display:flex; gap:0.5rem; align-items:center;">
-          <input type="text" id="search-input" placeholder="🔍 Search menu items..." style="margin-bottom:0; flex:1;">
+          <input type="text" id="search-input" placeholder="🔍 Search menu items..." style="margin-bottom:0; flex:1;" oninput="renderCatalog()">
           <button onclick="clearSearch()" style="padding:.72rem 1rem; border-radius:10px; border:1px solid var(--border); background:#f1f5f9; cursor:pointer; font-weight:700; font-size:0.85rem;">Clear</button>
         </div>
         <div id="category-filter-chips" style="display:flex; gap:0.5rem; margin-top:0.75rem; flex-wrap:wrap;"></div>
@@ -408,7 +408,6 @@
       '</div>';
     }
 
-    // Non-blocking background sync with Supabase
     async function postOrderToSupabase(order) {
       setTimeout(async () => {
         try {
