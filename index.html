@@ -9,6 +9,7 @@
   <style>
     :root{
       --primary:#0f172a; --brand:#d97706; --brand-gradient:linear-gradient(135deg,#f59e0b 0%,#b45309 100%);
+      --special-gradient:linear-gradient(135deg,#ef4444 0%,#dc2626 50%,#b91c1c 100%);
       --bg-page:#f8fafc; --card-bg:#ffffff; --muted:#64748b; --border:#e2e8f0;
       --shadow:0 10px 30px -5px rgba(15,23,42,0.08),0 4px 6px -4px rgba(15,23,42,0.03);
       --radius:16px; --focus: 0 0 0 4px rgba(217,119,6,0.15);
@@ -32,12 +33,43 @@
     .header-cart-btn:hover{background:rgba(255,255,255,0.14)}
     .header-orders-btn{background:transparent;border:none;color:#fff;display:flex;align-items:center;gap:.5rem;cursor:pointer;font-weight:700;font-size:.9rem}
     .orders-badge{background:#ef4444;color:#fff;padding:.15rem .5rem;border-radius:999px;font-size:.75rem;font-weight:900}
+    
     .hero-banner-container{max-width:1160px;margin:1.5rem auto 0;padding:0 1rem}
     .hero-banner{position:relative;width:100%;height:240px;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--border);background:#0f172a}
     .hero-banner-img{width:100%;height:100%;object-fit:cover;filter:brightness(.82);transition:transform .5s ease}
     .hero-banner:hover .hero-banner-img{transform:scale(1.02)}
     .hero-banner-overlay{position:absolute;inset:0;background:linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.5) 60%, rgba(15,23,42,0.15) 100%);display:flex;flex-direction:column;justify-content:flex-end;padding:1.75rem;color:#fff}
     .hero-tag{align-self:flex-start;background:rgba(217,119,6,0.95);padding:.3rem .85rem;border-radius:20px;font-weight:800;font-size:.75rem;box-shadow:0 4px 12px rgba(217,119,6,0.3);margin-bottom:.5rem}
+    
+    /* Dedicated Hot Deal Hero Showcase */
+    .special-spotlight-banner {
+      background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+      border: 2px solid #ef4444;
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-top: 1.25rem;
+      box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.25rem;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    .special-spotlight-banner::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(239,68,68,0.15) 0%, transparent 60%);
+      animation: rotateGlow 8s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes rotateGlow { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
     .container{max-width:1160px;margin:1.75rem auto;padding:0 1rem;display:grid;grid-template-columns:1fr;gap:1.5rem}
     @media(min-width:920px){.container{grid-template-columns:340px 1fr}}
     .card{background:var(--card-bg);border-radius:var(--radius);padding:1.25rem;border:1px solid var(--border);box-shadow:var(--shadow);color:var(--primary)}
@@ -58,7 +90,12 @@
     .dropdown-content-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1.1rem;padding:1.25rem;background:#f8fafc}
     .item-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 4px 12px rgba(0,0,0,0.03);transition:transform .2s,box-shadow .2s}
     .item-card:hover{transform:translateY(-3px);box-shadow:0 12px 25px rgba(0,0,0,0.08)}
-    .item-img-container{width:100%;height:140px;overflow:hidden;background:#e2e8f0}
+    
+    /* Premium Shining Special Highlight for Wings & Chips */
+    .item-card.shining-special{border:2px solid #ef4444; box-shadow:0 0 25px rgba(239,68,68,0.4); animation:pulseSpecial 2s infinite;}
+    @keyframes pulseSpecial{0%{box-shadow:0 0 15px rgba(239,68,68,0.3); transform: scale(1);} 50%{box-shadow:0 0 35px rgba(239,68,68,0.65); transform: scale(1.02);} 100%{box-shadow:0 0 15px rgba(239,68,68,0.3); transform: scale(1);}}
+
+    .item-img-container{width:100%;height:140px;overflow:hidden;background:#e2e8f0;position:relative}
     .item-img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
     .item-card:hover .item-img{transform:scale(1.05)}
     .item-details{padding:1rem;display:flex;flex-direction:column;justify-content:space-between;flex:1}
@@ -123,6 +160,19 @@
         <p style="margin:0;color:#cbd5e1;font-size:.95rem">Order online for quick in-store pickup. Call: 064 629 7453</p>
       </div>
     </div>
+
+    <!-- Glowing Enticing Special Banner for Wings & Chips -->
+    <div class="special-spotlight-banner">
+      <div style="z-index:1;">
+        <span style="background:#ef4444; color:#fff; font-size:0.75rem; font-weight:900; padding:0.25rem 0.65rem; border-radius:20px; text-transform:uppercase; letter-spacing:1px; box-shadow:0 2px 10px rgba(239,68,68,0.5);">🔥 STORE SPECIAL ★ BEST SELLER</span>
+        <h3 style="font-size:1.35rem; font-weight:900; margin:0.4rem 0 0.2rem; color:#fff;">Crispy Wings & Golden Chips Combo</h3>
+        <p style="font-size:0.88rem; color:#cbd5e1; margin:0;">Hot, seasoned chicken wings served with a generous side of fresh chips!</p>
+      </div>
+      <div style="text-align:right; z-index:1; min-width:130px;">
+        <div style="font-size:1.6rem; font-weight:900; color:#facc15;">R35.00</div>
+        <button onclick="addToCart('cc6')" style="background:var(--special-gradient); color:#fff; border:none; padding:0.55rem 1rem; border-radius:10px; font-weight:900; font-size:0.85rem; cursor:pointer; margin-top:0.35rem; box-shadow:0 4px 15px rgba(239,68,68,0.5); width:100%;">+ Order Special</button>
+      </div>
+    </div>
   </div>
 
   <div class="container">
@@ -134,14 +184,14 @@
 
       <div id="login-panel" class="card" style="margin-top:1.25rem">
         <div class="card-title">🔑 Account Login</div>
-        <input type="tel" id="login-phone" placeholder="Registered Phone Number">
+        <input type="tel" id="login-phone" placeholder="Phone (e.g. 0646297453)">
         <button onclick="handleLoginClient()" class="btn-primary">Login to Store</button>
       </div>
 
       <div id="registration-panel" class="card" style="margin-top:1.25rem">
         <div class="card-title">📝 New Registration</div>
         <input type="text" id="new-name" placeholder="Full Name">
-        <input type="tel" id="new-phone" placeholder="Phone Number">
+        <input type="tel" id="new-phone" placeholder="Phone (e.g. 0646297453)">
         <input type="text" id="new-address" placeholder="Delivery/Collection Address">
         <button onclick="handleRegisterClient()" class="btn-primary" style="background:linear-gradient(135deg,#059669 0%,#047857 100%)">Register Account</button>
       </div>
@@ -175,7 +225,7 @@
     <main>
       <div class="card" style="margin-bottom:1.5rem; padding:1.25rem;">
         <div style="display:flex; gap:0.75rem; align-items:center;">
-          <input type="text" id="search-input" placeholder="🔍 Search menu items (e.g. Chips, Burger)..." style="margin-bottom:0; flex:1;" oninput="renderCatalog()">
+          <input type="text" id="search-input" placeholder="🔍 Search menu items (e.g. Chips, Wings, Bunny)..." style="margin-bottom:0; flex:1;" oninput="renderCatalog()">
           <button onclick="clearSearch()" style="padding:.75rem 1.15rem; border-radius:12px; border:1px solid var(--border); background:#f1f5f9; cursor:pointer; font-weight:700; font-size:0.9rem;">Clear</button>
         </div>
         <div id="category-filter-chips" style="display:flex; gap:0.6rem; margin-top:1rem; flex-wrap:wrap;"></div>
@@ -253,11 +303,20 @@
 
     function getSharedState() {
       try { const stored = localStorage.getItem(SHARED_KEY); if (stored) return JSON.parse(stored); } catch (e) {}
-      return { clients: [], orders: [] };
+      return { clients: [], orders: [], outOfStock: [] };
     }
 
     function saveSharedState(state) {
       try { localStorage.setItem(SHARED_KEY, JSON.stringify(state)); } catch (e) {}
+    }
+
+    function cleanAndValidatePhone(input) {
+      if (!input) return '';
+      let cleaned = input.replace(/\D/g, '');
+      if (cleaned.startsWith('27') && cleaned.length >= 11) {
+        cleaned = '0' + cleaned.slice(2);
+      }
+      return cleaned;
     }
 
     let client = JSON.parse(localStorage.getItem('dcs_client')) || null;
@@ -265,16 +324,17 @@
     let favorites = JSON.parse(localStorage.getItem('dcs_favorites')) || [];
     let activeCategoryFilter = 'ALL';
 
+    // UPDATED CATALOG WITH NEW CHIP PRICES (R10, R20, R30) & ENTICING WINGS & CHIPS SPECIAL
     const catalog = [
-      { id: 'ch1', name: 'SMALL CHIPS', category: 'Chips', price: 15, img: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80' },
-      { id: 'ch2', name: 'MEDIUM CHIPS', category: 'Chips', price: 25, img: 'https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?auto=format&fit=crop&w=500&q=80' },
-      { id: 'ch3', name: 'LARGE CHIPS', category: 'Chips', price: 35, img: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=500&q=80' },
+      { id: 'ch1', name: 'SMALL CHIPS', category: 'Chips', price: 10, img: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80' },
+      { id: 'ch2', name: 'MEDIUM CHIPS', category: 'Chips', price: 20, img: 'https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?auto=format&fit=crop&w=500&q=80' },
+      { id: 'ch3', name: 'LARGE CHIPS', category: 'Chips', price: 30, img: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=500&q=80' },
       { id: 'cc1', name: 'FULL HOUSE COMBO 1', category: 'Chicken Combos', price: 155, img: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=500&q=80' },
       { id: 'cc2', name: 'FULL CHICKEN', category: 'Chicken Combos', price: 95, img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=80' },
       { id: 'cc3', name: 'HALF CHICKEN', category: 'Chicken Combos', price: 50, img: 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&w=500&q=80' },
       { id: 'cc4', name: '½ CHICKEN & CHIPS', category: 'Chicken Combos', price: 60, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=500&q=80' },
       { id: 'cc5', name: '¼ CHICKEN & CHIPS', category: 'Chicken Combos', price: 45, img: 'https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&w=500&q=80' },
-      { id: 'cc6', name: 'WINGS & CHIPS (SPECIAL)', category: 'Chicken Combos', price: 35, img: 'https://images.unsplash.com/photo-1567620832903-9fc6debc209f?auto=format&fit=crop&w=500&q=80' },
+      { id: 'cc6', name: '🔥 CRISPY WINGS & CHIPS (SPECIAL)', category: 'Chicken Combos', price: 35, img: 'https://images.unsplash.com/photo-1567620832903-9fc6debc209f?auto=format&fit=crop&w=500&q=80', isSpecial: true },
       { id: 'bc1', name: 'CHIP BUNNY', category: 'Bunny Chows', price: 20, img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=500&q=80' },
       { id: 'bc2', name: 'POLONY BUNNY', category: 'Bunny Chows', price: 38, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
       { id: 'bc3', name: 'RUSSIAN BUNNY', category: 'Bunny Chows', price: 43, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?auto=format&fit=crop&w=500&q=80' },
@@ -297,28 +357,45 @@
     ];
 
     let audioCtx = null;
-    function playCustomerChime() {
+    function playCustomerChime(type) {
       try {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const now = audioCtx.currentTime;
+
         const osc1 = audioCtx.createOscillator();
         const gain1 = audioCtx.createGain();
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(659.25, now);
-        gain1.gain.setValueAtTime(0.4, now);
-        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
         osc1.connect(gain1); gain1.connect(audioCtx.destination);
-        osc1.start(now); osc1.stop(now + 0.4);
 
-        const osc2 = audioCtx.createOscillator();
-        const gain2 = audioCtx.createGain();
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(880.00, now + 0.2);
-        gain2.gain.setValueAtTime(0.5, now + 0.2);
-        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
-        osc2.connect(gain2); gain2.connect(audioCtx.destination);
-        osc2.start(now + 0.2); osc2.stop(now + 0.8);
+        if (type === 'preparing') {
+          osc1.type = 'triangle';
+          osc1.frequency.setValueAtTime(440, now);
+          osc1.frequency.setValueAtTime(554.37, now + 0.15);
+          gain1.gain.setValueAtTime(0.4, now);
+          gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+          osc1.start(now); osc1.stop(now + 0.5);
+        } else if (type === 'ready') {
+          osc1.type = 'sine';
+          osc1.frequency.setValueAtTime(659.25, now);
+          osc1.frequency.setValueAtTime(880.00, now + 0.2);
+          gain1.gain.setValueAtTime(0.5, now);
+          gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+          osc1.start(now); osc1.stop(now + 0.8);
+        } else if (type === 'completed') {
+          osc1.type = 'sine';
+          osc1.frequency.setValueAtTime(523.25, now);
+          osc1.frequency.setValueAtTime(659.25, now + 0.2);
+          osc1.frequency.setValueAtTime(783.99, now + 0.4);
+          gain1.gain.setValueAtTime(0.5, now);
+          gain1.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+          osc1.start(now); osc1.stop(now + 1.0);
+        } else {
+          osc1.type = 'sine';
+          osc1.frequency.setValueAtTime(500, now);
+          gain1.gain.setValueAtTime(0.3, now);
+          gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+          osc1.start(now); osc1.stop(now + 0.3);
+        }
       } catch (err) {}
     }
 
@@ -329,12 +406,17 @@
 
     function showStageNotification(orderId, stage) {
       let msg = '';
+      let chimeType = 'default';
+
       if (stage === 'preparing' || stage === 'kitchen-prep') {
         msg = '🔥 Your order is currently being freshly prepared by our kitchen team!';
+        chimeType = 'preparing';
       } else if (stage === 'ready' || stage === 'ready-for-pick-up') {
         msg = '✅ Your order is ready! Come collect it hot and fresh from the counter.';
+        chimeType = 'ready';
       } else if (stage === 'completed' || stage === 'order-completed') {
         msg = '⭐ Thank you for shopping with Davidsonville Community Store! We hope your meal brings warmth to your home. See you again soon! ⭐';
+        chimeType = 'completed';
       } else if (stage === 'cancelled') {
         msg = '❌ Order #' + orderId + ' has been cancelled.';
       } else {
@@ -349,7 +431,8 @@
       toast.className = 'toast-alert';
       toast.innerHTML = '<span>🔔</span><div><strong>Order #' + orderId + '</strong><br>' + msg + '</div>';
       document.body.appendChild(toast);
-      playCustomerChime();
+      
+      playCustomerChime(chimeType);
       
       setTimeout(() => {
         toast.style.transition = 'opacity 0.6s ease';
@@ -366,13 +449,13 @@
 
     function renderOrderItemsList(itemsInput) {
       const items = parseOrderItems(itemsInput);
-      let html = '<ul style="list-style:none; padding:0; margin:0.35rem 0; font-size:0.85rem;">';
+      let html = '<ul style="list-style:none; padding:0; margin:0.25rem 0; font-size:0.78rem;">';
       for (let i = 0; i < items.length; i++) {
         let item = items[i];
         let q = item.qty || item.quantity || 1;
         let n = item.name || item.title || 'Item';
         let p = Number(item.price || 0);
-        html += '<li style="display:flex; justify-content:space-between; padding:0.25rem 0; border-bottom:1px dotted var(--border);"><span><strong>' + q + 'x</strong> ' + n + '</span><span style="font-weight:800;color:var(--brand)">R' + (q * p).toFixed(2) + '</span></li>';
+        html += '<li style="display:flex; justify-content:space-between; padding:0.15rem 0; border-bottom:1px dotted var(--border);"><span><strong>' + q + 'x</strong> ' + n + '</span><span style="font-weight:800;color:var(--brand)">R' + (q * p).toFixed(2) + '</span></li>';
       }
       html += '</ul>';
       return html;
@@ -389,27 +472,27 @@
       const oid = order.id || order.order_id;
       let notesHtml = '';
       if (order.instructions || order.notes) {
-        notesHtml = '<div style="font-size:.78rem; background:#fffbeb; padding:.35rem .6rem; border-left:3px solid var(--brand); margin-bottom:.5rem; border-radius:4px"><strong>Notes:</strong> ' + (order.instructions || order.notes) + '</div>';
+        notesHtml = '<div style="font-size:.72rem; background:#fffbeb; padding:.25rem .5rem; border-left:3px solid var(--brand); margin-bottom:.4rem; border-radius:4px"><strong>Notes:</strong> ' + (order.instructions || order.notes) + '</div>';
       }
 
       let btnHtml = '';
       if (isFailedOrCancelled) {
-        btnHtml = '<button onclick="resubmitOrderFromSlip(\'' + oid + '\')" style="font-size:.78rem; font-weight:800; padding:.4rem .8rem; background:#9333ea; color:#fff; border:none; border-radius:8px; cursor:pointer;">🔄 Reorder</button>';
+        btnHtml = '<button onclick="resubmitOrderFromSlip(\'' + oid + '\')" style="font-size:.72rem; font-weight:800; padding:.35rem .6rem; background:#9333ea; color:#fff; border:none; border-radius:6px; cursor:pointer;">🔄 Reorder</button>';
       } else {
-        btnHtml = '<button onclick="saveOrderAsFavorite(\'' + oid + '\')" style="font-size:.78rem; font-weight:800; padding:.4rem .8rem; background:#059669; color:#fff; border:none; border-radius:8px; cursor:pointer;">⭐ Favorite</button>';
+        btnHtml = '<button onclick="saveOrderAsFavorite(\'' + oid + '\')" style="font-size:.72rem; font-weight:800; padding:.35rem .6rem; background:#059669; color:#fff; border:none; border-radius:6px; cursor:pointer;">⭐ Favorite</button>';
       }
 
-      return '<div style="padding:1rem; border:1px solid var(--border); border-radius:12px; margin-bottom:.85rem; background:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.03)">' +
-        '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.6rem; border-bottom:1px solid var(--border); padding-bottom:.6rem;">' +
-          '<div><strong style="font-size:0.95rem">Order #' + oid + '</strong><div style="font-size:0.75rem; color:var(--muted);">' + (order.date || '') + '</div></div>' +
-          '<span style="background:var(--primary); color:#fff; font-size:0.72rem; font-weight:800; padding:.25rem .6rem; border-radius:20px;">' + (stageLabels[stage] || stage.toUpperCase()) + '</span>' +
+      return '<div style="padding:0.85rem; border:1px solid var(--border); border-radius:10px; margin-bottom:.75rem; background:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.03)">' +
+        '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.4rem; border-bottom:1px solid var(--border); padding-bottom:.4rem;">' +
+          '<div><strong style="font-size:0.85rem">Order #' + oid + '</strong><div style="font-size:0.7rem; color:var(--muted);">' + (order.date || '') + '</div></div>' +
+          '<span style="background:var(--primary); color:#fff; font-size:0.68rem; font-weight:800; padding:.2rem .5rem; border-radius:16px;">' + (stageLabels[stage] || stage.toUpperCase()) + '</span>' +
         '</div>' +
-        '<div style="margin:.5rem 0; background:#f8fafc; padding:.6rem; border-radius:8px;">' + renderOrderItemsList(order.items) + '</div>' +
+        '<div style="margin:.4rem 0; background:#f8fafc; padding:.4rem; border-radius:6px;">' + renderOrderItemsList(order.items) + '</div>' +
         notesHtml +
-        '<div style="display:flex; justify-content:space-between; align-items:center; font-size:.9rem; margin-top:.5rem"><span>Total:</span><strong style="color:var(--brand);font-size:1.05rem">R' + Number(order.total || order.total_amount || 0).toFixed(2) + '</strong></div>' +
-        '<div style="margin-top:.85rem; display:flex; justify-content:space-between; align-items:center; gap:0.5rem;">' +
+        '<div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; margin-top:.4rem"><span>Total:</span><strong style="color:var(--brand);font-size:0.95rem">R' + Number(order.total || order.total_amount || 0).toFixed(2) + '</strong></div>' +
+        '<div style="margin-top:.6rem; display:flex; justify-content:space-between; align-items:center; gap:0.4rem;">' +
           btnHtml +
-          '<button onclick="showDigitalReceiptFromId(\'' + oid + '\')" style="font-size:.78rem; font-weight:800; padding:.4rem .8rem; background:var(--primary); color:#fff; border:none; border-radius:8px; cursor:pointer;">🧾 View Slip</button>' +
+          '<button onclick="showDigitalReceiptFromId(\'' + oid + '\')" style="font-size:.72rem; font-weight:800; padding:.35rem .6rem; background:var(--primary); color:#fff; border:none; border-radius:6px; cursor:pointer;">🧾 Slip</button>' +
         '</div>' +
       '</div>';
     }
@@ -541,24 +624,37 @@
     function clearSearch() { document.getElementById('search-input').value = ''; activeCategoryFilter = 'ALL'; renderCategoryChips(); renderCatalog(); }
 
     function handleLoginClient() {
-      const phone = document.getElementById('login-phone').value.trim();
-      if (!phone) { alert('Enter phone number'); return; }
+      const rawPhone = document.getElementById('login-phone').value.trim();
+      const phone = cleanAndValidatePhone(rawPhone);
+      if (!phone || phone.length < 10) { alert('Please enter a valid South African phone number (e.g. 0646297453)'); return; }
+      
       const state = getSharedState();
       const found = (state.clients || []).find(c => c.phone === phone);
-      if (!found) { alert('Account not found. Please register.'); return; }
+      if (!found) { alert('Account not found with number ' + phone + '. Please register first.'); return; }
+      
       client = found; localStorage.setItem('dcs_client', JSON.stringify(client));
       renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Welcome back, ' + client.name + '!');
     }
 
     function handleRegisterClient() {
       const name = document.getElementById('new-name').value.trim();
-      const phone = document.getElementById('new-phone').value.trim();
+      const rawPhone = document.getElementById('new-phone').value.trim();
       const address = document.getElementById('new-address').value.trim();
-      if (!name || !phone || !address) { alert('Fill all fields'); return; }
+      const phone = cleanAndValidatePhone(rawPhone);
+
+      if (!name || !phone || phone.length < 10 || !address) { 
+        alert('Please fill all fields and enter a valid SA phone number (e.g., 0646297453)'); 
+        return; 
+      }
+
       client = { name, phone, address, points: 50 };
       localStorage.setItem('dcs_client', JSON.stringify(client));
-      let state = getSharedState(); state.clients.push(client); saveSharedState(state);
-      renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Registered with 50 bonus points!');
+      let state = getSharedState(); 
+      if (!state.clients) state.clients = [];
+      state.clients.push(client); 
+      saveSharedState(state);
+      
+      renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Registered successfully with 50 bonus points!');
     }
 
     function logoutClient() {
@@ -589,27 +685,52 @@
     function renderCatalog() {
       const container = document.getElementById('catalog-dropdowns-container');
       if (!container) return;
+      
+      const openCategories = {};
+      container.querySelectorAll('details.menu-category-dropdown').forEach(det => {
+        const catName = det.getAttribute('data-category');
+        if (catName && det.open) openCategories[catName] = true;
+      });
+
       const q = (document.getElementById('search-input')?.value || '').toLowerCase();
+      const state = getSharedState();
+      const outOfStock = state.outOfStock || [];
+
       const cats = ['Chips', 'Chicken Combos', 'Bunny Chows', 'Specials', 'Toasted Sandwiches'];
       const filteredCats = activeCategoryFilter === 'ALL' ? cats : [activeCategoryFilter];
 
       container.innerHTML = filteredCats.map(cat => {
         const items = catalog.filter(i => i.category === cat && i.name.toLowerCase().includes(q));
         if (items.length === 0) return '';
-        return '<details class="menu-category-dropdown" open><summary><span>' + cat + '</span><span style="font-size:0.8rem; color:var(--muted); font-weight:normal;">▼ Show / Hide</span></summary><div class="dropdown-content-grid">' + items.map(i => 
-          '<div class="item-card">' +
-            '<div class="item-img-container"><img src="' + i.img + '" class="item-img"></div>' +
+        const isOpen = openCategories[cat] ? ' open' : '';
+        return '<details class="menu-category-dropdown"' + isOpen + ' data-category="' + cat + '"><summary><span>' + cat + '</span><span style="font-size:0.8rem; color:var(--muted); font-weight:normal;">▼ Show / Hide</span></summary><div class="dropdown-content-grid">' + items.map(i => {
+          const isSoldOut = outOfStock.includes(i.id);
+          const isSpecialShining = i.isSpecial;
+          return '<div class="item-card ' + (isSpecialShining ? 'shining-special' : '') + '" style="' + (isSoldOut ? 'opacity:0.65;' : '') + '">' +
+            '<div class="item-img-container">' +
+              '<img src="' + i.img + '" class="item-img" style="' + (isSoldOut ? 'filter: grayscale(100%);' : '') + '">' +
+              (isSoldOut ? '<div style="position:absolute; inset:0; background:rgba(15,23,42,0.6); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:0.85rem; letter-spacing:1px;">SOLD OUT</div>' : '') +
+              (isSpecialShining && !isSoldOut ? '<div style="position:absolute; top:8px; right:8px; background:var(--special-gradient); color:#fff; font-size:0.75rem; font-weight:900; padding:0.3rem 0.6rem; border-radius:6px; box-shadow:0 2px 10px rgba(239,68,68,0.5);">🔥 HOT SPECIAL ★</div>' : '') +
+            '</div>' +
             '<div class="item-details">' +
               '<h4>' + i.name + '</h4>' +
               '<div class="item-price">R' + i.price.toFixed(2) + '</div>' +
-              '<button onclick="addToCart(\'' + i.id + '\')" class="btn-primary small" style="margin-top:.75rem">+ Add to Cart</button>' +
+              (isSoldOut ? 
+                '<button class="btn-primary small" style="margin-top:.75rem; background:#94a3b8; cursor:not-allowed;" disabled>Sold Out</button>' :
+                '<button onclick="addToCart(\'' + i.id + '\')" class="btn-primary small" style="margin-top:.75rem; ' + (isSpecialShining ? 'background:var(--special-gradient); font-weight:900; box-shadow:0 4px 12px rgba(239,68,68,0.4);' : '') + '">+ Add to Cart</button>'
+              ) +
             '</div>' +
-          '</div>'
-        ).join('') + '</div></details>';
+          '</div>';
+        }).join('') + '</div></details>';
       }).join('');
     }
 
     function addToCart(id) {
+      const state = getSharedState();
+      if ((state.outOfStock || []).includes(id)) {
+        alert('Sorry, this item is currently sold out.');
+        return;
+      }
       const item = catalog.find(i => i.id === id);
       const ex = cart.find(c => c.id === id);
       if (ex) ex.qty += 1; else cart.push({ ...item, qty: 1 });
@@ -696,7 +817,7 @@
       toast.className = 'toast-alert';
       toast.innerHTML = '<span>🛒</span><div><strong>Order #' + orderId + ' Placed!</strong><br>Your order has been sent to the kitchen and is currently being reviewed.</div>';
       document.body.appendChild(toast);
-      playCustomerChime();
+      playCustomerChime('preparing');
       
       setTimeout(() => {
         toast.style.transition = 'opacity 0.6s ease';
