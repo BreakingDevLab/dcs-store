@@ -72,6 +72,12 @@
     .audit-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:1rem;}
     input[type="text"]{padding:0.75rem 1rem; border:1px solid var(--border); border-radius:12px; font-size:0.92rem; width:320px; outline:none; color:var(--primary); transition:all .2s}
     input[type="text"]:focus{box-shadow:var(--focus); border-color:var(--brand);}
+
+    .modal-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.75);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:300;padding:1rem}
+    .modal-content{background:#fff;border-radius:var(--radius);max-width:540px;width:100%;padding:1.5rem;max-height:90vh;overflow-y:auto;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25)}
+    .receipt-box{font-family:'Courier New',Courier,monospace;font-size:.88rem;background:#fff;padding:1.5rem;border:1px dashed #94a3b8;border-radius:12px;color:#0f172a;box-shadow:0 4px 15px rgba(0,0,0,0.06)}
+    .receipt-row{display:flex;justify-content:space-between;margin-bottom:.4rem}
+    .receipt-total{font-weight:800;border-top:1px dashed #000;margin-top:.75rem;padding-top:.75rem;font-size:1.05rem}
   </style>
 </head>
 <body>
@@ -130,7 +136,7 @@
     <div id="tab-audit" class="dashboard-section hidden-tab">
       <div class="audit-section" style="margin-top:0;">
         <div class="audit-header">
-          <h3 style="font-size:1.15rem; font-weight:900;">📋 Audit Log & Order Search (Find Lost Orders)</h3>
+          <h3 style="font-size:1.15rem; font-weight:900;">📋 Audit Log & Order Search (Verify Customer Slips)</h3>
           <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
             <input type="text" id="audit-search-input" placeholder="🔍 Search Order ID, Customer, or Phone..." oninput="renderKanban()">
             <button onclick="ownerClearAuditLogs()" class="btn-action btn-cancel" style="width:auto; padding:0.7rem 1.1rem; margin-top:0; font-size:0.82rem;">🗑️ Owner Clear Logs</button>
@@ -141,10 +147,20 @@
     </div>
   </div>
 
+  <div id="receipt-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div id="receipt-details-container"></div>
+      <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+        <button onclick="window.print()" class="btn-action btn-prep" style="flex:1; padding:0.8rem; font-size:0.9rem;">🖨️ Print Slip</button>
+        <button onclick="closeReceiptModal()" style="flex:1; background:#64748b; color:white; border:none; border-radius:12px; padding:0.8rem; font-weight:800; cursor:pointer;">Close</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const SHARED_KEY = 'davidsonville_app_state_v15';
     const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjE4NjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjE0NjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU';
     const OWNER_PIN = '2026';
 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -244,9 +260,7 @@
     }
 
     document.addEventListener('click', () => {
-      if (!audioCtx) {
-        enableAudioContext();
-      }
+      if (!audioCtx) enableAudioContext();
     }, { once: true });
 
     function getSharedState() {
@@ -260,11 +274,8 @@
 
     function ownerClearAuditLogs() {
       const pin = prompt('Enter Owner Security PIN to clear audit logs:');
-      if (pin !== OWNER_PIN) {
-        alert('Incorrect Owner PIN. Action denied.');
-        return;
-      }
-      if (!confirm('Are you sure you want to clear completed/archived order logs?')) return;
+      if (pin !== OWNER_PIN) { alert('Incorrect Owner PIN. Action denied.'); return; }
+      if (!confirm('Clear completed/archived order logs?')) return;
       let state = getSharedState();
       state.orders = (state.orders || []).filter(o => {
         let st = (o.stage || 'received').toLowerCase().trim();
@@ -272,18 +283,15 @@
       });
       saveSharedState(state);
       renderKanban();
-      alert('Audit logs cleared successfully by store owner.');
+      alert('Audit logs cleared successfully.');
     }
 
     function toggleItemStock(itemId) {
       let state = getSharedState();
       if (!state.outOfStock) state.outOfStock = [];
       const idx = state.outOfStock.indexOf(itemId);
-      if (idx > -1) {
-        state.outOfStock.splice(idx, 1);
-      } else {
-        state.outOfStock.push(itemId);
-      }
+      if (idx > -1) state.outOfStock.splice(idx, 1);
+      else state.outOfStock.push(itemId);
       saveSharedState(state);
       renderInventoryGrid();
     }
@@ -332,32 +340,32 @@
           .order('created_at', { ascending: false });
 
         let combined = [...(data || [])];
-
         if (state.orders && Array.isArray(state.orders)) {
           state.orders.forEach(lo => {
-            if (!combined.some(o => (o.id || o.order_id) === lo.id)) {
-              combined.push(lo);
-            }
+            if (!combined.some(o => (o.id || o.order_id) === lo.id)) combined.push(lo);
           });
         }
 
-        if (knownOrderCount >= 0 && combined.length > knownOrderCount) {
-          playKitchenChime();
-        }
+        if (knownOrderCount >= 0 && combined.length > knownOrderCount) playKitchenChime();
         knownOrderCount = combined.length;
 
-        state.orders = combined.map(o => ({
-          id: o.order_id || o.id,
-          date: o.created_at ? new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (o.date || ''),
-          timestamp: o.created_at ? new Date(o.created_at).getTime() : (o.timestamp || Date.now()),
-          items: parseOrderItems(o.items),
-          instructions: o.instructions || o.notes || '',
-          total: Number(o.total || o.total_amount || 0),
-          stage: (o.stage || o.status || 'received').toLowerCase().trim().replace(/_/g, '-'),
-          clientName: o.client_name || o.customer_name || 'Customer',
-          phone: o.phone || o.customer_phone || ''
-        }));
-
+        state.orders = combined.map(o => {
+          const tot = Number(o.total || 0);
+          return {
+            id: o.id || o.order_id,
+            date: o.created_at ? new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (o.date || ''),
+            timestamp: o.created_at ? new Date(o.created_at).getTime() : (o.timestamp || Date.now()),
+            items: parseOrderItems(o.items),
+            instructions: o.notes || o.instructions || '',
+            total: tot,
+            discount: Number(o.discount || 0),
+            earnedPoints: o.earnedPoints !== undefined ? o.earnedPoints : Math.floor(tot / 100) * 5,
+            currentPoints: o.currentPoints !== undefined ? o.currentPoints : 0,
+            stage: (o.stage || o.status || 'received').toLowerCase().trim().replace(/_/g, '-'),
+            clientName: o.customer_name || o.client_name || 'Customer',
+            phone: o.phone || ''
+          };
+        });
         saveSharedState(state);
       } catch (e) {}
       renderKanban();
@@ -373,12 +381,45 @@
 
       let state = getSharedState();
       let ord = (state.orders || []).find(o => String(o.id) === String(orderId));
-      if (ord) {
-        ord.stage = newStage;
-        saveSharedState(state);
-      }
+      if (ord) { ord.stage = newStage; saveSharedState(state); }
       fetchOrders();
     }
+
+    function showStaffDigitalReceipt(id) {
+      const state = getSharedState();
+      const order = (state.orders || []).find(x => String(x.id) === String(id));
+      if (!order) { alert('Order slip not found.'); return; }
+
+      const finalTot = Number(order.total || 0);
+      const disc = Number(order.discount || 0);
+      const sub = finalTot + disc;
+      const earned = order.earnedPoints !== undefined ? order.earnedPoints : Math.floor(finalTot / 100) * 5;
+
+      let discountRowHtml = disc > 0 ? '<div class="receipt-row" style="color:#059669; font-weight:700;"><span>Points Discount (R20):</span><span>-R' + disc.toFixed(2) + '</span></div>' : '';
+
+      document.getElementById('receipt-details-container').innerHTML = 
+        '<div class="receipt-box">' +
+          '<div style="text-align:center; font-weight:900; font-size:1.15rem; margin-bottom:2px;">DAVIDSONVILLE COMMUNITY STORE</div>' +
+          '<div style="text-align:center; font-size:0.78rem; color:#64748b; margin-bottom:2px;">Kitchen Verification Slip</div>' +
+          '<div style="font-size:0.8rem; border-bottom:1px dashed #cbd5e1; padding-bottom:8px; margin-bottom:10px; margin-top:8px;">' +
+            '<div><strong>Order ID:</strong> #' + order.id + '</div>' +
+            '<div><strong>Time:</strong> ' + new Date(order.timestamp).toLocaleString() + '</div>' +
+            '<div><strong>Customer:</strong> ' + (order.clientName || 'Customer') + ' (' + (order.phone || 'No Phone') + ')</div>' +
+            '<div><strong>Current Status:</strong> <span style="color:var(--brand); font-weight:800;">' + (order.stage || 'received').toUpperCase() + '</span></div>' +
+            ((order.instructions) ? '<div style="margin-top:4px; background:#fffbeb; padding:2px 4px; color:#b45309;"><strong>Kitchen Note:</strong> ' + order.instructions + '</div>' : '') +
+          '</div>' +
+          '<div style="font-size:0.85rem; margin-bottom:10px;">' + renderOrderItemsList(order.items) + '</div>' +
+          '<div style="border-top:1px dashed #cbd5e1; padding-top:8px; font-size:0.9rem;">' +
+            '<div class="receipt-row"><span>Subtotal:</span><span>R' + sub.toFixed(2) + '</span></div>' +
+            discountRowHtml +
+            '<div class="receipt-row" style="color:#059669; font-weight:700;"><span>⭐ Points Earned (This Order):</span><span>+' + earned + ' pts</span></div>' +
+            '<div class="receipt-row receipt-total"><span>TOTAL VERIFIED:</span> <span>R' + finalTot.toFixed(2) + '</span></div>' +
+          '</div>' +
+        '</div>';
+      document.getElementById('receipt-modal').style.display = 'flex';
+    }
+
+    function closeReceiptModal() { document.getElementById('receipt-modal').style.display = 'none'; }
 
     function renderKanban() {
       const state = getSharedState();
@@ -395,11 +436,9 @@
       };
 
       const counts = { 'received': 0, 'preparing': 0, 'ready': 0, 'completed': 0, 'cancelled': 0 };
-
       for (let k in cols) { if (cols[k]) cols[k].innerHTML = ''; }
 
-      let auditHtml = '<table style="width:100%; border-collapse:collapse;"><tr style="background:#f1f5f9; text-align:left; border-bottom:1px solid var(--border); font-weight:800"><th style="padding:10px;">Order ID</th><th style="padding:10px;">Customer</th><th style="padding:10px;">Phone</th><th style="padding:10px;">Status</th><th style="padding:10px;">Total</th><th style="padding:10px;">Time</th></tr>';
-
+      let auditHtml = '<table style="width:100%; border-collapse:collapse;"><tr style="background:#f1f5f9; text-align:left; border-bottom:1px solid var(--border); font-weight:800"><th style="padding:10px;">Order ID</th><th style="padding:10px;">Customer</th><th style="padding:10px;">Phone</th><th style="padding:10px;">Status</th><th style="padding:10px;">Total</th><th style="padding:10px;">Time</th><th style="padding:10px;">Action</th></tr>';
       let filteredAuditCount = 0;
 
       orders.forEach(o => {
@@ -416,10 +455,7 @@
           if (st === 'completed') counts.completed++;
           if (st === 'cancelled') counts.cancelled++;
         }
-
-        if (st !== 'completed' && st !== 'cancelled') {
-          counts[st]++;
-        }
+        if (st !== 'completed' && st !== 'cancelled') counts[st]++;
 
         const matchesSearch = !searchQuery || String(o.id).toLowerCase().includes(searchQuery) || String(o.clientName).toLowerCase().includes(searchQuery) || String(o.phone).includes(searchQuery);
 
@@ -432,25 +468,21 @@
             '<td style="padding:10px; font-weight:800; text-transform:uppercase; font-size:0.75rem;">' + st + '</td>' +
             '<td style="padding:10px; font-weight:800;">R' + Number(o.total).toFixed(2) + '</td>' +
             '<td style="padding:10px; color:var(--muted);">' + orderDate.toLocaleString() + '</td>' +
+            '<td style="padding:10px;"><button onclick="showStaffDigitalReceipt(\'' + o.id + '\')" style="padding:0.3rem 0.6rem; background:var(--primary); color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:800; font-size:0.75rem;">🧾 View Slip</button></td>' +
           '</tr>';
         }
 
-        if (st === 'completed' || st === 'cancelled') {
-          return;
-        }
+        if (st === 'completed' || st === 'cancelled') return;
 
         let notesHtml = o.instructions ? '<div style="font-size:0.72rem; background:#fffbeb; padding:0.25rem 0.5rem; border-left:3px solid var(--brand); margin-bottom:0.4rem; border-radius:4px"><strong>Note:</strong> ' + o.instructions + '</div>' : '';
 
         let btnHtml = '';
-        if (st === 'received') {
-          btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'preparing\')" class="btn-action btn-prep">🔥 Start Prep</button>';
-        } else if (st === 'preparing') {
-          btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'ready\')" class="btn-action btn-ready">✅ Ready</button>';
-        } else if (st === 'ready') {
-          btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'completed\')" class="btn-action btn-complete">🏁 Complete</button>';
-        }
+        if (st === 'received') btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'preparing\')" class="btn-action btn-prep">🔥 Start Prep</button>';
+        else if (st === 'preparing') btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'ready\')" class="btn-action btn-ready">✅ Ready</button>';
+        else if (st === 'ready') btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'completed\')" class="btn-action btn-complete">🏁 Complete</button>';
 
-        let cancelBtn = (st !== 'completed' && st !== 'cancelled') ? '<button onclick="updateOrderStatus(\'' + o.id + '\', \'cancelled\')" class="btn-action btn-cancel" style="padding:0.3rem; font-size:0.72rem; background:#ef4444; margin-top:0.2rem">Cancel</button>' : '';
+        let cancelBtn = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'cancelled\')" class="btn-action btn-cancel" style="padding:0.3rem; font-size:0.72rem; background:#ef4444; margin-top:0.2rem">Cancel</button>';
+        let slipBtn = '<button onclick="showStaffDigitalReceipt(\'' + o.id + '\')" class="btn-action" style="padding:0.3rem; font-size:0.72rem; background:var(--primary); margin-top:0.2rem">🧾 View Customer Slip</button>';
 
         const card = document.createElement('div');
         card.className = 'order-card';
@@ -462,15 +494,13 @@
           '<div style="background:#f8fafc; padding:0.4rem; border-radius:6px; margin-bottom:0.4rem;">' + renderOrderItemsList(o.items) + '</div>' +
           notesHtml +
           '<div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; font-weight:900; margin-bottom:0.4rem;"><span>Total:</span><span style="color:var(--brand); font-size:0.95rem">R' + Number(o.total).toFixed(2) + '</span></div>' +
-          btnHtml + cancelBtn;
+          btnHtml + slipBtn + cancelBtn;
 
         if (cols[st]) cols[st].appendChild(card);
       });
 
       auditHtml += '</table>';
-      if (filteredAuditCount === 0) {
-        auditHtml = '<p style="text-align:center; padding:1.5rem; color:var(--muted);">No matching order ID or record found.</p>';
-      }
+      if (filteredAuditCount === 0) auditHtml = '<p style="text-align:center; padding:1.5rem; color:var(--muted);">No matching order records found.</p>';
 
       const auditContainer = document.getElementById('audit-log-container');
       if (auditContainer) auditContainer.innerHTML = auditHtml;
@@ -492,14 +522,10 @@
       try {
         supabaseClient
           .channel('staff-realtime-orders')
-          .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'orders' },
-            (payload) => {
-              playKitchenChime();
-              fetchOrders();
-            }
-          )
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+            playKitchenChime();
+            fetchOrders();
+          })
           .subscribe();
       } catch (e) {}
     }
