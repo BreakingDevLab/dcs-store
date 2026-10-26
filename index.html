@@ -488,12 +488,12 @@
           btnHtml +
           '<button onclick="showDigitalReceiptFromId(\'' + oid + '\')" style="font-size:.72rem; font-weight:800; padding:.35rem .6rem; background:var(--primary); color:#fff; border:none; border-radius:6px; cursor:pointer;">🧾 Slip</button>' +
         '</div>' +
-      '</div>';
+      '</div>'; 
     }
 
     async function postOrderToSupabase(order) {
       try {
-        await supabaseClient.from('orders').upsert({
+        const { data, error } = await supabaseClient.from('orders').upsert({
           id: order.id,
           customer_name: order.clientName,
           phone: order.phone,
@@ -504,7 +504,16 @@
           stage: order.stage || 'received',
           created_at: new Date(order.timestamp).toISOString()
         });
-      } catch (e) {}
+        
+        if (error) {
+          console.error("❌ Supabase Insert Error:", error.message, error.details, error.hint);
+          alert("Order sync error: " + error.message);
+        } else {
+          console.log("✅ Order successfully synced to Supabase:", data);
+        }
+      } catch (err) {
+        console.error("❌ Network or Script Exception:", err);
+      }
     }
 
     async function verifyAndFetchSupabaseOrders() {
