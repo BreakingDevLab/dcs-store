@@ -41,7 +41,7 @@
     .hero-banner-overlay{position:absolute;inset:0;background:linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.5) 60%, rgba(15,23,42,0.15) 100%);display:flex;flex-direction:column;justify-content:flex-end;padding:1.75rem;color:#fff}
     .hero-tag{align-self:flex-start;background:rgba(217,119,6,0.95);padding:.3rem .85rem;border-radius:20px;font-weight:800;font-size:.75rem;box-shadow:0 4px 12px rgba(217,119,6,0.3);margin-bottom:.5rem}
     
-    /* Professional & Attractive Special Spotlight Banner */
+    /* Professional Special Spotlight Banner with Smooth Moving Glow Animation */
     .special-spotlight-banner {
       background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
       border: 2px solid #f43f5e;
@@ -56,12 +56,18 @@
       color: #fff;
       position: relative;
       overflow: hidden;
+      animation: specialGlowPulse 3s infinite ease-in-out;
     }
     .special-spotlight-banner::before {
       content: '';
       position: absolute;
       top: 0; left: 0; width: 6px; height: 100%;
       background: var(--special-gradient);
+    }
+    @keyframes specialGlowPulse {
+      0% { box-shadow: 0 12px 30px -6px rgba(244, 63, 94, 0.25); border-color: #f43f5e; }
+      50% { box-shadow: 0 16px 40px -4px rgba(244, 63, 94, 0.45); border-color: #fb7185; }
+      100% { box-shadow: 0 12px 30px -6px rgba(244, 63, 94, 0.25); border-color: #f43f5e; }
     }
     
     .container{max-width:1160px;margin:1.75rem auto;padding:0 1rem;display:grid;grid-template-columns:1fr;gap:1.5rem}
@@ -83,7 +89,6 @@
     .item-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 4px 12px rgba(0,0,0,0.03);transition:transform .2s,box-shadow .2s}
     .item-card:hover{transform:translateY(-3px);box-shadow:0 12px 25px rgba(0,0,0,0.08)}
     
-    /* Professional & Attractive Shining Special Item Card */
     .item-card.shining-special{
       border: 2px solid #f43f5e;
       box-shadow: 0 4px 20px rgba(244, 63, 94, 0.2);
@@ -154,7 +159,7 @@
       </div>
     </div>
 
-    <!-- Professional & Attractive Special Spotlight Banner -->
+    <!-- Special Spotlight Banner with Gentle Moving Glow -->
     <div class="special-spotlight-banner">
       <div style="z-index:1;">
         <span style="background:rgba(244,63,94,0.18); color:#fb7185; border:1px solid rgba(244,63,94,0.3); font-size:0.72rem; font-weight:800; padding:0.25rem 0.65rem; border-radius:20px; text-transform:uppercase; letter-spacing:0.5px;">🔥 Featured Store Special</span>
