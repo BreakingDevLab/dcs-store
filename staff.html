@@ -375,7 +375,7 @@
       try {
         const { error } = await supabaseClient
           .from('orders')
-          .update({ stage: newStage, status: newStage })
+          .update({ stage: newStage })
           .eq('id', orderId);
 
         if (error) {
