@@ -373,11 +373,17 @@
 
     async function updateOrderStatus(orderId, newStage) {
       try {
-        await supabaseClient
+        const { error } = await supabaseClient
           .from('orders')
           .update({ stage: newStage, status: newStage })
-          .or(`id.eq.${orderId},order_id.eq.${orderId}`);
-      } catch (e) {}
+          .eq('id', orderId);
+
+        if (error) {
+          console.error("❌ Supabase Update Error:", error.message);
+        }
+      } catch (e) {
+        console.error("❌ Exception during status update:", e);
+      }
 
       let state = getSharedState();
       let ord = (state.orders || []).find(o => String(o.id) === String(orderId));
