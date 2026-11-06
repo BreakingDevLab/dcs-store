@@ -54,7 +54,6 @@
     .stat-card h3{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.2rem;font-weight:800}
     .stat-card .value{font-size:1.3rem;font-weight:900;color:var(--primary)}
 
-    /* Perfect responsive Kanban grid: Stacks cleanly on phones, side-by-side columns on laptops */
     .kanban-grid{display:grid;grid-template-columns:1fr;gap:1rem;align-items:start}
     @media(min-width:1024px){.kanban-grid{grid-template-columns:repeat(5, minmax(0, 1fr));gap:0.75rem;}}
 
@@ -164,14 +163,19 @@
   </div>
 
   <script>
+    // Declare state variables at the very top of the script block
+    let isUpdatingStatus = false; 
+    let audioCtx = null;
+    let knownOrderCount = -1;
+
     const SHARED_KEY = 'davidsonville_app_state_v15';
     const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6InFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU';
     const OWNER_PIN = '2026';
 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { persistSession: false },
-      global: { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY } }
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { headers: { 'apikey': SUPABASE_ANON_KEY } }
     });
 
     const catalogItemsRef = [
@@ -204,9 +208,6 @@
       { id: 'ts4', name: 'CHEESE & TOMATO', category: 'Toasted Sandwiches' },
       { id: 'ts5', name: 'BACON, EGG & CHEESE', category: 'Toasted Sandwiches' }
     ];
-
-    let audioCtx = null;
-    let knownOrderCount = -1;
 
     function switchTab(tabName) {
       document.querySelectorAll('.dashboard-section').forEach(sec => sec.classList.add('hidden-tab'));
@@ -278,10 +279,15 @@
       try { localStorage.setItem(SHARED_KEY, JSON.stringify(state)); } catch (e) {}
     }
 
-    function ownerClearAuditLogs() {
+    async function ownerClearAuditLogs() {
       const pin = prompt('Enter Owner Security PIN to clear audit logs:');
       if (pin !== OWNER_PIN) { alert('Incorrect Owner PIN. Action denied.'); return; }
       if (!confirm('Clear completed/archived order logs?')) return;
+      
+      try {
+        await supabaseClient.from('orders').delete().in('stage', ['completed', 'order-completed', 'cancelled']);
+      } catch (e) {}
+
       let state = getSharedState();
       state.orders = (state.orders || []).filter(o => {
         let st = (o.stage || 'received').toLowerCase().trim();
@@ -338,12 +344,15 @@
     }
 
     async function fetchOrders() {
+      if (isUpdatingStatus) return; // Prevent polling interrupt during status transitions
       let state = getSharedState();
       try {
         const { data, error } = await supabaseClient
           .from('orders')
           .select('*')
           .order('created_at', { ascending: false });
+
+        if (error) return;
 
         let combined = [...(data || [])];
         if (state.orders && Array.isArray(state.orders)) {
@@ -383,6 +392,17 @@
     }
 
     async function updateOrderStatus(orderId, newStage) {
+      isUpdatingStatus = true; // Engage update lock
+
+      // Instantly update local state and re-render so it stays in the new column
+      let state = getSharedState();
+      let ord = (state.orders || []).find(o => String(o.id) === String(orderId));
+      if (ord) {
+        ord.stage = newStage;
+        saveSharedState(state);
+        renderKanban();
+      }
+
       try {
         const { error } = await supabaseClient
           .from('orders')
@@ -390,16 +410,14 @@
           .eq('id', orderId);
 
         if (error) {
-          console.error("❌ Supabase Update Error:", error.message);
+          alert("Failed to update status on server: " + error.message);
         }
       } catch (e) {
-        console.error("❌ Exception during status update:", e);
+        console.error(e);
+      } finally {
+        isUpdatingStatus = false; // Release lock
+        fetchOrders();
       }
-
-      let state = getSharedState();
-      let ord = (state.orders || []).find(o => String(o.id) === String(orderId));
-      if (ord) { ord.stage = newStage; saveSharedState(state); }
-      fetchOrders();
     }
 
     function showStaffDigitalReceipt(id) {
@@ -534,9 +552,11 @@
       try {
         supabaseClient
           .channel('staff-realtime-orders')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
-            playKitchenChime();
-            fetchOrders();
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+            if (!isUpdatingStatus) {
+              playKitchenChime();
+              fetchOrders();
+            }
           })
           .subscribe();
       } catch (e) {}
