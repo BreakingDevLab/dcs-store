@@ -289,13 +289,18 @@
   </div>
 
   <script>
+    const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co'.trim();
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU'.trim();
     const SHARED_KEY = 'davidsonville_app_state_v15';
-    const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU';
 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
-      global: { headers: { 'apikey': SUPABASE_ANON_KEY } }
+      global: { 
+        headers: { 
+          'apikey': SUPABASE_ANON_KEY, 
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY 
+        } 
+      }
     });
 
     function getSharedState() {
@@ -486,7 +491,7 @@
 
     async function postOrderToSupabase(order) {
       try {
-        const { data, error } = await supabaseClient.from('orders').upsert({
+        const { error } = await supabaseClient.from('orders').upsert({
           id: order.id,
           customer_name: order.clientName,
           phone: order.phone,
@@ -495,12 +500,12 @@
           notes: order.instructions || '',
           total: Number(order.total || 0),
           stage: order.stage || 'received',
+          status: order.stage || 'received',
           created_at: new Date(order.timestamp).toISOString()
         });
         
         if (error) {
-          console.error("❌ Supabase Insert Error:", error.message, error.details, error.hint);
-          alert("Order sync error: " + error.message);
+          console.error("❌ Supabase Insert Error:", error.message);
         }
       } catch (err) {
         console.error("❌ Network or Script Exception:", err);
@@ -561,7 +566,7 @@
           .on(
             'postgres_changes',
             { event: '*', schema: 'public', table: 'orders' },
-            (payload) => {
+            () => {
               verifyAndFetchSupabaseOrders();
             }
           )
