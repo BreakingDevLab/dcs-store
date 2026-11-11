@@ -514,6 +514,22 @@
         return true;
       } catch (err) { console.error('Network error:', err); return false; }
     }
+      try {
+        const { error } = await supabaseClient.from('orders').upsert({
+          id: order.id,
+          customer_name: order.clientName,
+          phone: order.phone,
+          address: client?.address || '',
+          items: JSON.stringify(order.items),
+          notes: order.instructions || '',
+          total: Number(order.total || 0),
+          stage: order.stage || 'received',
+          created_at: new Date(order.timestamp).toISOString()
+        });
+        if (error) { console.error('Supabase error:', error); return false; }
+        return true;
+      } catch (err) { console.error('Network error:', err); return false; }
+    }
       setTimeout(async () => {
         try {
           await supabaseClient.from('orders').upsert({
@@ -814,6 +830,14 @@
       saveSharedState(state);
 
       const success = await postOrderToSupabase(newOrder);
+      if (!success) {
+        alert('Order could not reach the server. Please check your connection.');
+        return;
+      }
+
+      state.orders.unshift(newOrder);
+      saveSharedState(state);
+      cart = []; localStorage.removeItem('dcs_cart');
       if (!success) {
         alert('Order could not reach the server. Please check your connection.');
         return;
