@@ -336,6 +336,14 @@
       el.title = connected ? 'Live Sync Active' : 'Disconnected';
     }
 
+    function getOrderAgeTimerHtml(timestamp) {
+      const diffMins = Math.floor((Date.now() - Number(timestamp)) / 60000);
+      let bg = '#22c55e';
+      if (diffMins >= 20) { bg = '#dc2626'; }
+      else if (diffMins >= 15) { bg = '#f59e0b'; }
+      return `<div style="margin-top:6px; display:inline-block; padding:3px 8px; border-radius:20px; color:white; font-size:11px; font-weight:800; background:${bg};">⏱ ${diffMins} min</div>`;
+    }
+
     async function fetchOrders() {
         updateConnectionStatus(true);
         updateConnectionStatus(true);
@@ -474,7 +482,7 @@
             '<div><strong style="font-size:0.85rem">#' + o.id + '</strong><div style="font-size:0.7rem; color:var(--muted); font-weight:600">' + o.clientName + '</div></div>' +
             '<span style="font-size:0.7rem; font-weight:800; color:var(--brand);">' + o.date + '</span>' +
           '</div>' +
-          '<div style="background:#f8fafc; padding:0.4rem; border-radius:6px; margin-bottom:0.4rem;">' + renderOrderItemsList(o.items) + '</div>' +
+          renderOrderItemsList(o.items) + '</div>' + getOrderAgeTimerHtml(o.timestamp)
           notesHtml +
           '<div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; font-weight:900; margin-bottom:0.4rem;"><span>Total:</span><span style="color:var(--brand); font-size:0.95rem">R' + Number(o.total).toFixed(2) + '</span></div>' +
           btnHtml + cancelBtn;
