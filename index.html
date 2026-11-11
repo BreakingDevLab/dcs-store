@@ -1,1045 +1,166 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛒</text></svg>">
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Davidsonville Community Store | Online Storefront</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Storefront | DCS Store</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    :root{
-      --primary:#0f172a; --brand:#d97706; --brand-gradient:linear-gradient(135deg,#f59e0b 0%,#b45309 100%);
-      --special-gradient:linear-gradient(135deg,#f43f5e 0%,#e11d48 50%,#be123c 100%);
-      --bg-page:#f8fafc; --card-bg:#ffffff; --muted:#64748b; --border:#e2e8f0;
-      --shadow:0 10px 30px -5px rgba(15,23,42,0.08),0 4px 6px -4px rgba(15,23,42,0.03);
-      --radius:16px; --focus: 0 0 0 4px rgba(217,119,6,0.15);
-    }
-    *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,system-ui,-apple-system,sans-serif}
-    body{background:var(--bg-page); color:var(--primary); min-height:100vh; padding-bottom:90px; -webkit-text-size-adjust:100%;}
-    header{
-      background:rgba(15,23,42,0.98); color:#fff; padding:.9rem 1.5rem; position:sticky; top:0; z-index:120;
-      display:flex; align-items:center; justify-content:space-between; gap:1rem; border-bottom:1px solid rgba(255,255,255,0.08);
-      box-shadow:0 4px 20px rgba(0,0,0,0.18); backdrop-filter:blur(10px); flex-wrap:wrap;
-    }
-    .brand-header{display:flex;align-items:center;gap:.85rem}
-    .brand-icon{width:46px;height:46px;border-radius:12px;background:var(--brand-gradient);display:flex;align-items:center;justify-content:center;font-size:1.3rem;box-shadow:0 4px 12px rgba(217,119,6,0.3)}
-    .header-title h1{font-size:1.15rem;font-weight:800;color:#fff;line-height:1.1;letter-spacing:-0.01em}
-    .header-title p{font-size:.75rem;color:#94a3b8;margin-top:2px;font-weight:500}
-    .header-actions{display:flex;align-items:center;gap:1rem; flex-wrap:wrap;}
-    .hours-badge{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .85rem;border-radius:30px;font-weight:700;font-size:.75rem}
-    .hours-open{background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(74,222,128,0.2)}
-    .hours-closed{background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(248,113,113,0.2)}
-    .header-cart-btn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:.5rem 1rem;border-radius:12px;display:flex;align-items:center;gap:.6rem;font-weight:700;cursor:pointer;transition:background .2s}
-    .header-cart-btn:hover{background:rgba(255,255,255,0.14)}
-    .header-orders-btn{background:transparent;border:none;color:#fff;display:flex;align-items:center;gap:.5rem;cursor:pointer;font-weight:700;font-size:.9rem}
-    .orders-badge{background:#ef4444;color:#fff;padding:.15rem .5rem;border-radius:999px;font-size:.75rem;font-weight:900}
-    
-    .hero-banner-container{max-width:1160px;margin:1.5rem auto 0;padding:0 1rem}
-    .hero-banner{position:relative;width:100%;height:240px;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--border);background:#0f172a}
-    .hero-banner-img{width:100%;height:100%;object-fit:cover;filter:brightness(.82);transition:transform .5s ease}
-    .hero-banner:hover .hero-banner-img{transform:scale(1.02)}
-    .hero-banner-overlay{position:absolute;inset:0;background:linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.5) 60%, rgba(15,23,42,0.15) 100%);display:flex;flex-direction:column;justify-content:flex-end;padding:1.75rem;color:#fff}
-    .hero-tag{align-self:flex-start;background:rgba(217,119,6,0.95);padding:.3rem .85rem;border-radius:20px;font-weight:800;font-size:.75rem;box-shadow:0 4px 12px rgba(217,119,6,0.3);margin-bottom:.5rem}
-    
-    .special-spotlight-banner {
-      background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
-      border: 2px solid #f43f5e;
-      border-radius: var(--radius);
-      padding: 1.35rem 1.75rem;
-      margin-top: 1.25rem;
-      box-shadow: 0 12px 30px -6px rgba(244, 63, 94, 0.25);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1.5rem;
-      color: #fff;
-      position: relative;
-      overflow: hidden;
-      flex-wrap: wrap;
-      animation: specialGlowPulse 3s infinite ease-in-out;
-    }
-    .special-spotlight-banner::before {
-      content: ''; position: absolute; top: 0; left: 0; width: 6px; height: 100%; background: var(--special-gradient);
-    }
-    @keyframes specialGlowPulse {
-      0% { box-shadow: 0 12px 30px -6px rgba(244, 63, 94, 0.25); border-color: #f43f5e; }
-      50% { box-shadow: 0 16px 40px -4px rgba(244, 63, 94, 0.45); border-color: #fb7185; }
-      100% { box-shadow: 0 12px 30px -6px rgba(244, 63, 94, 0.25); border-color: #f43f5e; }
-    }
-    
-    .container{max-width:1160px;margin:1.75rem auto;padding:0 1rem;display:grid;grid-template-columns:1fr;gap:1.5rem}
-    @media(min-width:920px){.container{grid-template-columns:340px 1fr}}
-    .card{background:var(--card-bg);border-radius:var(--radius);padding:1.25rem;border:1px solid var(--border);box-shadow:var(--shadow);color:var(--primary); overflow:hidden;}
-    .card-title{font-weight:800;font-size:1.05rem;margin-bottom:1.1rem;color:var(--primary);display:flex;align-items:center;gap:.6rem}
-    input[type="text"],input[type="tel"],select,textarea{width:100%;padding:.75rem 1rem;border:1px solid var(--border);background:#fff;border-radius:12px;margin-bottom:.85rem;font-size:.92rem;color:var(--primary);outline:none;transition:border-color .2s,box-shadow .2s}
-    input:focus,select:focus,textarea:focus{box-shadow:var(--focus);border-color:var(--brand)}
-    .btn-primary{width:100%;padding:.78rem;background:var(--brand-gradient);color:#fff;border:none;border-radius:12px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(217,119,6,0.3);transition:transform .1s,opacity .2s}
-    .btn-primary:hover{opacity:.95}
-    .btn-primary.small{padding:.5rem .8rem;font-size:.88rem}
-    .btn-danger{padding:.45rem .85rem;background:#ef4444;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:.8rem;cursor:pointer}
-    .filter-chip{padding:0.45rem 1rem; border-radius:24px; border:1px solid var(--border); background:#fff; font-size:0.85rem; font-weight:700; cursor:pointer; color:var(--muted); transition:all .2s}
-    .filter-chip.active, .filter-chip:hover{background:var(--primary); color:#fff; border-color:var(--primary); box-shadow:0 4px 12px rgba(15,23,42,0.15)}
-    .menu-category-dropdown{margin-bottom:1.25rem;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);background:#fff;box-shadow:var(--shadow)}
-    .menu-category-dropdown summary{padding:1.1rem 1.25rem;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-weight:800;font-size:1.05rem;list-style:none;background:#fff;transition:background .2s}
-    .menu-category-dropdown summary:hover{background:#f8fafc}
-    .dropdown-content-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1.1rem;padding:1.25rem;background:#f8fafc}
-    .item-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 4px 12px rgba(0,0,0,0.03);transition:transform .2s,box-shadow .2s}
-    .item-card:hover{transform:translateY(-3px);box-shadow:0 12px 25px rgba(0,0,0,0.08)}
-    
-    .item-card.shining-special{border: 2px solid #f43f5e; box-shadow: 0 4px 20px rgba(244, 63, 94, 0.2);}
-    .item-img-container{width:100%;height:140px;overflow:hidden;background:#e2e8f0;position:relative}
-    .item-img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
-    .item-details{padding:1rem;display:flex;flex-direction:column;justify-content:space-between;flex:1}
-    .item-details h4{font-size:.95rem;font-weight:800;color:var(--primary);margin-bottom:.3rem}
-    .item-price{font-weight:900;color:var(--brand);font-size:1.05rem}
-    .cart-drawer-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.65);backdrop-filter:blur(6px);display:none;z-index:200}
-    .cart-drawer{position:fixed;top:0;right:-440px;width:100%;max-width:440px;height:100vh;background:#fff;z-index:201;transition:right .3s cubic-bezier(0.16, 1, 0.3, 1);display:flex;flex-direction:column;box-shadow:-12px 0 40px rgba(0,0,0,0.2)}
-    .cart-drawer.open{right:0}.cart-drawer-overlay.open{display:block}
-    .cart-header{padding:1.25rem;background:var(--primary);color:#fff;display:flex;justify-content:space-between;align-items:center;font-size:1.1rem}
-    .cart-body{flex:1;overflow-y:auto;padding:1.25rem}
-    .cart-footer{padding:1.25rem;border-top:1px solid var(--border);background:#f8fafc}
-    .cart-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px dashed var(--border)}
-    .toast-alert{
-      position:fixed; bottom:24px; right:24px; background:var(--primary); color:#fff; padding:1.1rem 1.4rem;
-      border-radius:var(--radius); display:flex; gap:.85rem; align-items:center; z-index:300;
-      box-shadow:0 15px 35px rgba(0,0,0,0.25); animation:slideUp .3s ease; border-left:4px solid var(--brand);
-      max-width:calc(100% - 48px);
-    }
-    @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
-    .modal-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.75);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:300;padding:1rem}
-    .modal-content{background:#fff;border-radius:var(--radius);max-width:540px;width:100%;padding:1.5rem;max-height:90vh;overflow-y:auto;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25)}
-    .receipt-box{font-family:'Courier New',Courier,monospace;font-size:.88rem;background:#fff;padding:1.5rem;border:1px dashed #94a3b8;border-radius:12px;color:#0f172a;box-shadow:0 4px 15px rgba(0,0,0,0.06)}
-    .receipt-row{display:flex;justify-content:space-between;margin-bottom:.4rem}
-    .receipt-total{font-weight:800;border-top:1px dashed #000;margin-top:.75rem;padding-top:.75rem;font-size:1.05rem}
-    #live-tracker-panel{position:fixed; left:20px; bottom:24px; width:360px; max-width:calc(100% - 40px); z-index:220; background:#fff;border-radius:var(--radius);border:1px solid var(--border);box-shadow:0 15px 35px rgba(15,23,42,0.15); overflow:hidden}
-    #live-tracker-panel.hidden{transform:translateY(20px) scale(.98); opacity:0; pointer-events:none; transition:all .2s ease}
-    #live-tracker-header{background:linear-gradient(90deg,#0f172a,#1e293b); color:#fff; padding:.85rem 1rem; display:flex; align-items:center; justify-content:space-between; font-weight:800}
-    #live-tracker-body{padding:1rem; max-height:380px; overflow:auto}
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 { color: #38bdf8; }
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-bottom: 30px; }
+    .menu-item { background: #1e293b; padding: 16px; border-radius: 8px; border: 1px solid #334155; }
+    .menu-item h3 { margin: 0 0 8px 0; }
+    .price { color: #22c55e; font-weight: bold; margin-bottom: 12px; }
+    button { background: #38bdf8; color: #0f172a; border: none; padding: 8px 16px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #0ea5e9; }
+    .cart-box { background: #1e293b; padding: 20px; border-radius: 8px; border: 1px solid #334155; }
+    input { width: 100%; padding: 8px; margin: 8px 0 16px 0; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 4px; box-sizing: border-box; }
   </style>
 </head>
 <body>
-  <header>
-    <div class="brand-header">
-      <div class="brand-icon">🍗</div>
-      <div class="header-title">
-        <h1>Davidsonville Store</h1>
-        <p>Community Fast Food & Daily Specials</p>
-      </div>
-    </div>
-    <div class="header-actions">
-      <span id="store-hours-status" class="hours-badge hours-open">Checking hours...</span>
-      <button id="header-orders-btn" class="header-orders-btn" onclick="toggleLiveTrackerPanel()">
-        <span>Active Orders</span>
-        <span id="header-orders-badge" class="orders-badge">0</span>
-      </button>
-      <button class="header-cart-btn" onclick="toggleCartDrawer()">
-        <span>🛒 Cart</span>
-        <span id="header-cart-badge" style="background:var(--brand);color:#fff;padding:.15rem .5rem;border-radius:20px;font-size:.75rem;font-weight:800;margin-left:.25rem">0</span>
-      </button>
-    </div>
-  </header>
-
-  <div id="store-closed-banner" style="display:none; background:#ef4444; color:#fff; text-align:center; padding:.75rem 1rem; font-weight:700; font-size:.9rem;">
-    🌙 The kitchen is currently resting! We are closed for the evening (orders close at 8:00 PM and reopen at 7:00 AM). You are welcome to browse the menu in the meantime!
-  </div>
-
-  <div class="hero-banner-container">
-    <div class="hero-banner">
-      <img src="Screenshot 2026-09-21 162238.png" alt="Storefront Header Image" class="hero-banner-img" onerror="this.src='https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80'">
-      <div class="hero-banner-overlay">
-        <span class="hero-tag">📍 3 Wagenaar St, Davidsonville</span>
-        <h2 style="margin:6px 0 4px;font-size:1.5rem;font-weight:900">Fresh Fast Food & Daily Specials</h2>
-        <p style="margin:0;color:#cbd5e1;font-size:.95rem">Order online for quick in-store pickup. Call: 064 629 7453</p>
-      </div>
-    </div>
-
-    <div class="special-spotlight-banner">
-      <div style="z-index:1;">
-        <span style="background:rgba(244,63,94,0.18); color:#fb7185; border:1px solid rgba(244,63,94,0.3); font-size:0.72rem; font-weight:800; padding:0.25rem 0.65rem; border-radius:20px; text-transform:uppercase; letter-spacing:0.5px;">🔥 Featured Store Special</span>
-        <h3 style="font-size:1.3rem; font-weight:900; margin:0.4rem 0 0.2rem; color:#fff; letter-spacing:-0.01em;">Crispy Wings & Golden Chips Combo</h3>
-        <p style="font-size:0.86rem; color:#cbd5e1; margin:0; line-height:1.4;">Hot, seasoned chicken wings served with a generous side of fresh, golden chips!</p>
-      </div>
-      <div style="text-align:right; z-index:1; min-width:140px;">
-        <div style="font-size:1.55rem; font-weight:900; color:#fbbf24;">R35.00</div>
-        <button onclick="addToCart('cc6')" style="background:var(--special-gradient); color:#fff; border:none; padding:0.6rem 1.1rem; border-radius:10px; font-weight:800; font-size:0.85rem; cursor:pointer; margin-top:0.4rem; box-shadow:0 4px 14px rgba(244,63,94,0.35); width:100%; transition:opacity 0.2s;">+ Order Special</button>
-      </div>
-    </div>
-  </div>
-
   <div class="container">
-    <aside>
-      <div class="card">
-        <div class="card-title">👤 Customer Profile</div>
-        <div id="client-details" style="padding:.85rem;border-radius:10px;font-size:.9rem;border:1px solid var(--border);background:#f8fafc"></div>
-      </div>
+    <h1>🍔 DCS Storefront</h1>
+    <p>Select items and place your order securely.</p>
 
-      <div id="login-panel" class="card" style="margin-top:1.25rem">
-        <div class="card-title">🔑 Account Login</div>
-        <input type="tel" id="login-phone" placeholder="Phone (e.g. 0646297453)">
-        <button onclick="handleLoginClient()" class="btn-primary">Login to Store</button>
-      </div>
+    <div class="menu-grid" id="menu-container"></div>
 
-      <div id="registration-panel" class="card" style="margin-top:1.25rem">
-        <div class="card-title">📝 New Registration</div>
-        <input type="text" id="new-name" placeholder="Full Name">
-        <input type="tel" id="new-phone" placeholder="Phone (e.g. 0646297453)">
-        <input type="text" id="new-address" placeholder="Delivery/Collection Address">
-        <button onclick="handleRegisterClient()" class="btn-primary" style="background:linear-gradient(135deg,#059669 0%,#047857 100%)">Register Account</button>
-      </div>
+    <div class="cart-box">
+      <h2>Your Cart</h2>
+      <div id="cart-items">Cart is empty</div>
+      <p><strong>Total: <span id="cart-total">R0.00</span></strong></p>
+      
+      <label for="customer-name">Your Name:</label>
+      <input type="text" id="customer-name" placeholder="Enter your name">
 
-      <details id="customer-tracker-panel" class="menu-category-dropdown card" style="display:none; margin-top:1.25rem">
-        <summary><span>🚀 Active Orders</span><span style="font-size:0.75rem; color:var(--muted); font-weight:normal;">▼ Show / Hide</span></summary>
-        <div class="dropdown-content-grid" style="padding:0.75rem; grid-template-columns:1fr;">
-          <div id="active-orders-tracker-container" style="padding:0.25rem 0;"></div>
-        </div>
-      </details>
-
-      <details id="favorites-panel" class="menu-category-dropdown card" style="margin-top:1.25rem">
-        <summary><span>⭐ Quick Favorites</span><span style="font-size:0.75rem; color:var(--muted); font-weight:normal;">▼ Show / Hide</span></summary>
-        <div class="dropdown-content-grid" style="padding:0.75rem; grid-template-columns:1fr;">
-          <div id="favorites-list" style="padding:0.5rem 0;"></div>
-        </div>
-      </details>
-
-      <details id="order-history-panel" class="menu-category-dropdown card" style="display:none; margin-top:1.25rem">
-        <summary><span>📜 Order History</span><span style="font-size:0.75rem; color:var(--muted); font-weight:normal;">▼ Show / Hide</span></summary>
-        <div style="padding:0.75rem;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <strong style="font-size:0.95rem;color:var(--primary)">Past Orders</strong>
-            <button onclick="clearOrderHistory()" class="btn-danger">🗑️ Clear</button>
-          </div>
-          <div id="order-history-list" style="padding:0.25rem 0;"></div>
-        </div>
-      </details>
-    </aside>
-
-    <main>
-      <div class="card" style="margin-bottom:1.5rem; padding:1.25rem;">
-        <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
-          <input type="text" id="search-input" placeholder="🔍 Search menu items (e.g. Chips, Wings, Bunny)..." style="margin-bottom:0; flex:1; min-width:200px;" oninput="renderCatalog()">
-          <button onclick="clearSearch()" style="padding:.75rem 1.15rem; border-radius:12px; border:1px solid var(--border); background:#f1f5f9; cursor:pointer; font-weight:700; font-size:0.9rem;">Clear</button>
-        </div>
-        <div id="category-filter-chips" style="display:flex; gap:0.6rem; margin-top:1rem; flex-wrap:wrap;"></div>
-      </div>
-
-      <div id="catalog-dropdowns-container"></div>
-    </main>
-  </div>
-
-  <div id="cart-drawer-overlay" class="cart-drawer-overlay" onclick="toggleCartDrawer()"></div>
-  <div id="cart-drawer" class="cart-drawer">
-    <div class="cart-header">
-      <strong>🛒 Your Cart</strong>
-      <button onclick="toggleCartDrawer()" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:#fff;padding:.4rem .8rem;border-radius:8px;cursor:pointer;font-weight:700">Close</button>
+      <button onclick="checkoutOrder()" id="checkout-btn" disabled>Place Order</button>
     </div>
-    <div class="cart-body">
-      <div id="cart-list"></div>
-      <div style="margin-top:1rem;">
-        <div id="redemption-banner" style="background:#fef3c7; border:1px solid #f59e0b; padding:0.75rem; border-radius:10px; font-size:0.85rem; margin-bottom:0.75rem; display:none;">
-          ⭐ You have <strong>1,000+ points</strong>! You can redeem R20 off this order!
-          <button onclick="toggleRedemption()" id="redeem-btn" class="btn-primary small" style="margin-top:0.4rem; background:var(--brand);">Redeem R20 Discount</button>
-        </div>
-      </div>
-      <div style="margin-top:1rem;">
-        <label style="font-size:0.82rem; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.5px">Special Instructions (Note to Kitchen)</label>
-        <textarea id="special-instructions" placeholder="e.g., extra sauce, well done chips..." rows="3" style="margin-top:.4rem"></textarea>
-      </div>
-      <div style="margin-top:0.75rem;">
-        <label style="font-size:0.82rem; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.5px">Order Timing</label>
-        <div style="display:flex; gap:1.25rem; font-size:0.88rem; margin-top:0.4rem; font-weight:600">
-          <label><input type="radio" name="timing" value="ASAP" checked> ASAP Prep</label>
-          <label><input type="radio" name="timing" value="Scheduled"> Schedule Pickup</label>
-        </div>
-      </div>
-      <div style="margin-top:1rem;">
-        <label style="font-size:0.82rem; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.5px">Payment Method</label>
-        <div style="display:flex; gap:1.25rem; font-size:0.88rem; margin-top:0.4rem; font-weight:600">
-          <label><input type="radio" name="payment" value="Cash on Pickup" checked> Cash</label>
-          <label><input type="radio" name="payment" value="Card / Speedpoint"> Card</label>
-        </div>
-      </div>
-    </div>
-    <div class="cart-footer">
-      <div id="checkout-summary-box"></div>
-      <button id="checkout-btn" onclick="checkoutOrder()" class="btn-primary" style="margin-top:1rem;" disabled>Login to Place Order</button>
-    </div>
-  </div>
-
-  <div class="floating-fab" onclick="toggleCartDrawer()" style="position:fixed;bottom:24px;right:24px;background:var(--brand-gradient);color:#fff;padding:.9rem 1.35rem;border-radius:50px;display:flex;align-items:center;gap:.75rem;cursor:pointer;z-index:150;box-shadow:0 12px 30px rgba(217,119,6,0.35);font-weight:800">
-    <span>🛒</span><span>Cart</span>
-    <span id="fab-cart-badge" style="background:white; color:var(--brand); border-radius:50%; width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; font-size:0.78rem; font-weight:900;">0</span>
-  </div>
-
-  <div id="receipt-modal" class="modal-overlay">
-    <div class="modal-content">
-      <div id="receipt-details-container"></div>
-      <div style="display:flex; gap:1rem; margin-top:1.5rem;">
-        <button onclick="window.print()" class="btn-primary" style="flex:1; background:var(--primary);">🖨️ Print Slip</button>
-        <button onclick="closeReceiptModal()" style="flex:1; background:#64748b; color:white; border:none; border-radius:12px; padding:0.8rem; font-weight:800; cursor:pointer;">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="live-tracker-panel" class="hidden">
-    <div id="live-tracker-header">
-      <span style="font-size:0.95rem">Active Orders</span>
-      <button onclick="toggleLiveTrackerPanel()" style="background:transparent;border:none;color:#fff;cursor:pointer;font-weight:bold;font-size:0.9rem">✕</button>
-    </div>
-    <div id="live-tracker-body"></div>
   </div>
 
   <script>
-    const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co'.trim();
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU'.trim();
-    const SHARED_KEY = 'davidsonville_app_state_v15';
+    const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false },
-      global: { 
-        headers: { 
-          'apikey': SUPABASE_ANON_KEY, 
-          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY 
-        } 
-      }
-    });
-
-    function getSharedState() {
-      try { const stored = localStorage.getItem(SHARED_KEY); if (stored) return JSON.parse(stored); } catch (e) {}
-      return { clients: [], orders: [], outOfStock: [] };
-    }
-
-    function saveSharedState(state) {
-      try { localStorage.setItem(SHARED_KEY, JSON.stringify(state)); } catch (e) {}
-    }
-
-    function cleanAndValidatePhone(input) {
-      if (!input) return '';
-      let cleaned = input.replace(/\D/g, '');
-      if (cleaned.startsWith('27') && cleaned.length >= 11) {
-        cleaned = '0' + cleaned.slice(2);
-      }
-      return cleaned;
-    }
-
-    let client = JSON.parse(localStorage.getItem('dcs_client')) || null;
-    let cart = JSON.parse(localStorage.getItem('dcs_cart')) || [];
-    let favorites = JSON.parse(localStorage.getItem('dcs_favorites')) || [];
-    let activeCategoryFilter = 'ALL';
-    let isRedeemingPoints = false;
-
-    const catalog = [
-      { id: 'ch1', name: 'SMALL CHIPS', category: 'Chips', price: 10, img: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80' },
-      { id: 'ch2', name: 'MEDIUM CHIPS', category: 'Chips', price: 20, img: 'https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?auto=format&fit=crop&w=500&q=80' },
-      { id: 'ch3', name: 'LARGE CHIPS', category: 'Chips', price: 30, img: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=500&q=80' },
-      { id: 'cc1', name: 'FULL HOUSE COMBO 1', category: 'Chicken Combos', price: 155, img: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=500&q=80' },
-      { id: 'cc2', name: 'FULL CHICKEN', category: 'Chicken Combos', price: 95, img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=80' },
-      { id: 'cc3', name: 'HALF CHICKEN', category: 'Chicken Combos', price: 50, img: 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&w=500&q=80' },
-      { id: 'cc4', name: '½ CHICKEN & CHIPS', category: 'Chicken Combos', price: 60, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=500&q=80' },
-      { id: 'cc5', name: '¼ CHICKEN & CHIPS', category: 'Chicken Combos', price: 45, img: 'https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&w=500&q=80' },
-      { id: 'cc6', name: '🔥 CRISPY WINGS & CHIPS (SPECIAL)', category: 'Chicken Combos', price: 35, img: 'https://images.unsplash.com/photo-1567620832903-9fc6debc209f?auto=format&fit=crop&w=500&q=80', isSpecial: true },
-      { id: 'bc1', name: 'CHIP BUNNY', category: 'Bunny Chows', price: 20, img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=500&q=80' },
-      { id: 'bc2', name: 'POLONY BUNNY', category: 'Bunny Chows', price: 38, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
-      { id: 'bc3', name: 'RUSSIAN BUNNY', category: 'Bunny Chows', price: 43, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?auto=format&fit=crop&w=500&q=80' },
-      { id: 'bc4', name: 'PATTY BUNNY', category: 'Bunny Chows', price: 50, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=500&q=80' },
-      { id: 'bc5', name: 'STEAK BUNNY', category: 'Bunny Chows', price: 55, img: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=500&q=80' },
-      { id: 'bc6', name: 'BACON BUNNY', category: 'Bunny Chows', price: 40, img: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?auto=format&fit=crop&w=500&q=80' },
-      { id: 'sp1', name: 'FOOTLONG FRANKFURTER', category: 'Specials', price: 40, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?auto=format&fit=crop&w=500&q=80' },
-      { id: 'sp2', name: 'FOOTLONG FRANK & CHIPS', category: 'Specials', price: 45, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=500&q=80' },
-      { id: 'sp3', name: 'STEAK ROLL', category: 'Specials', price: 50, img: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=500&q=80' },
-      { id: 'sp4', name: 'FOOTLONG STEAKROLL / CHIPS', category: 'Specials', price: 80, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
-      { id: 'sp5', name: 'X-LARGE RUSSIAN & CHIPS', category: 'Specials', price: 48, img: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=500&q=80' },
-      { id: 'sp6', name: 'BOEREWORS ROLL', category: 'Specials', price: 25, img: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=500&q=80' },
-      { id: 'sp7', name: 'PREGO ROLL', category: 'Specials', price: 35, img: 'https://images.unsplash.com/photo-1603064752734-4c48eff53d05?auto=format&fit=crop&w=500&q=80' },
-      { id: 'sp8', name: 'CHICKEN MAYO ROLL', category: 'Specials', price: 15, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
-      { id: 'ts1', name: 'CHIP BREAD', category: 'Toasted Sandwiches', price: 8, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
-      { id: 'ts2', name: 'TOASTED CHIP BREAD', category: 'Toasted Sandwiches', price: 10, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
-      { id: 'ts3', name: 'SCHOOL BOY', category: 'Toasted Sandwiches', price: 35, img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=500&q=80' },
-      { id: 'ts4', name: 'CHEESE & TOMATO', category: 'Toasted Sandwiches', price: 15, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
-      { id: 'ts5', name: 'BACON, EGG & CHEESE', category: 'Toasted Sandwiches', price: 38, img: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?auto=format&fit=crop&w=500&q=80' }
+    const menu = [
+      { id: 1, name: 'Double Cheeseburger', price: 85 },
+      { id: 2, name: 'Loaded Fries', price: 45 },
+      { id: 3, name: 'Craft Soda', price: 25 },
+      { id: 4, name: 'Crispy Chicken Wings', price: 65 }
     ];
 
-    let audioCtx = null;
-    function playCustomerChime(type) {
-      try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        const now = audioCtx.currentTime;
+    let cart = [];
 
-        const osc1 = audioCtx.createOscillator();
-        const gain1 = audioCtx.createGain();
-        osc1.connect(gain1); gain1.connect(audioCtx.destination);
-
-        if (type === 'preparing') {
-          osc1.type = 'triangle';
-          osc1.frequency.setValueAtTime(440, now);
-          osc1.frequency.setValueAtTime(554.37, now + 0.15);
-          gain1.gain.setValueAtTime(0.4, now);
-          gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-          osc1.start(now); osc1.stop(now + 0.5);
-        } else if (type === 'ready') {
-          osc1.type = 'sine';
-          osc1.frequency.setValueAtTime(659.25, now);
-          osc1.frequency.setValueAtTime(880.00, now + 0.2);
-          gain1.gain.setValueAtTime(0.5, now);
-          gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
-          osc1.start(now); osc1.stop(now + 0.8);
-        } else if (type === 'completed') {
-          osc1.type = 'sine';
-          osc1.frequency.setValueAtTime(523.25, now);
-          osc1.frequency.setValueAtTime(659.25, now + 0.2);
-          osc1.frequency.setValueAtTime(783.99, now + 0.4);
-          gain1.gain.setValueAtTime(0.5, now);
-          gain1.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
-          osc1.start(now); osc1.stop(now + 1.0);
-        }
-      } catch (err) {}
+    function renderMenu() {
+      const container = document.getElementById('menu-container');
+      container.innerHTML = menu.map(item => `
+        <div class="menu-item">
+          <h3>${item.name}</h3>
+          <div class="price">R${item.price.toFixed(2)}</div>
+          <button onclick="addToCart(${item.id})">Add to Cart</button>
+        </div>
+      `).join('');
     }
 
-    document.addEventListener('click', () => {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-    }, { once: true });
+    function addToCart(itemId) {
+      const item = menu.find(m => m.id === itemId);
+      cart.push(item);
+      updateCartUI();
+    }
 
-    function showStageNotification(orderId, stage) {
-      let msg = '';
-      let chimeType = 'default';
+    function updateCartUI() {
+      const itemsContainer = document.getElementById('cart-items');
+      const totalContainer = document.getElementById('cart-total');
+      const checkoutBtn = document.getElementById('checkout-btn');
 
-      if (stage === 'preparing' || stage === 'kitchen-prep') {
-        msg = '🔥 Your order is currently being freshly prepared by our kitchen team!';
-        chimeType = 'preparing';
-      } else if (stage === 'ready' || stage === 'ready-for-pick-up') {
-        msg = '✅ Your order is ready! Come collect it hot and fresh from the counter.';
-        chimeType = 'ready';
-      } else if (stage === 'completed' || stage === 'order-completed') {
-        msg = '⭐ Thank you for shopping with Davidsonville Community Store! See you again soon! ⭐';
-        chimeType = 'completed';
-      } else if (stage === 'cancelled') {
-        msg = '❌ Order #' + orderId + ' has been cancelled.';
-      } else {
-        msg = 'Order #' + orderId + ' status updated to ' + stage.toUpperCase() + '.';
+      if (cart.length === 0) {
+        itemsContainer.innerHTML = 'Cart is empty';
+        totalContainer.innerText = 'R0.00';
+        checkoutBtn.disabled = true;
+        return;
       }
 
-      const existing = document.getElementById('status-toast');
-      if (existing) existing.remove();
+      let total = 0;
+      itemsContainer.innerHTML = cart.map(item => {
+        total += item.price;
+        return `<div>${item.name} - R${item.price.toFixed(2)}</div>`;
+      }).join('');
 
-      const toast = document.createElement('div');
-      toast.id = 'status-toast';
-      toast.className = 'toast-alert';
-      toast.innerHTML = '<span>🔔</span><div><strong>Order #' + orderId + '</strong><br>' + msg + '</div>';
-      document.body.appendChild(toast);
-      playCustomerChime(chimeType);
-      
-      setTimeout(() => {
-        toast.style.transition = 'opacity 0.6s ease';
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 600);
-      }, 7000);
+      totalContainer.innerText = 'R' + total.toFixed(2);
+      checkoutBtn.disabled = false;
     }
 
-    function parseOrderItems(rawItems) {
-      if (!rawItems) return [];
-      if (Array.isArray(rawItems)) return rawItems;
-      try { const p = JSON.parse(rawItems); if (Array.isArray(p)) return p; return [p]; } catch (e) { return [{ name: rawItems, qty: 1, price: 0 }]; }
-    }
-
-    function renderOrderItemsList(itemsInput) {
-      const items = parseOrderItems(itemsInput);
-      let html = '<ul style="list-style:none; padding:0; margin:0.25rem 0; font-size:0.78rem;">';
-      for (let i = 0; i < items.length; i++) {
-        let item = items[i];
-        let q = item.qty || item.quantity || 1;
-        let n = item.name || item.title || 'Item';
-        let p = Number(item.price || 0);
-        html += '<li style="display:flex; justify-content:space-between; padding:0.15rem 0; border-bottom:1px dotted var(--border);"><span><strong>' + q + 'x</strong> ' + n + '</span><span style="font-weight:800;color:var(--brand)">R' + (q * p).toFixed(2) + '</span></li>';
-      }
-      html += '</ul>';
-      return html;
-    }
-
-    function buildOrderCardHTML(order) {
-      const stage = (order.stage || order.status || 'received').toLowerCase().trim().replace(/_/g, '-');
-      const isFailedOrCancelled = (stage === 'cancelled' || stage === 'failed');
-      const stageLabels = {
-        'received': 'Received', 'pending': 'Pending', 'kitchen-prep': 'Kitchen Prep', 'preparing': 'Preparing',
-        'ready': 'Ready', 'ready-for-pick-up': 'Ready for Pick up', 'order-completed': 'Completed', 'completed': 'Completed', 'cancelled': 'Cancelled'
-      };
-
-      const oid = order.id || order.order_id;
-      let notesHtml = '';
-      if (order.instructions || order.notes) {
-        notesHtml = '<div style="font-size:.72rem; background:#fffbeb; padding:.25rem .5rem; border-left:3px solid var(--brand); margin-bottom:.4rem; border-radius:4px"><strong>Notes:</strong> ' + (order.instructions || order.notes) + '</div>';
-      }
-
-      let btnHtml = isFailedOrCancelled ? 
-        '<button onclick="resubmitOrderFromSlip(\'' + oid + '\')" style="font-size:.72rem; font-weight:800; padding:.35rem .6rem; background:#9333ea; color:#fff; border:none; border-radius:6px; cursor:pointer;">🔄 Reorder</button>' :
-        '<button onclick="saveOrderAsFavorite(\'' + oid + '\')" style="font-size:.72rem; font-weight:800; padding:.35rem .6rem; background:#059669; color:#fff; border:none; border-radius:6px; cursor:pointer;">⭐ Favorite</button>';
-
-      return '<div style="padding:0.85rem; border:1px solid var(--border); border-radius:10px; margin-bottom:.75rem; background:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.03)">' +
-        '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.4rem; border-bottom:1px solid var(--border); padding-bottom:.4rem;">' +
-          '<div><strong style="font-size:0.85rem">Order #' + oid + '</strong><div style="font-size:0.7rem; color:var(--muted);">' + (order.date || '') + '</div></div>' +
-          '<span style="background:var(--primary); color:#fff; font-size:0.68rem; font-weight:800; padding:.2rem .5rem; border-radius:16px;">' + (stageLabels[stage] || stage.toUpperCase()) + '</span>' +
-        '</div>' +
-        '<div style="margin:.4rem 0; background:#f8fafc; padding:.4rem; border-radius:6px;">' + renderOrderItemsList(order.items) + '</div>' +
-        notesHtml +
-        '<div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; margin-top:.4rem"><span>Total:</span><strong style="color:var(--brand);font-size:0.95rem">R' + Number(order.total || order.total_amount || 0).toFixed(2) + '</strong></div>' +
-        '<div style="margin-top:.6rem; display:flex; justify-content:space-between; align-items:center; gap:0.4rem;">' +
-          btnHtml +
-          '<button onclick="showDigitalReceiptFromId(\'' + oid + '\')" style="font-size:.72rem; font-weight:800; padding:.35rem .6rem; background:var(--primary); color:#fff; border:none; border-radius:6px; cursor:pointer;">🧾 Slip</button>' +
-        '</div>' +
-      '</div>'; 
-    }
-
+    // Robust server-confirmed checkout with upsert
     async function postOrderToSupabase(order) {
       try {
-        const { error } = await supabaseClient.from('orders').upsert({
-          id: order.id,
-          customer_name: order.clientName,
-          phone: order.phone,
-          address: client?.address || '',
-          items: JSON.stringify(order.items),
-          notes: order.instructions || '',
-          total: Number(order.total || 0),
-          stage: order.stage || 'received',
-          status: order.stage || 'received',
-          created_at: new Date(order.timestamp).toISOString()
-        });
-        
-        if (error) {
-          console.error("❌ Supabase Insert Error:", error.message);
-        }
-      } catch (err) {
-        console.error("❌ Network or Script Exception:", err);
-      }
-    }
-
-    async function verifyAndFetchSupabaseOrders() {
-      if (!client || !client.phone) return;
-      let state = getSharedState();
-      try {
-        const { data: remoteOrders, error } = await supabaseClient
+        const { error } = await supabaseClient
           .from('orders')
-          .select('*')
-          .eq('phone', client.phone.trim())
-          .order('created_at', { ascending: false });
+          .upsert({
+            id: order.id,
+            customer_name: order.clientName,
+            phone: order.phone || '',
+            address: order.address || '',
+            items: JSON.stringify(order.items),
+            notes: order.instructions || '',
+            total: Number(order.total || 0),
+            stage: order.stage || 'received',
+            status: order.stage || 'received',
+            created_at: new Date(order.timestamp).toISOString()
+          })
+          .select();
 
-        if (!error && remoteOrders && remoteOrders.length > 0) {
-          let prevStages = JSON.parse(localStorage.getItem('dcs_prev_stages') || '{}');
-          let newStages = {};
-
-          const mapped = remoteOrders.map(o => {
-            const st = (o.stage || o.status || 'received').toLowerCase().trim().replace(/_/g, '-');
-            const oid = o.id || 'DCS-01';
-            newStages[oid] = st;
-            if (prevStages[oid] && prevStages[oid] !== st) {
-              showStageNotification(oid, st);
-            }
-            return {
-              id: oid,
-              date: o.created_at ? new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-              timestamp: o.created_at ? new Date(o.created_at).getTime() : Date.now(),
-              items: parseOrderItems(o.items),
-              instructions: o.notes || '',
-              total: Number(o.total || 0),
-              stage: st,
-              clientName: o.customer_name || client.name,
-              phone: o.phone || client.phone
-            };
-          });
-          localStorage.setItem('dcs_prev_stages', JSON.stringify(newStages));
-          
-          let existingOrders = state.orders || [];
-          mapped.forEach(mo => {
-            let idx = existingOrders.findIndex(eo => String(eo.id) === String(mo.id));
-            if (idx > -1) { existingOrders[idx] = mo; } else { existingOrders.push(mo); }
-          });
-          state.orders = existingOrders;
-          saveSharedState(state);
+        if (error) {
+          console.error(error);
+          return false;
         }
-      } catch (e) {}
-      renderLiveOrderTrackersUI();
-    }
-
-    function subscribeToRealtimeCustomer() {
-      try {
-        supabaseClient
-          .channel('customer-realtime-updates')
-          .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'orders' },
-            () => {
-              verifyAndFetchSupabaseOrders();
-            }
-          )
-          .subscribe();
-      } catch (e) {}
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      checkStoreOperatingHours();
-      renderCategoryChips(); renderClientProfile(); renderCatalog(); renderCart(); renderFavorites(); renderOrderHistory(); renderLiveOrderTrackersUI();
-      verifyAndFetchSupabaseOrders();
-      subscribeToRealtimeCustomer();
-      setInterval(verifyAndFetchSupabaseOrders, 4000);
-    });
-
-    function checkStoreOperatingHours() {
-      const now = new Date();
-      const hour = now.getHours();
-      const statusBadge = document.getElementById('store-hours-status');
-      const closedBanner = document.getElementById('store-closed-banner');
-      const checkoutBtn = document.getElementById('checkout-btn');
-      const isClosed = (hour >= 20 || hour < 7);
-
-      if (statusBadge) {
-        if (!isClosed) { statusBadge.className = "hours-badge hours-open"; statusBadge.innerText = "● Open Now (7 AM - 8 PM)"; }
-        else { statusBadge.className = "hours-badge hours-closed"; statusBadge.innerText = "● Closed (Opens 7 AM)"; }
-      }
-      if (closedBanner) closedBanner.style.display = isClosed ? 'block' : 'none';
-      if (checkoutBtn && client) {
-        if (isClosed) {
-          checkoutBtn.disabled = true;
-          checkoutBtn.innerText = 'Store Closed (Orders open 7 AM - 8 PM)';
-          checkoutBtn.style.background = '#94a3b8';
-        } else {
-          checkoutBtn.disabled = false;
-          checkoutBtn.innerText = 'Complete Order';
-          checkoutBtn.style.background = '';
-        }
+        return true;
+      } catch (err) {
+        console.error(err);
+        return false;
       }
     }
 
-    function renderCategoryChips() {
-      const c = document.getElementById('category-filter-chips');
-      if (!c) return;
-      const cats = ['ALL', 'Chips', 'Chicken Combos', 'Bunny Chows', 'Specials', 'Toasted Sandwiches'];
-      c.innerHTML = cats.map(cat => '<button onclick="setCategoryFilter(\'' + cat + '\')" class="filter-chip ' + (activeCategoryFilter === cat ? 'active' : '') + '">' + cat + '</button>').join('');
-    }
-
-    function setCategoryFilter(cat) { activeCategoryFilter = cat; renderCategoryChips(); renderCatalog(); }
-    function clearSearch() { document.getElementById('search-input').value = ''; activeCategoryFilter = 'ALL'; renderCategoryChips(); renderCatalog(); }
-
-    function handleLoginClient() {
-      const rawPhone = document.getElementById('login-phone').value.trim();
-      const phone = cleanAndValidatePhone(rawPhone);
-      if (!phone || phone.length < 10) { alert('Please enter a valid South African phone number (e.g. 0646297453)'); return; }
-      const state = getSharedState();
-      const found = (state.clients || []).find(c => c.phone === phone);
-      if (!found) { alert('Account not found with number ' + phone + '. Please register first.'); return; }
-      client = found; localStorage.setItem('dcs_client', JSON.stringify(client));
-      renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Welcome back, ' + client.name + '!');
-    }
-
-    function handleRegisterClient() {
-      const name = document.getElementById('new-name').value.trim();
-      const rawPhone = document.getElementById('new-phone').value.trim();
-      const address = document.getElementById('new-address').value.trim();
-      const phone = cleanAndValidatePhone(rawPhone);
-
-      if (!name || !phone || phone.length < 10 || !address) { 
-        alert('Please fill all fields and enter a valid SA phone number (e.g., 0646297453)'); 
-        return; 
-      }
-
-      client = { name, phone, address, points: 0 };
-      localStorage.setItem('dcs_client', JSON.stringify(client));
-      let state = getSharedState(); 
-      if (!state.clients) state.clients = [];
-      state.clients.push(client); 
-      saveSharedState(state);
-      renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Account registered successfully! Start ordering to earn points.');
-    }
-
-    function logoutClient() {
-      client = null; localStorage.removeItem('dcs_client');
-      isRedeemingPoints = false;
-      renderClientProfile(); renderCart(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Logged out');
-    }
-
-    function renderClientProfile() {
-      const box = document.getElementById('client-details');
-      const btn = document.getElementById('checkout-btn');
-      const now = new Date(); const isClosed = (now.getHours() >= 20 || now.getHours() < 7);
-
-      if (client) {
-        if (client.points === undefined) client.points = 0;
-        box.innerHTML = '👤 <strong>' + client.name + '</strong><br>📞 ' + client.phone + '<br>⭐ Loyalty Points: <strong>' + client.points + '</strong><br><button onclick="logoutClient()" style="background:#dc2626;color:#fff;border:none;margin-top:.5rem;font-size:.75rem;font-weight:700;padding:.3rem .6rem;border-radius:6px;cursor:pointer">Logout</button>';
-        document.getElementById('login-panel').style.display = 'none';
-        document.getElementById('registration-panel').style.display = 'none';
-        document.getElementById('order-history-panel').style.display = 'block';
-        if (!isClosed) { btn.disabled = false; btn.innerText = 'Complete Order'; }
-      } else {
-        box.innerHTML = '⚠️ Guest Mode (Login or Register below)';
-        document.getElementById('login-panel').style.display = 'block';
-        document.getElementById('registration-panel').style.display = 'block';
-        document.getElementById('order-history-panel').style.display = 'none';
-        btn.disabled = true; btn.innerText = 'Login to Order';
-      }
-      renderCart();
-    }
-
-    function renderCatalog() {
-      const container = document.getElementById('catalog-dropdowns-container');
-      if (!container) return;
-      const openCategories = {};
-      container.querySelectorAll('details.menu-category-dropdown').forEach(det => {
-        const catName = det.getAttribute('data-category');
-        if (catName && det.open) openCategories[catName] = true;
-      });
-
-      const q = (document.getElementById('search-input')?.value || '').toLowerCase();
-      const state = getSharedState();
-      const outOfStock = state.outOfStock || [];
-      const cats = ['Chips', 'Chicken Combos', 'Bunny Chows', 'Specials', 'Toasted Sandwiches'];
-      const filteredCats = activeCategoryFilter === 'ALL' ? cats : [activeCategoryFilter];
-
-      container.innerHTML = filteredCats.map(cat => {
-        const items = catalog.filter(i => i.category === cat && i.name.toLowerCase().includes(q));
-        if (items.length === 0) return '';
-        const isOpen = openCategories[cat] ? ' open' : '';
-        return '<details class="menu-category-dropdown"' + isOpen + ' data-category="' + cat + '"><summary><span>' + cat + '</span><span style="font-size:0.8rem; color:var(--muted); font-weight:normal;">▼ Show / Hide</span></summary><div class="dropdown-content-grid">' + items.map(i => {
-          const isSoldOut = outOfStock.includes(i.id);
-          const isSpecialShining = i.isSpecial;
-          return '<div class="item-card ' + (isSpecialShining ? 'shining-special' : '') + '" style="' + (isSoldOut ? 'opacity:0.65;' : '') + '">' +
-            '<div class="item-img-container">' +
-              '<img src="' + i.img + '" class="item-img" style="' + (isSoldOut ? 'filter: grayscale(100%);' : '') + '">' +
-              (isSoldOut ? '<div style="position:absolute; inset:0; background:rgba(15,23,42,0.6); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:0.85rem; letter-spacing:1px;">SOLD OUT</div>' : '') +
-              (isSpecialShining && !isSoldOut ? '<div style="position:absolute; top:8px; right:8px; background:var(--special-gradient); color:#fff; font-size:0.7rem; font-weight:800; padding:0.25rem 0.55rem; border-radius:6px; box-shadow:0 2px 8px rgba(244,63,94,0.35);">★ SPECIAL</div>' : '') +
-            '</div>' +
-            '<div class="item-details">' +
-              '<h4>' + i.name + '</h4>' +
-              '<div class="item-price">R' + i.price.toFixed(2) + '</div>' +
-              (isSoldOut ? 
-                '<button class="btn-primary small" style="margin-top:.75rem; background:#94a3b8; cursor:not-allowed;" disabled>Sold Out</button>' :
-                '<button onclick="addToCart(\'' + i.id + '\')" class="btn-primary small" style="margin-top:.75rem; ' + (isSpecialShining ? 'background:var(--special-gradient); font-weight:800; box-shadow:0 4px 12px rgba(244,63,94,0.3);' : '') + '">+ Add to Cart</button>'
-              ) +
-            '</div>' +
-          '</div>';
-        }).join('') + '</div></details>';
-      }).join('');
-    }
-
-    function addToCart(id) {
-      const state = getSharedState();
-      if ((state.outOfStock || []).includes(id)) { alert('Sorry, this item is currently sold out.'); return; }
-      const item = catalog.find(i => i.id === id);
-      const ex = cart.find(c => c.id === id);
-      if (ex) ex.qty += 1; else cart.push({ ...item, qty: 1 });
-      localStorage.setItem('dcs_cart', JSON.stringify(cart));
-      renderCart();
-    }
-
-    function removeCartItem(index) {
-      cart.splice(index, 1);
-      localStorage.setItem('dcs_cart', JSON.stringify(cart));
-      renderCart();
-    }
-
-    function toggleRedemption() {
-      if (!client || client.points < 1000) {
-        alert('You need at least 1,000 points to redeem this discount.');
+    async function checkoutOrder() {
+      const nameInput = document.getElementById('customer-name').value.trim();
+      if (!nameInput) {
+        alert('Please enter your name before placing an order.');
         return;
       }
-      isRedeemingPoints = !isRedeemingPoints;
-      renderCart();
-    }
 
-    function renderCart() {
-      const list = document.getElementById('cart-list');
-      const sum = document.getElementById('checkout-summary-box');
-      const redemptionBanner = document.getElementById('redemption-banner');
-      const redeemBtn = document.getElementById('redeem-btn');
+      const total = cart.reduce((sum, item) => sum + item.price, 0);
+      const timestampNow = Date.now();
       
-      const totalItems = cart.reduce((a, b) => a + b.qty, 0);
-      document.getElementById('header-cart-badge').innerText = totalItems;
-      document.getElementById('fab-cart-badge').innerText = totalItems;
-
-      if (client && client.points >= 1000 && cart.length > 0) {
-        redemptionBanner.style.display = 'block';
-        redeemBtn.innerText = isRedeemingPoints ? '✓ R20 Discount Applied (Click to Remove)' : 'Redeem R20 Discount';
-      } else if (redemptionBanner) {
-        redemptionBanner.style.display = 'none';
-        isRedeemingPoints = false;
-      }
-
-      if (cart.length === 0) { 
-        list.innerHTML = '<p style="font-size:0.9rem; color:var(--muted); text-align:center; padding:1.5rem 0;">Your cart is currently empty</p>'; 
-        sum.innerHTML = ''; 
-        if (redemptionBanner) redemptionBanner.style.display = 'none';
-        isRedeemingPoints = false;
-        return; 
-      }
-
-      let sub = cart.reduce((a, b) => a + (b.price * b.qty), 0);
-      let discount = isRedeemingPoints ? 20 : 0;
-      if (discount > sub) discount = sub;
-      let finalTotal = sub - discount;
-
-      list.innerHTML = cart.map((i, idx) => '<div class="cart-row"><span style="font-weight:600">' + i.qty + 'x ' + i.name + ' <span style="color:var(--brand);font-weight:800">(R' + (i.price * i.qty).toFixed(2) + ')</span></span><button onclick="removeCartItem(' + idx + ')" style="background:#ef4444; color:#fff; border:none; padding:0.25rem 0.6rem; border-radius:6px; font-size:0.75rem; font-weight:700; cursor:pointer;">Remove</button></div>').join('');
-      
-      let summaryHtml = '<div style="display:flex; justify-content:space-between; font-size:0.95rem; font-weight:600; margin-bottom:0.3rem"><span>Subtotal:</span><span>R' + sub.toFixed(2) + '</span></div>';
-      if (isRedeemingPoints) {
-        summaryHtml += '<div style="display:flex; justify-content:space-between; font-size:0.95rem; font-weight:700; color:#059669; margin-bottom:0.3rem"><span>Points Discount:</span><span>-R20.00</span></div>';
-      }
-      summaryHtml += '<div style="display:flex; justify-content:space-between; font-size:1.05rem; font-weight:800; border-top:1px dashed var(--border); padding-top:0.5rem; margin-top:0.3rem"><span>Total Due:</span><span style="color:var(--brand)">R' + finalTotal.toFixed(2) + '</span></div>';
-      sum.innerHTML = summaryHtml;
-    }
-
-    function toggleCartDrawer() {
-      document.getElementById('cart-drawer').classList.toggle('open');
-      document.getElementById('cart-drawer-overlay').classList.toggle('open');
-    }
-    function toggleLiveTrackerPanel() {
-      document.getElementById('live-tracker-panel').classList.toggle('hidden');
-    }
-
-    function checkoutOrder() {
-      const now = new Date();
-      if (now.getHours() >= 20 || now.getHours() < 7) {
-        alert('We are closed for the evening (orders close at 8:00 PM and open at 7:00 AM).');
-        return;
-      }
-      if (!client || cart.length === 0) return;
-      const instructions = document.getElementById('special-instructions').value.trim();
-      const sub = cart.reduce((a, b) => a + (b.price * b.qty), 0);
-      let discountApplied = isRedeemingPoints && client.points >= 1000 ? 20 : 0;
-      if (discountApplied > sub) discountApplied = sub;
-      const finalTotal = sub - discountApplied;
-
-      const earnedPoints = Math.floor(finalTotal / 100) * 5;
-      if (client.points === undefined) client.points = 0;
-      
-      if (isRedeemingPoints && client.points >= 1000) {
-        client.points -= 1000;
-      }
-      client.points += earnedPoints;
-      localStorage.setItem('dcs_client', JSON.stringify(client));
-
-      let state = getSharedState();
-      if (!state.clients) state.clients = [];
-      let cIdx = state.clients.findIndex(c => c.phone === client.phone);
-      if (cIdx > -1) { state.clients[cIdx].points = client.points; }
-
-      if (!state.orders) state.orders = [];
-
-      let orderCounter = parseInt(localStorage.getItem('dcs_order_counter') || '0', 10);
-      orderCounter++;
-      localStorage.setItem('dcs_order_counter', orderCounter);
-      const formattedOrderId = 'DCS-' + Date.now();
-
       const newOrder = {
-        id: formattedOrderId,
-        date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        timestamp: Date.now(),
-        items: [...cart],
-        instructions: instructions,
-        paymentMethod: document.querySelector('input[name="payment"]:checked').value,
-        subtotal: sub,
-        discount: discountApplied,
-        total: finalTotal,
-        earnedPoints: earnedPoints,
-        currentPoints: client.points,
+        id: 'DCS-' + timestampNow,
+        clientName: nameInput,
+        items: cart,
+        total: total,
         stage: 'received',
-        clientName: client.name,
-        phone: client.phone
+        timestamp: timestampNow
       };
 
-      state.orders.unshift(newOrder);
-      saveSharedState(state);
-      postOrderToSupabase(newOrder);
+      const checkoutBtn = document.getElementById('checkout-btn');
+      checkoutBtn.innerText = 'Verifying & Sending...';
+      checkoutBtn.disabled = true;
 
-      cart = []; localStorage.removeItem('dcs_cart');
-      isRedeemingPoints = false;
-      document.getElementById('special-instructions').value = '';
-      toggleCartDrawer();
-      renderCart(); renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory();
-      
-      showOrderPlacedNotification(newOrder.id);
-      showDigitalReceipt(newOrder);
-    }
+      const success = await postOrderToSupabase(newOrder);
 
-    function showOrderPlacedNotification(orderId) {
-      const existing = document.getElementById('order-placed-toast');
-      if (existing) existing.remove();
-
-      const toast = document.createElement('div');
-      toast.id = 'order-placed-toast';
-      toast.className = 'toast-alert';
-      toast.innerHTML = '<span>🛒</span><div><strong>Order #' + orderId + ' Placed!</strong><br>Sent to the kitchen successfully.</div>';
-      document.body.appendChild(toast);
-      playCustomerChime('preparing');
-      
-      setTimeout(() => {
-        toast.style.transition = 'opacity 0.6s ease';
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 600);
-      }, 7000);
-    }
-
-    function showDigitalReceipt(order) {
-      const sub = Number(order.subtotal || order.total || 0);
-      const disc = Number(order.discount || 0);
-      const finalTot = Number(order.total || 0);
-      const earned = order.earnedPoints !== undefined ? order.earnedPoints : Math.floor(finalTot / 100) * 5;
-      const current = order.currentPoints !== undefined ? order.currentPoints : (client ? client.points : earned);
-
-      let discountRowHtml = disc > 0 ? '<div class="receipt-row" style="color:#059669; font-weight:700;"><span>Points Discount (R20):</span><span>-R' + disc.toFixed(2) + '</span></div>' : '';
-
-      document.getElementById('receipt-details-container').innerHTML = 
-        '<div class="receipt-box">' +
-          '<div style="text-align:center; font-weight:900; font-size:1.15rem; margin-bottom:2px;">DAVIDSONVILLE COMMUNITY STORE</div>' +
-          '<div style="text-align:center; font-size:0.78rem; color:#64748b; margin-bottom:2px;">3 Wagenaar St, Davidsonville</div>' +
-          '<div style="text-align:center; font-size:0.75rem; color:#64748b; margin-bottom:12px;">Tel: 064 629 7453 | Verified Slip</div>' +
-          '<div style="font-size:0.8rem; border-bottom:1px dashed #cbd5e1; padding-bottom:8px; margin-bottom:10px;">' +
-            '<div><strong>Order ID:</strong> #' + order.id + '</div>' +
-            '<div><strong>Date:</strong> ' + new Date(order.timestamp).toLocaleString() + '</div>' +
-            '<div><strong>Customer:</strong> ' + (order.clientName || order.customer_name) + ' (' + (order.phone || '') + ')</div>' +
-            '<div><strong>Payment:</strong> ' + (order.paymentMethod || 'Cash') + '</div>' +
-            ((order.instructions || order.notes) ? '<div style="margin-top:4px; color:#b45309;"><strong>Note:</strong> ' + (order.instructions || order.notes) + '</div>' : '') +
-          '</div>' +
-          '<div style="font-size:0.85rem; margin-bottom:10px;">' + renderOrderItemsList(order.items) + '</div>' +
-          '<div style="border-top:1px dashed #cbd5e1; padding-top:8px; font-size:0.9rem;">' +
-            '<div class="receipt-row"><span>Subtotal:</span><span>R' + sub.toFixed(2) + '</span></div>' +
-            discountRowHtml +
-            '<div class="receipt-row" style="color:#059669; font-weight:700;"><span>⭐ Points Earned (This Order):</span><span>+' + earned + ' pts</span></div>' +
-            '<div class="receipt-row" style="color:#0f172a; font-weight:800;"><span>⭐ Total Loyalty Balance:</span><span>' + current + ' pts</span></div>' +
-            '<div class="receipt-row receipt-total"><span>TOTAL DUE:</span> <span>R' + finalTot.toFixed(2) + '</span></div>' +
-          '</div>' +
-          '<div style="text-align:center; font-size:0.75rem; color:#64748b; margin-top:15px; border-top:1px dashed #cbd5e1; padding-top:10px;">' +
-            '⭐ Thank you for shopping with Davidsonville Community Store! ⭐' +
-          '</div>' +
-        '</div>';
-      document.getElementById('receipt-modal').style.display = 'flex';
-    }
-
-    function closeReceiptModal() { document.getElementById('receipt-modal').style.display = 'none'; }
-
-    function showDigitalReceiptFromId(id) {
-      const state = getSharedState();
-      const o = (state.orders || []).find(x => String(x.id) === String(id));
-      if (o) showDigitalReceipt(o);
-    }
-
-    function resubmitOrderFromSlip(id) {
-      const now = new Date();
-      if (now.getHours() >= 20 || now.getHours() < 7) { alert('Store is closed. Orders open at 7:00 AM.'); return; }
-      const state = getSharedState();
-      const o = (state.orders || []).find(x => String(x.id) === String(id));
-      if (!o || !confirm('Resubmit this order?')) return;
-      
-      const finalTot = Number(o.total || 0);
-      const earned = Math.floor(finalTot / 100) * 5;
-      if (client) {
-        if (client.points === undefined) client.points = 0;
-        client.points += earned;
-        localStorage.setItem('dcs_client', JSON.stringify(client));
+      if (!success) {
+        alert('Order could not reach the server. Please check your connection.');
+        checkoutBtn.innerText = 'Place Order';
+        checkoutBtn.disabled = false;
+        return;
       }
 
-      let orderCounter = parseInt(localStorage.getItem('dcs_order_counter') || '0', 10);
-      orderCounter++;
-      localStorage.setItem('dcs_order_counter', orderCounter);
-      o.id = 'DCS-' + String(orderCounter).padStart(2, '0');
-
-      o.stage = 'received';
-      o.timestamp = Date.now();
-      o.earnedPoints = earned;
-      o.currentPoints = client ? client.points : earned;
-      state.orders.unshift(o);
-      saveSharedState(state);
-      postOrderToSupabase(o);
-      renderClientProfile();
-      renderLiveOrderTrackersUI();
-      renderOrderHistory();
-      alert('Order resubmitted!');
+      alert('Order successfully placed! Order ID: ' + newOrder.id);
+      cart = [];
+      document.getElementById('customer-name').value = '';
+      updateCartUI();
+      checkoutBtn.innerText = 'Place Order';
     }
 
-    function saveOrderAsFavorite(id) {
-      const state = getSharedState();
-      const o = (state.orders || []).find(x => String(x.id) === String(id));
-      if (!o) return;
-      const favName = prompt('Enter a label for this favorite order:', 'Order #' + o.id);
-      if (!favName) return;
-      favorites.push({ id: 'fav_' + Date.now(), name: favName, items: [...o.items] });
-      localStorage.setItem('dcs_favorites', JSON.stringify(favorites));
-      renderFavorites();
-      alert('Order saved to Quick Favorites!');
-    }
-
-    function renderFavorites() {
-      const container = document.getElementById('favorites-list');
-      if (!container) return;
-      if (favorites.length === 0) { container.innerHTML = '<p style="font-size:0.85rem; color:var(--muted);">No saved favorites yet.</p>'; return; }
-      container.innerHTML = favorites.map(f => 
-        '<div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; padding:.6rem 0; border-bottom:1px dashed var(--border);">' +
-          '<div><strong style="color:var(--primary);">' + f.name + '</strong><br><span style="font-size:0.75rem; color:var(--muted);">' + f.items.length + ' items</span></div>' +
-          '<button onclick="loadFavoriteToCart(\'' + f.id + '\')" style="font-size:0.75rem; font-weight:800; padding:0.4rem 0.8rem; background:var(--primary); color:white; border:none; border-radius:8px; cursor:pointer;">Reorder</button>' +
-        '</div>'
-      ).join('');
-    }
-
-    function loadFavoriteToCart(favId) {
-      const fav = favorites.find(f => f.id === favId);
-      if (fav) {
-        cart = [...fav.items];
-        localStorage.setItem('dcs_cart', JSON.stringify(cart));
-        renderCart();
-        toggleCartDrawer();
-        alert('Loaded "' + fav.name + '" into your cart!');
-      }
-    }
-
-    async function clearOrderHistory() {
-      if (!client || !client.phone) return;
-      if (!confirm('Clear your past order history?')) return;
-      const userPhone = client.phone.trim();
-      try {
-        await supabaseClient.from('orders').delete().ilike('phone', '%' + userPhone + '%');
-      } catch (e) {}
-      let state = getSharedState();
-      state.orders = (state.orders || []).filter(o => cleanAndValidatePhone(String(o.phone || '')) !== userPhone);
-      saveSharedState(state);
-      renderOrderHistory();
-      renderLiveOrderTrackersUI();
-      alert('Order history cleared.');
-    }
-
-    function renderOrderHistory() {
-      const container = document.getElementById('order-history-list');
-      if (!container) return;
-      const state = getSharedState();
-      const myOrders = (state.orders || []).filter(o => client && cleanAndValidatePhone(String(o.phone || '')) === client.phone.trim());
-      if (myOrders.length === 0) { container.innerHTML = '<p style="font-size:0.85rem; color:var(--muted);">No past orders found.</p>'; return; }
-
-      container.innerHTML = myOrders.map(o => 
-        '<div style="padding:.6rem 0; border-bottom:1px dashed var(--border);">' +
-          '<div style="display:flex; justify-content:space-between; align-items:center;">' +
-            '<div><strong style="color:var(--primary);">#' + o.id + '</strong> (' + o.date + ')<br><span style="font-size:0.75rem; color:var(--brand); font-weight:bold;">Status: ' + (o.stage || 'received').toUpperCase() + '</span></div>' +
-            '<div style="display:flex; gap:6px;">' +
-              '<button onclick="showDigitalReceiptFromId(\'' + o.id + '\')" style="font-size:0.72rem; font-weight:800; padding:0.35rem 0.6rem; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">🧾 Slip</button>' +
-            '</div>' +
-          '</div>' +
-          renderOrderItemsList(o.items) +
-        '</div>'
-      ).join('');
-    }
-
-    function renderLiveOrderTrackersUI() {
-      const container = document.getElementById('active-orders-tracker-container');
-      const panel = document.getElementById('customer-tracker-panel');
-      const trackerBody = document.getElementById('live-tracker-body');
-      const state = getSharedState();
-      const myOrders = (state.orders || []).filter(o => client && cleanAndValidatePhone(String(o.phone || '')) === client.phone.trim());
-      const active = myOrders.filter(o => {
-        const st = (o.stage || o.status || 'received').toLowerCase().trim();
-        return st !== 'order-completed' && st !== 'completed' && st !== 'cancelled';
-      });
-
-      const badgeEl = document.getElementById('header-orders-badge');
-      if (badgeEl) badgeEl.innerText = active.length;
-      if (panel) panel.style.display = (client && active.length > 0) ? 'block' : 'none';
-      if (container) container.innerHTML = active.length ? active.map(buildOrderCardHTML).join('') : '<p style="font-size:0.85rem; color:var(--muted);">No active orders.</p>';
-      if (trackerBody) trackerBody.innerHTML = active.length ? active.map(buildOrderCardHTML).join('') : '<p style="font-size:0.9rem; color:var(--muted); text-align:center; padding:1.5rem 0;">No active orders found.</p>';
-      renderOrderHistory();
-    }
+    renderMenu();
   </script>
 </body>
 </html>
