@@ -1,213 +1,522 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KDS Dashboard | DCS Store</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👨‍🍳</text></svg>">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Davidsonville Store | Kitchen & Staff Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    h1 { margin: 0; color: #38bdf8; }
-    #live-status-indicator { font-weight: bold; padding: 6px 12px; border-radius: 20px; background: #ef4444; color: white; border: 1px solid #334155; }
+    :root{
+      --primary:#0f172a; --brand:#d97706; --brand-gradient:linear-gradient(135deg,#f59e0b 0%,#b45309 100%);
+      --bg-page:#f8fafc; --card-bg:#ffffff; --muted:#64748b; --border:#e2e8f0;
+      --shadow:0 10px 30px -5px rgba(15,23,42,0.08),0 4px 6px -4px rgba(15,23,42,0.03);
+      --radius:16px; --focus: 0 0 0 4px rgba(217,119,6,0.15);
+    }
+    *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,system-ui,-apple-system,sans-serif}
+    body{background:var(--bg-page); color:var(--primary); min-height:100vh; padding-bottom:60px;}
+    header{
+      background:rgba(15,23,42,0.98); color:#fff; padding:.9rem 1.5rem; position:sticky; top:0; z-index:120;
+      display:flex; align-items:center; justify-content:space-between; gap:1rem; border-bottom:1px solid rgba(255,255,255,0.08);
+      box-shadow:0 4px 20px rgba(0,0,0,0.18); backdrop-filter:blur(10px);
+    }
+    .brand-header{display:flex;align-items:center;gap:.85rem}
+    .brand-icon{width:46px;height:46px;border-radius:12px;background:var(--brand-gradient);display:flex;align-items:center;justify-content:center;font-size:1.3rem;box-shadow:0 4px 12px rgba(217,119,6,0.3)}
+    .header-title h1{font-size:1.15rem;font-weight:800;color:#fff;line-height:1.1;letter-spacing:-0.01em}
+    .header-title p{font-size:.75rem;color:#94a3b8;margin-top:2px;font-weight:500}
     
-    .revenue-card { background: #1e293b; color: white; padding: 16px 20px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #334155; }
-    .revenue-amount { font-size: 28px; font-weight: bold; color: #22c55e; margin-top: 4px; }
+    .staff-nav{
+      background:#1e293b; padding:0.6rem 1.5rem; display:flex; gap:1.25rem; align-items:center; 
+      border-bottom:1px solid rgba(255,255,255,0.06); position:sticky; top:65px; z-index:110; overflow-x:auto;
+    }
+    .staff-nav button{
+      background:transparent; border:none; color:#cbd5e1; text-decoration:none; font-weight:700; font-size:0.85rem; 
+      padding:0.35rem 0.75rem; border-radius:8px; transition:all 0.2s; white-space:nowrap; cursor:pointer;
+    }
+    .staff-nav button:hover, .staff-nav button.active{background:rgba(255,255,255,0.12); color:#fff}
 
-    .kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-    @media (max-width: 1024px) { .kanban { grid-template-columns: 1fr; } }
-    .column { background: #1e293b; border-radius: 8px; padding: 16px; min-height: 400px; border: 1px solid #334155; }
-    .column h2 { font-size: 16px; border-bottom: 2px solid #334155; padding-bottom: 8px; margin-top: 0; }
-    .order-card { background: #0f172a; padding: 12px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #334155; }
-    .order-card h4 { margin: 0 0 6px 0; color: #38bdf8; }
-    .btn-action { margin-top: 8px; background: #22c55e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .container{max-width:1650px;margin:1.5rem auto;padding:0 1rem}
+    .audio-alert-banner{
+      background:linear-gradient(90deg, #f59e0b, #d97706); color:#fff; text-align:center; padding:0.75rem 1rem;
+      font-weight:800; font-size:0.9rem; cursor:pointer; box-shadow:0 4px 12px rgba(217,119,6,0.25);
+      animation:pulseBanner 1.5s infinite; transition:all 0.3s ease;
+    }
+    @keyframes pulseBanner{0%{opacity:1} 50%{opacity:0.75} 100%{opacity:1}}
+    
+    .dashboard-section { display: block; }
+    .dashboard-section.hidden-tab { display: none; }
+
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.25rem}
+    .stat-card{background:#fff;border-radius:12px;padding:1rem;border:1px solid var(--border);box-shadow:var(--shadow)}
+    .stat-card h3{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:.3rem;font-weight:800}
+    .stat-card .value{font-size:1.5rem;font-weight:900;color:var(--primary)}
+
+    .kanban-grid{display:grid;grid-template-columns:repeat(5, minmax(0, 1fr));gap:0.85rem;align-items:start}
+    @media(max-width:1200px){.kanban-grid{grid-template-columns:repeat(1, minmax(0, 1fr));}}
+
+    .kanban-column{background:#f1f5f9;border-radius:12px;padding:0.85rem;min-height:540px;border:1px solid var(--border);box-shadow:inset 0 2px 6px rgba(0,0,0,0.02)}
+    .kanban-header{font-weight:900;font-size:0.85rem;margin-bottom:0.85rem;display:flex;justify-content:space-between;align-items:center;color:var(--primary);padding-bottom:0.5rem;border-bottom:2px solid var(--border)}
+    
+    .order-card{background:#fff;border-radius:10px;padding:0.85rem;margin-bottom:0.75rem;border:1px solid var(--border);box-shadow:0 4px 12px rgba(0,0,0,0.03);position:relative;transition:transform .2s,box-shadow .2s}
+    .order-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,0.06)}
+    .order-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border)}
+    
+    .btn-action{width:100%;padding:0.5rem;margin-top:0.4rem;border:none;border-radius:8px;font-weight:800;font-size:0.78rem;cursor:pointer;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.1);transition:transform .1s,opacity .2s}
+    .btn-action:hover{opacity:.95}
+    .btn-prep{background:var(--brand-gradient)}
+    .btn-ready{background:#2563eb}
+    .btn-complete{background:#059669}
+    .btn-cancel{background:#dc2626}
+    
+    .audit-section, .inventory-section{background:#fff; border-radius:var(--radius); padding:1.5rem; margin-top:1.5rem; border:1px solid var(--border); box-shadow:var(--shadow);}
+    .audit-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:1rem;}
+    input[type="text"]{padding:0.75rem 1rem; border:1px solid var(--border); border-radius:12px; font-size:0.92rem; width:320px; outline:none; color:var(--primary); transition:all .2s}
+    input[type="text"]:focus{box-shadow:var(--focus); border-color:var(--brand);}
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>👨‍🍳 Kitchen Display System (KDS)</h1>
-    <div id="live-status-indicator">🔴 Disconnected</div>
+  <div id="audio-banner" class="audio-alert-banner" onclick="enableAudioContext()">
+    🔊 Click anywhere on this dashboard to enable incoming order chimes & audio alerts!
   </div>
 
-  <div class="revenue-card">
-    <div>
-      <h3 style="margin: 0; font-size: 13px; color: #94a3b8; text-transform: uppercase;">Today's Revenue</h3>
-      <div id="daily-revenue-amount" class="revenue-amount">R0</div>
+  <header>
+    <div class="brand-header">
+      <div class="brand-icon">🍗</div>
+      <div class="header-title">
+        <h1>Davidsonville Store</h1>
+        <p>Kitchen & Staff KDS Dashboard</p>
+      </div>
     </div>
-    <div style="font-size: 32px;">💰</div>
-  </div>
+    <div style="display:flex; gap:0.85rem; align-items:center;">
+      <button onclick="fetchOrders()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#fff; padding:0.55rem 1.1rem; border-radius:12px; font-weight:800; cursor:pointer; font-size:0.9rem">🔄 Refresh Orders</button>
+      <span id="live-status-indicator" style="background:#22c55e; width:12px; height:12px; border-radius:50%; display:inline-block; box-shadow:0 0 10px #22c55e" title="Live Sync Active"></span>
+    </div>
+  </header>
 
-  <div class="kanban">
-    <div class="column"><h2>Received</h2><div id="col-received"></div></div>
-    <div class="column"><h2>Preparing</h2><div id="col-preparing"></div></div>
-    <div class="column"><h2>Ready</h2><div id="col-ready"></div></div>
-    <div class="column"><h2>Completed</h2><div id="col-completed"></div></div>
+  <nav class="staff-nav">
+    <button id="nav-btn-kds" class="active" onclick="switchTab('kds')">📊 KDS Overview</button>
+    <button id="nav-btn-stock" onclick="switchTab('stock')">⚡ Stock Control</button>
+    <button id="nav-btn-audit" onclick="switchTab('audit')">📋 Audit Log & Search</button>
+    <button onclick="window.open('index.html', '_blank')" style="margin-left:auto; background:var(--brand); color:#fff; border-radius:8px; padding:0.35rem 0.75rem;">🛒 View Storefront ↗</button>
+  </nav>
+
+  <div class="container">
+    <div id="tab-kds" class="dashboard-section">
+      <div class="stats-grid">
+        <div class="stat-card"><h3>Incoming Orders</h3><div id="stat-received" class="value">0</div></div>
+        <div class="stat-card"><h3>In Preparation</h3><div id="stat-prep" class="value">0</div></div>
+        <div class="stat-card"><h3>Ready for Pickup</h3><div id="stat-ready" class="value">0</div></div>
+        <div class="stat-card"><h3>Completed Today</h3><div id="stat-completed" class="value">0</div></div>
+        <div class="stat-card"><h3>Cancelled Orders</h3><div id="stat-cancelled" class="value">0</div></div>
+      </div>
+
+      <div class="kanban-grid">
+        <div class="kanban-column"><div class="kanban-header"><span>📥 Received</span><span id="count-received" style="background:#e2e8f0;padding:.15rem .5rem;border-radius:10px;font-size:0.75rem">0</span></div><div id="col-received"></div></div>
+        <div class="kanban-column"><div class="kanban-header"><span>🔥 Preparing</span><span id="count-prep" style="background:#e2e8f0;padding:.15rem .5rem;border-radius:10px;font-size:0.75rem">0</span></div><div id="col-preparing"></div></div>
+        <div class="kanban-column"><div class="kanban-header"><span>✅ Ready</span><span id="count-ready" style="background:#e2e8f0;padding:.15rem .5rem;border-radius:10px;font-size:0.75rem">0</span></div><div id="col-ready"></div></div>
+        <div class="kanban-column"><div class="kanban-header"><span>🏁 Completed</span><span id="count-completed" style="background:#e2e8f0;padding:.15rem .5rem;border-radius:10px;font-size:0.75rem">0</span></div><div id="col-completed"></div></div>
+        <div class="kanban-column"><div class="kanban-header"><span>❌ Cancelled</span><span id="count-cancelled" style="background:#e2e8f0;padding:.15rem .5rem;border-radius:10px;font-size:0.75rem">0</span></div><div id="col-cancelled"></div></div>
+      </div>
+    </div>
+
+    <div id="tab-stock" class="dashboard-section hidden-tab">
+      <div class="inventory-section" style="margin-top:0;">
+        <h3 style="font-size:1.15rem; font-weight:900; margin-bottom:1rem;">⚡ Stock Control & "Out of Stock" Toggles</h3>
+        <p style="font-size:0.88rem; color:var(--muted); margin-bottom:1rem;">Click any item to toggle it as Sold Out or Available instantly on the customer storefront.</p>
+        <div id="inventory-items-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:0.85rem;"></div>
+      </div>
+    </div>
+
+    <div id="tab-audit" class="dashboard-section hidden-tab">
+      <div class="audit-section" style="margin-top:0;">
+        <div class="audit-header">
+          <h3 style="font-size:1.15rem; font-weight:900;">📋 Audit Log & Order Search (Find Lost Orders)</h3>
+          <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+            <input type="text" id="audit-search-input" placeholder="🔍 Search Order ID, Customer, or Phone..." oninput="renderKanban()">
+            <button onclick="ownerClearAuditLogs()" class="btn-action btn-cancel" style="width:auto; padding:0.7rem 1.1rem; margin-top:0; font-size:0.82rem;">🗑️ Owner Clear Logs</button>
+          </div>
+        </div>
+        <div id="audit-log-container" style="max-height:480px; overflow-y:auto; font-size:0.88rem;"></div>
+      </div>
+    </div>
   </div>
 
   <script>
-    const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const SHARED_KEY = 'davidsonville_app_state_v15';
+    const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjE4NjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU';
+    const OWNER_PIN = '2026';
 
-    let allOrders = [];
-    let knownOrderIds = new Set();
-    let isInitialFetch = true;
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false },
+      global: { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY } }
+    });
 
-    // Connection monitoring
-    function updateConnectionStatus(connected) {
-      const el = document.getElementById('live-status-indicator');
-      if(!el) return;
-      el.style.background = connected ? '#22c55e' : '#ef4444';
-      el.innerText = connected ? '🟢 Connected' : '🔴 Disconnected';
-    }
+    const catalogItemsRef = [
+      { id: 'ch1', name: 'SMALL CHIPS (R10)', category: 'Chips' },
+      { id: 'ch2', name: 'MEDIUM CHIPS (R20)', category: 'Chips' },
+      { id: 'ch3', name: 'LARGE CHIPS (R30)', category: 'Chips' },
+      { id: 'cc1', name: 'FULL HOUSE COMBO 1', category: 'Chicken Combos' },
+      { id: 'cc2', name: 'FULL CHICKEN', category: 'Chicken Combos' },
+      { id: 'cc3', name: 'HALF CHICKEN', category: 'Chicken Combos' },
+      { id: 'cc4', name: '½ CHICKEN & CHIPS', category: 'Chicken Combos' },
+      { id: 'cc5', name: '¼ CHICKEN & CHIPS', category: 'Chicken Combos' },
+      { id: 'cc6', name: '🔥 CRISPY WINGS & CHIPS (SPECIAL)', category: 'Chicken Combos' },
+      { id: 'bc1', name: 'CHIP BUNNY', category: 'Bunny Chows' },
+      { id: 'bc2', name: 'POLONY BUNNY', category: 'Bunny Chows' },
+      { id: 'bc3', name: 'RUSSIAN BUNNY', category: 'Bunny Chows' },
+      { id: 'bc4', name: 'PATTY BUNNY', category: 'Bunny Chows' },
+      { id: 'bc5', name: 'STEAK BUNNY', category: 'Bunny Chows' },
+      { id: 'bc6', name: 'BACON BUNNY', category: 'Bunny Chows' },
+      { id: 'sp1', name: 'FOOTLONG FRANKFURTER', category: 'Specials' },
+      { id: 'sp2', name: 'FOOTLONG FRANK & CHIPS', category: 'Specials' },
+      { id: 'sp3', name: 'STEAK ROLL', category: 'Specials' },
+      { id: 'sp4', name: 'FOOTLONG STEAKROLL / CHIPS', category: 'Specials' },
+      { id: 'sp5', name: 'X-LARGE RUSSIAN & CHIPS', category: 'Specials' },
+      { id: 'sp6', name: 'BOEREWORS ROLL', category: 'Specials' },
+      { id: 'sp7', name: 'PREGO ROLL', category: 'Specials' },
+      { id: 'sp8', name: 'CHICKEN MAYO ROLL', category: 'Specials' },
+      { id: 'ts1', name: 'CHIP BREAD', category: 'Toasted Sandwiches' },
+      { id: 'ts2', name: 'TOASTED CHIP BREAD', category: 'Toasted Sandwiches' },
+      { id: 'ts3', name: 'SCHOOL BOY', category: 'Toasted Sandwiches' },
+      { id: 'ts4', name: 'CHEESE & TOMATO', category: 'Toasted Sandwiches' },
+      { id: 'ts5', name: 'BACON, EGG & CHEESE', category: 'Toasted Sandwiches' }
+    ];
 
-    // Order age timers with thresholds
-    function getOrderAgeTimerHtml(timestamp) {
-      const diffMins = Math.floor((Date.now() - Number(timestamp)) / 60000);
-      let bg = '#22c55e';
-      if (diffMins >= 20) {
-        bg = '#dc2626'; // Red for critical stale orders
-      } else if (diffMins >= 15) {
-        bg = '#f59e0b'; // Orange for delayed orders
-      }
-      return `
-        <div style="margin-top:6px; display:inline-block; padding:4px 8px; border-radius:20px; color:white; font-size:11px; font-weight:800; background:${bg};">
-          ⏱ ${diffMins} min
-        </div>
-      `;
-    }
+    let audioCtx = null;
+    let knownOrderCount = -1;
 
-    // Daily revenue calculation
-    function updateDailyRevenue(orders) {
-      const revenueElem = document.getElementById('daily-revenue-amount');
-      if (!revenueElem) return;
+    function switchTab(tabName) {
+      document.querySelectorAll('.dashboard-section').forEach(sec => sec.classList.add('hidden-tab'));
+      document.querySelectorAll('.staff-nav button').forEach(btn => btn.classList.remove('active'));
 
-      const todayStr = new Date().toDateString();
-      const todayTotal = orders.reduce((sum, order) => {
-        const orderDate = new Date(order.created_at || Date.now());
-        if (orderDate.toDateString() === todayStr && order.stage === 'completed') {
-          return sum + (parseFloat(order.total) || 0);
-        }
-        return sum;
-      }, 0);
-
-      revenueElem.innerText = 'R' + todayTotal.toLocaleString('en-ZA', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-    }
-
-    // New-order audio chime
-    function playNewOrderSound() {
-      try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15);
-        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.4);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    function renderKanban() {
-      const stages = ['received', 'preparing', 'ready', 'completed'];
-      stages.forEach(stage => {
-        const container = document.getElementById(`col-${stage}`);
-        const stageOrders = allOrders.filter(o => (o.stage || 'received') === stage);
-        
-        container.innerHTML = stageOrders.map(order => {
-          let parsedItems = [];
-          try {
-            parsedItems = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
-          } catch(e) { parsedItems = []; }
-
-          const itemsList = Array.isArray(parsedItems) 
-            ? parsedItems.map(i => `• ${i.name}`).join('<br>') 
-            : 'Items listed';
-
-          let nextStageBtn = '';
-          if (stage === 'received') nextStageBtn = `<button class="btn-action" onclick="updateStage('${order.id}', 'preparing')">Start Preparing ➔</button>`;
-          if (stage === 'preparing') nextStageBtn = `<button class="btn-action" onclick="updateStage('${order.id}', 'ready')">Mark Ready ➔</button>`;
-          if (stage === 'ready') nextStageBtn = `<button class="btn-action" onclick="updateStage('${order.id}', 'completed')">Complete ➔</button>`;
-
-          const timestampVal = new Date(order.created_at || Date.now()).getTime();
-
-          return `
-            <div class="order-card">
-              <h4>${order.id}</h4>
-              <p><strong>Customer:</strong> ${order.customer_name || 'Guest'}</p>
-              <p style="font-size: 13px; margin: 4px 0;">${itemsList}</p>
-              <p style="color: #22c55e; font-weight: bold; margin: 4px 0;">R${parseFloat(order.total || 0).toFixed(2)}</p>
-              ${getOrderAgeTimerHtml(timestampVal)}
-              <div style="margin-top: 8px;">${nextStageBtn}</div>
-            </div>
-          `;
-        }).join('');
-      });
-
-      updateDailyRevenue(allOrders);
-    }
-
-    async function updateStage(orderId, newStage) {
-      const { error } = await supabaseClient
-        .from('orders')
-        .update({ stage: newStage, status: newStage })
-        .eq('id', orderId);
-
-      if (error) {
-        alert('Could not update order stage.');
-      } else {
-        fetchOrders();
-      }
-    }
-
-    async function fetchOrders() {
-      const { data, error } = await supabaseClient
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        updateConnectionStatus(false);
-      } else {
-        updateConnectionStatus(true);
-        allOrders = data || [];
-        
-        if (isInitialFetch) {
-          allOrders.forEach(o => knownOrderIds.add(o.id));
-          isInitialFetch = false;
-        }
-        
+      if (tabName === 'kds') {
+        document.getElementById('tab-kds').classList.remove('hidden-tab');
+        document.getElementById('nav-btn-kds').classList.add('active');
+      } else if (tabName === 'stock') {
+        document.getElementById('tab-stock').classList.remove('hidden-tab');
+        document.getElementById('nav-btn-stock').classList.add('active');
+        renderInventoryGrid();
+      } else if (tabName === 'audit') {
+        document.getElementById('tab-audit').classList.remove('hidden-tab');
+        document.getElementById('nav-btn-audit').classList.add('active');
         renderKanban();
       }
     }
 
-    supabaseClient
-      .channel('public:orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
-        updateConnectionStatus(true);
-        if (payload.eventType === 'INSERT') {
-          const newOrder = payload.new;
-          if (newOrder && newOrder.id && !knownOrderIds.has(newOrder.id)) {
-            knownOrderIds.add(newOrder.id);
-            if (!isInitialFetch) {
-              playNewOrderSound();
-            }
-          }
+    function enableAudioContext() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        playKitchenChime();
+        const banner = document.getElementById('audio-banner');
+        if (banner) {
+          banner.style.background = '#059669';
+          banner.innerText = '✅ Audio alerts enabled successfully!';
+          setTimeout(() => banner.style.display = 'none', 1500);
         }
-        fetchOrders();
-      })
-      .subscribe((status) => {
-        updateConnectionStatus(status === 'SUBSCRIBED');
+      catch (e) { updateConnectionStatus(false); }
+    }
+
+    function playKitchenChime() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'triangle';
+        osc1.frequency.setValueAtTime(523.25, now);
+        gain1.gain.setValueAtTime(0.5, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc1.connect(gain1); gain1.connect(audioCtx.destination);
+        osc1.start(now); osc1.stop(now + 0.35);
+
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(659.25, now + 0.15);
+        gain2.gain.setValueAtTime(0.5, now + 0.15);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+        osc2.connect(gain2); gain2.connect(audioCtx.destination);
+        osc2.start(now + 0.15); osc2.stop(now + 0.6);
+      catch (e) { updateConnectionStatus(false); }
+    }
+
+    document.addEventListener('click', () => {
+      if (!audioCtx) {
+        enableAudioContext();
+      }
+    }, { once: true });
+
+    function getSharedState() {
+      catch (e) { updateConnectionStatus(false); }
+      return { clients: [], orders: [], outOfStock: [] };
+    }
+
+    function saveSharedState(state) {
+      catch (e) { updateConnectionStatus(false); }
+    }
+
+    function ownerClearAuditLogs() {
+      const pin = prompt('Enter Owner Security PIN to clear audit logs:');
+      if (pin !== OWNER_PIN) {
+        alert('Incorrect Owner PIN. Action denied.');
+        return;
+      }
+      if (!confirm('Are you sure you want to clear completed/archived order logs?')) return;
+      let state = getSharedState();
+      state.orders = (state.orders || []).filter(o => {
+        let st = (o.stage || 'received').toLowerCase().trim();
+        return st !== 'completed' && st !== 'order-completed' && st !== 'cancelled';
+      });
+      saveSharedState(state);
+      renderKanban();
+      alert('Audit logs cleared successfully by store owner.');
+    }
+
+    function toggleItemStock(itemId) {
+      let state = getSharedState();
+      if (!state.outOfStock) state.outOfStock = [];
+      const idx = state.outOfStock.indexOf(itemId);
+      if (idx > -1) {
+        state.outOfStock.splice(idx, 1);
+      } else {
+        state.outOfStock.push(itemId);
+      }
+      saveSharedState(state);
+      renderInventoryGrid();
+    }
+
+    function renderInventoryGrid() {
+      const container = document.getElementById('inventory-items-grid');
+      if (!container) return;
+      const state = getSharedState();
+      const outOfStock = state.outOfStock || [];
+
+      container.innerHTML = catalogItemsRef.map(item => {
+        const isOut = outOfStock.includes(item.id);
+        return '<button onclick="toggleItemStock(\'' + item.id + '\')" style="padding:0.6rem 0.8rem; border-radius:10px; border:1px solid ' + (isOut ? '#ef4444' : '#e2e8f0') + '; background:' + (isOut ? '#fee2e2' : '#f8fafc') + '; cursor:pointer; text-align:left; display:flex; justify-content:space-between; align-items:center; font-weight:700; font-size:0.85rem;">' +
+          '<span style="color:var(--primary);">' + item.name + '</span>' +
+          '<span style="font-size:0.75rem; padding:0.2rem 0.5rem; border-radius:6px; background:' + (isOut ? '#dc2626' : '#22c55e') + '; color:#fff;">' + (isOut ? 'SOLD OUT' : 'AVAILABLE') + '</span>' +
+        '</button>';
+      }).join('');
+    }
+
+    function parseOrderItems(rawItems) {
+      if (!rawItems) return [];
+      if (Array.isArray(rawItems)) return rawItems;
+      try { const p = JSON.parse(rawItems); if (Array.isArray(p)) return p; return [p]; } catch (e) { return [{ name: rawItems, qty: 1, price: 0 }]; }
+    }
+
+    function renderOrderItemsList(itemsInput) {
+      const items = parseOrderItems(itemsInput);
+      let html = '<ul style="list-style:none; padding:0; margin:0.25rem 0; font-size:0.78rem;">';
+      for (let i = 0; i < items.length; i++) {
+        let item = items[i];
+        let q = item.qty || item.quantity || 1;
+        let n = item.name || item.title || 'Item';
+        let p = Number(item.price || 0);
+        html += '<li style="display:flex; justify-content:space-between; padding:0.15rem 0; border-bottom:1px dotted var(--border);"><span><strong>' + q + 'x</strong> ' + n + '</span><span style="font-weight:800;color:var(--brand)">R' + (q * p).toFixed(2) + '</span></li>';
+      }
+      html += '</ul>';
+      return html;
+    }
+
+    function updateConnectionStatus(connected) {
+      const el = document.getElementById('live-status-indicator');
+      if (!el) return;
+      el.style.background = connected ? '#22c55e' : '#ef4444';
+    }
+
+    async function fetchOrders() {
+        updateConnectionStatus(true);
+      let state = getSharedState();
+      try {
+        const { data, error } = await supabaseClient
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        let combined = [...(data || [])];
+
+        if (state.orders && Array.isArray(state.orders)) {
+          state.orders.forEach(lo => {
+            if (!combined.some(o => (o.id || o.order_id) === lo.id)) {
+              combined.push(lo);
+            }
+          });
+        }
+
+        if (knownOrderCount >= 0 && combined.length > knownOrderCount) {
+          playKitchenChime();
+        }
+        knownOrderCount = combined.length;
+
+        state.orders = combined.map(o => ({
+          id: o.order_id || o.id,
+          date: o.created_at ? new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (o.date || ''),
+          timestamp: o.created_at ? new Date(o.created_at).getTime() : (o.timestamp || Date.now()),
+          items: parseOrderItems(o.items),
+          instructions: o.instructions || o.notes || '',
+          total: Number(o.total || o.total_amount || 0),
+          stage: (o.stage || o.status || 'received').toLowerCase().trim().replace(/_/g, '-'),
+          clientName: o.client_name || o.customer_name || 'Customer',
+          phone: o.phone || o.customer_phone || ''
+        }));
+
+        saveSharedState(state);
+      catch (e) { updateConnectionStatus(false); }
+      renderKanban();
+    }
+
+    async function updateOrderStatus(orderId, newStage) {
+      try {
+        await supabaseClient
+          .from('orders')
+          .update({ stage: newStage, status: newStage })
+          .or(`id.eq.${orderId},order_id.eq.${orderId}`);
+      catch (e) { updateConnectionStatus(false); }
+
+      let state = getSharedState();
+      let ord = (state.orders || []).find(o => String(o.id) === String(orderId));
+      if (ord) {
+        ord.stage = newStage;
+        saveSharedState(state);
+      }
+      fetchOrders();
+    }
+
+    function renderKanban() {
+      const state = getSharedState();
+      const orders = state.orders || [];
+      const searchQuery = (document.getElementById('audit-search-input')?.value || '').toLowerCase().trim();
+      const todayDateStr = new Date().toDateString();
+
+      const cols = {
+        'received': document.getElementById('col-received'),
+        'preparing': document.getElementById('col-preparing'),
+        'ready': document.getElementById('col-ready'),
+        'completed': document.getElementById('col-completed'),
+        'cancelled': document.getElementById('col-cancelled')
+      };
+
+      const counts = { 'received': 0, 'preparing': 0, 'ready': 0, 'completed': 0, 'cancelled': 0 };
+
+      for (let k in cols) { if (cols[k]) cols[k].innerHTML = ''; }
+
+      let auditHtml = '<table style="width:100%; border-collapse:collapse;"><tr style="background:#f1f5f9; text-align:left; border-bottom:1px solid var(--border); font-weight:800"><th style="padding:10px;">Order ID</th><th style="padding:10px;">Customer</th><th style="padding:10px;">Phone</th><th style="padding:10px;">Status</th><th style="padding:10px;">Total</th><th style="padding:10px;">Time</th></tr>';
+
+      let filteredAuditCount = 0;
+
+      orders.forEach(o => {
+        let st = (o.stage || 'received').toLowerCase().trim();
+        if (st === 'kitchen-prep') st = 'preparing';
+        if (st === 'ready-for-pick-up') st = 'ready';
+        if (st === 'order-completed') st = 'completed';
+        if (!cols[st]) st = 'received';
+
+        const orderDate = new Date(o.timestamp);
+        const isFromToday = orderDate.toDateString() === todayDateStr;
+
+        if (isFromToday) {
+          if (st === 'completed') counts.completed++;
+          if (st === 'cancelled') counts.cancelled++;
+        }
+
+        if (st !== 'completed' && st !== 'cancelled') {
+          counts[st]++;
+        }
+
+        const matchesSearch = !searchQuery || String(o.id).toLowerCase().includes(searchQuery) || String(o.clientName).toLowerCase().includes(searchQuery) || String(o.phone).includes(searchQuery);
+
+        if (matchesSearch) {
+          filteredAuditCount++;
+          auditHtml += '<tr style="border-bottom:1px solid #f1f5f9;">' +
+            '<td style="padding:10px; font-weight:900; color:var(--brand);">#' + o.id + '</td>' +
+            '<td style="padding:10px; font-weight:600">' + o.clientName + '</td>' +
+            '<td style="padding:10px;">' + o.phone + '</td>' +
+            '<td style="padding:10px; font-weight:800; text-transform:uppercase; font-size:0.75rem;">' + st + '</td>' +
+            '<td style="padding:10px; font-weight:800;">R' + Number(o.total).toFixed(2) + '</td>' +
+            '<td style="padding:10px; color:var(--muted);">' + orderDate.toLocaleString() + '</td>' +
+          '</tr>';
+        }
+
+        if (st === 'completed' || st === 'cancelled') {
+          return;
+        }
+
+        let notesHtml = o.instructions ? '<div style="font-size:0.72rem; background:#fffbeb; padding:0.25rem 0.5rem; border-left:3px solid var(--brand); margin-bottom:0.4rem; border-radius:4px"><strong>Note:</strong> ' + o.instructions + '</div>' : '';
+
+        let btnHtml = '';
+        if (st === 'received') {
+          btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'preparing\')" class="btn-action btn-prep">🔥 Start Prep</button>';
+        } else if (st === 'preparing') {
+          btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'ready\')" class="btn-action btn-ready">✅ Ready</button>';
+        } else if (st === 'ready') {
+          btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'completed\')" class="btn-action btn-complete">🏁 Complete</button>';
+        }
+
+        let cancelBtn = (st !== 'completed' && st !== 'cancelled') ? '<button onclick="updateOrderStatus(\'' + o.id + '\', \'cancelled\')" class="btn-action btn-cancel" style="padding:0.3rem; font-size:0.72rem; background:#ef4444; margin-top:0.2rem">Cancel</button>' : '';
+
+        const card = document.createElement('div');
+        card.className = 'order-card';
+        card.innerHTML = 
+          '<div class="order-card-header">' +
+            '<div><strong style="font-size:0.85rem">#' + o.id + '</strong><div style="font-size:0.7rem; color:var(--muted); font-weight:600">' + o.clientName + '</div></div>' +
+            '<span style="font-size:0.7rem; font-weight:800; color:var(--brand);">' + o.date + '</span>' +
+          '</div>' +
+          '<div style="background:#f8fafc; padding:0.4rem; border-radius:6px; margin-bottom:0.4rem;">' + renderOrderItemsList(o.items) + '</div>' +
+          notesHtml +
+          '<div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; font-weight:900; margin-bottom:0.4rem;"><span>Total:</span><span style="color:var(--brand); font-size:0.95rem">R' + Number(o.total).toFixed(2) + '</span></div>' +
+          btnHtml + cancelBtn;
+
+        if (cols[st]) cols[st].appendChild(card);
       });
 
-    fetchOrders();
-    setInterval(fetchOrders, 15000);
+      auditHtml += '</table>';
+      if (filteredAuditCount === 0) {
+        auditHtml = '<p style="text-align:center; padding:1.5rem; color:var(--muted);">No matching order ID or record found.</p>';
+      }
+
+      const auditContainer = document.getElementById('audit-log-container');
+      if (auditContainer) auditContainer.innerHTML = auditHtml;
+
+      document.getElementById('stat-received').innerText = counts.received;
+      document.getElementById('stat-prep').innerText = counts.preparing;
+      document.getElementById('stat-ready').innerText = counts.ready;
+      document.getElementById('stat-completed').innerText = counts.completed;
+      document.getElementById('stat-cancelled').innerText = counts.cancelled;
+
+      document.getElementById('count-received').innerText = counts.received;
+      document.getElementById('count-prep').innerText = counts.preparing;
+      document.getElementById('count-ready').innerText = counts.ready;
+      document.getElementById('count-completed').innerText = counts.completed;
+      document.getElementById('count-cancelled').innerText = counts.cancelled;
+    }
+
+    function subscribeToRealtimeStaff() {
+      try {
+        supabaseClient
+          .channel('staff-realtime-orders')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'orders' },
+            (payload) => {
+              playKitchenChime();
+              fetchOrders();
+            }
+          )
+          .subscribe();
+      catch (e) { updateConnectionStatus(false); }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderInventoryGrid();
+      fetchOrders();
+      subscribeToRealtimeStaff();
+      setInterval(fetchOrders, 4000);
+    });
   </script>
 </body>
 </html>
