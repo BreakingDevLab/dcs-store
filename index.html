@@ -797,7 +797,7 @@
       document.getElementById('live-tracker-panel').classList.toggle('hidden');
     }
 
-    function checkoutOrder() {
+    async function checkoutOrder() {
       const now = new Date();
       if (now.getHours() >= 20 || now.getHours() < 7) {
         alert('We are closed for the evening (orders close at 8:00 PM and open at 7:00 AM). You can still browse our menu!');
