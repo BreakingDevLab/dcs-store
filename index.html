@@ -793,8 +793,7 @@
 
       let state = getSharedState();
       if (!state.orders) state.orders = [];
-      const nextNum = (state.orders.length + 1).toString().padStart(2, '0');
-      const formattedOrderId = 'DCS-' + nextNum;
+      const formattedOrderId = 'DCS-' + Date.now();
 
       const newOrder = {
         id: formattedOrderId,
@@ -892,8 +891,7 @@
       const o = (state.orders || []).find(x => String(x.id) === String(id));
       if (!o || !confirm('Resubmit this order?')) return;
       
-      const nextNum = (state.orders.length + 1).toString().padStart(2, '0');
-      o.id = 'DCS-' + nextNum;
+      const formattedOrderId = 'DCS-' + Date.now();
       o.stage = 'received';
       o.timestamp = Date.now();
       state.orders.unshift(o);
