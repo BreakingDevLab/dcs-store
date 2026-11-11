@@ -329,7 +329,15 @@
       el.style.background = connected ? '#22c55e' : '#ef4444';
     }
 
+    function updateConnectionStatus(connected) {
+      const el = document.getElementById('live-status-indicator');
+      if (!el) return;
+      el.style.background = connected ? '#22c55e' : '#ef4444';
+      el.title = connected ? 'Live Sync Active' : 'Disconnected';
+    }
+
     async function fetchOrders() {
+        updateConnectionStatus(true);
         updateConnectionStatus(true);
       let state = getSharedState();
       try {
