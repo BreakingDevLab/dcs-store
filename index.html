@@ -621,18 +621,33 @@
     function setCategoryFilter(cat) { activeCategoryFilter = cat; renderCategoryChips(); renderCatalog(); }
     function clearSearch() { document.getElementById('search-input').value = ''; activeCategoryFilter = 'ALL'; renderCategoryChips(); renderCatalog(); }
 
-    function handleLoginClient() {
+   async function handleLoginClient() {
       const rawPhone = document.getElementById('login-phone').value.trim();
       const phone = cleanAndValidatePhone(rawPhone);
       if (!phone || phone.length < 10) { alert('Please enter a valid South African phone number (e.g. 0646297453)'); return; }
-      const state = getSharedState();
-      const found = (state.clients || []).find(c => c.phone === phone);
-      if (!found) { alert('Account not found with number ' + phone + '. Please register first.'); return; }
-      client = found; localStorage.setItem('dcs_client', JSON.stringify(client));
-      renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Welcome back, ' + client.name + '!');
+      
+      try {
+        const { data, error } = await supabaseClient
+          .from('clients')
+          .select('*')
+          .eq('phone', phone)
+          .single();
+
+        if (error || !data) {
+          alert('Account not found with number ' + phone + '. Please register first.');
+          return;
+        }
+
+        client = { name: data.name, phone: data.phone, address: data.address, points: data.points || 0 };
+        localStorage.setItem('dcs_client', JSON.stringify(client));
+        renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory();
+        alert('Welcome back, ' + client.name + '!');
+      } catch (err) {
+        alert('Login failed. Please check your connection.');
+      }
     }
 
-    function handleRegisterClient() {
+    async function handleRegisterClient() {
       const name = document.getElementById('new-name').value.trim();
       const rawPhone = document.getElementById('new-phone').value.trim();
       const address = document.getElementById('new-address').value.trim();
@@ -644,15 +659,28 @@
       }
 
       client = { name, phone, address, points: 0 };
-      localStorage.setItem('dcs_client', JSON.stringify(client));
-      let state = getSharedState(); 
-      if (!state.clients) state.clients = [];
-      state.clients.push(client); 
-      saveSharedState(state);
-      renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Account registered successfully! Start ordering to earn points.');
-    }
 
-    function logoutClient() {
+      try {
+        const { error } = await supabaseClient.from('clients').upsert({
+          phone: client.phone,
+          name: client.name,
+          address: client.address,
+          points: 0,
+          updated_at: new Date().toISOString()
+        });
+
+        if (error) {
+          alert('Registration error: ' + error.message);
+          return;
+        }
+
+        localStorage.setItem('dcs_client', JSON.stringify(client));
+        renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory();
+        alert('Account registered successfully! Start ordering to earn points.');
+      } catch (err) {
+        alert('Registration failed. Please check your connection.');
+      }
+    }    function logoutClient() {
       client = null; localStorage.removeItem('dcs_client');
       isRedeemingPoints = false;
       renderClientProfile(); renderCart(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Logged out');
@@ -809,13 +837,24 @@
       const finalTotal = sub - discountApplied;
 
       const earnedPoints = Math.floor(finalTotal / 100) * 5;
+     // Inside checkoutOrder():
       if (client.points === undefined) client.points = 0;
-      
       if (isRedeemingPoints && client.points >= 1000) {
         client.points -= 1000;
       }
       client.points += earnedPoints;
       localStorage.setItem('dcs_client', JSON.stringify(client));
+
+      // Sync updated points to Supabase database
+      try {
+        await supabaseClient.from('clients').upsert({
+          phone: client.phone,
+          name: client.name,
+          address: client.address,
+          points: client.points,
+          updated_at: new Date().toISOString()
+        });
+      } catch (e) {}
 
       let state = getSharedState();
       if (!state.clients) state.clients = [];
