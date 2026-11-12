@@ -987,9 +987,9 @@ function resubmitOrderFromSlip(id) {
     async function clearOrderHistory() {
       if (!client || !client.phone) return;
       if (!confirm('Clear your past order history?')) return;
-      const userPhone = client.phone.trim();
+      const userPhone = cleanAndValidatePhone(client.phone);
       try {
-        await supabaseClient.from('orders').delete().ilike('phone', '%' + userPhone + '%');
+        await supabaseClient.from('orders').delete().eq('phone', userPhone);
       } catch (e) {}
       let state = getSharedState();
       state.orders = (state.orders || []).filter(o => cleanAndValidatePhone(String(o.phone || '')) !== userPhone);
