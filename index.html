@@ -824,7 +824,7 @@
       let orderCounter = parseInt(localStorage.getItem('dcs_order_counter') || '0', 10);
       orderCounter++;
       localStorage.setItem('dcs_order_counter', orderCounter);
-      const formattedOrderId = 'DCS-' + String(orderCounter).padStart(2, '0');
+      const formattedOrderId = 'DCS-' + Date.now();
 
       const newOrder = {
         id: formattedOrderId,
