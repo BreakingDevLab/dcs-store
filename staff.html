@@ -163,19 +163,23 @@
   </div>
 
   <script>
-    // Declare state variables at the very top of the script block
     let isUpdatingStatus = false; 
     let audioCtx = null;
     let knownOrderCount = -1;
 
-    const SHARED_KEY = 'davidsonville_app_state_v15';
-    const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6InFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU';
+    const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co'.trim();
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6InFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU'.trim();
     const OWNER_PIN = '2026';
+    const SHARED_KEY = 'davidsonville_app_state_v15';
 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
-      global: { headers: { 'apikey': SUPABASE_ANON_KEY } }
+      global: { 
+        headers: { 
+          'apikey': SUPABASE_ANON_KEY, 
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY 
+        } 
+      }
     });
 
     const catalogItemsRef = [
@@ -344,7 +348,7 @@
     }
 
     async function fetchOrders() {
-      if (isUpdatingStatus) return; // Prevent polling interrupt during status transitions
+      if (isUpdatingStatus) return; 
       let state = getSharedState();
       try {
         const { data, error } = await supabaseClient
@@ -392,9 +396,8 @@
     }
 
     async function updateOrderStatus(orderId, newStage) {
-      isUpdatingStatus = true; // Engage update lock
+      isUpdatingStatus = true; 
 
-      // Instantly update local state and re-render so it stays in the new column
       let state = getSharedState();
       let ord = (state.orders || []).find(o => String(o.id) === String(orderId));
       if (ord) {
@@ -406,7 +409,7 @@
       try {
         const { error } = await supabaseClient
           .from('orders')
-          .update({ stage: newStage })
+          .update({ stage: newStage, status: newStage })
           .eq('id', orderId);
 
         if (error) {
@@ -415,7 +418,7 @@
       } catch (e) {
         console.error(e);
       } finally {
-        isUpdatingStatus = false; // Release lock
+        isUpdatingStatus = false; 
         fetchOrders();
       }
     }
