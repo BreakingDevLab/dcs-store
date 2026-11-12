@@ -919,7 +919,7 @@
       if (o) showDigitalReceipt(o);
     }
 
-    function resubmitOrderFromSlip(id) {
+function resubmitOrderFromSlip(id) {
       const now = new Date();
       if (now.getHours() >= 20 || now.getHours() < 7) { alert('Store is closed. Orders open at 7:00 AM.'); return; }
       const state = getSharedState();
@@ -934,10 +934,7 @@
         localStorage.setItem('dcs_client', JSON.stringify(client));
       }
 
-      let orderCounter = parseInt(localStorage.getItem('dcs_order_counter') || '0', 10);
-      orderCounter++;
-      localStorage.setItem('dcs_order_counter', orderCounter);
-      o.id = 'DCS-' + String(orderCounter).padStart(2, '0');
+      o.id = 'DCS-' + Date.now();
 
       o.stage = 'received';
       o.timestamp = Date.now();
