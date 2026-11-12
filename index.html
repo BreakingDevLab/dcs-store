@@ -9,23 +9,23 @@
   <style>
     :root{
       --primary:#0f172a; --brand:#d97706; --brand-gradient:linear-gradient(135deg,#f59e0b 0%,#b45309 100%);
-      --special-gradient:linear-gradient(135deg,#ef4444 0%,#dc2626 50%,#b91c1c 100%);
+      --special-gradient:linear-gradient(135deg,#f43f5e 0%,#e11d48 50%,#be123c 100%);
       --bg-page:#f8fafc; --card-bg:#ffffff; --muted:#64748b; --border:#e2e8f0;
       --shadow:0 10px 30px -5px rgba(15,23,42,0.08),0 4px 6px -4px rgba(15,23,42,0.03);
       --radius:16px; --focus: 0 0 0 4px rgba(217,119,6,0.15);
     }
     *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,system-ui,-apple-system,sans-serif}
-    body{background:var(--bg-page); color:var(--primary); min-height:100vh; padding-bottom:90px;}
+    body{background:var(--bg-page); color:var(--primary); min-height:100vh; padding-bottom:90px; -webkit-text-size-adjust:100%;}
     header{
       background:rgba(15,23,42,0.98); color:#fff; padding:.9rem 1.5rem; position:sticky; top:0; z-index:120;
       display:flex; align-items:center; justify-content:space-between; gap:1rem; border-bottom:1px solid rgba(255,255,255,0.08);
-      box-shadow:0 4px 20px rgba(0,0,0,0.18); backdrop-filter:blur(10px);
+      box-shadow:0 4px 20px rgba(0,0,0,0.18); backdrop-filter:blur(10px); flex-wrap:wrap;
     }
     .brand-header{display:flex;align-items:center;gap:.85rem}
     .brand-icon{width:46px;height:46px;border-radius:12px;background:var(--brand-gradient);display:flex;align-items:center;justify-content:center;font-size:1.3rem;box-shadow:0 4px 12px rgba(217,119,6,0.3)}
     .header-title h1{font-size:1.15rem;font-weight:800;color:#fff;line-height:1.1;letter-spacing:-0.01em}
     .header-title p{font-size:.75rem;color:#94a3b8;margin-top:2px;font-weight:500}
-    .header-actions{display:flex;align-items:center;gap:1rem}
+    .header-actions{display:flex;align-items:center;gap:1rem; flex-wrap:wrap;}
     .hours-badge{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .85rem;border-radius:30px;font-weight:700;font-size:.75rem}
     .hours-open{background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(74,222,128,0.2)}
     .hours-closed{background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(248,113,113,0.2)}
@@ -41,44 +41,40 @@
     .hero-banner-overlay{position:absolute;inset:0;background:linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.5) 60%, rgba(15,23,42,0.15) 100%);display:flex;flex-direction:column;justify-content:flex-end;padding:1.75rem;color:#fff}
     .hero-tag{align-self:flex-start;background:rgba(217,119,6,0.95);padding:.3rem .85rem;border-radius:20px;font-weight:800;font-size:.75rem;box-shadow:0 4px 12px rgba(217,119,6,0.3);margin-bottom:.5rem}
     
-    /* Dedicated Hot Deal Hero Showcase */
     .special-spotlight-banner {
       background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
-      border: 2px solid #ef4444;
+      border: 2px solid #f43f5e;
       border-radius: var(--radius);
-      padding: 1.25rem 1.5rem;
+      padding: 1.35rem 1.75rem;
       margin-top: 1.25rem;
-      box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.3);
+      box-shadow: 0 12px 30px -6px rgba(244, 63, 94, 0.25);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 1.25rem;
+      gap: 1.5rem;
       color: #fff;
       position: relative;
       overflow: hidden;
+      flex-wrap: wrap;
+      animation: specialGlowPulse 3s infinite ease-in-out;
     }
     .special-spotlight-banner::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(239,68,68,0.15) 0%, transparent 60%);
-      animation: rotateGlow 8s linear infinite;
-      pointer-events: none;
+      content: ''; position: absolute; top: 0; left: 0; width: 6px; height: 100%; background: var(--special-gradient);
     }
-    @keyframes rotateGlow { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
+    @keyframes specialGlowPulse {
+      0% { box-shadow: 0 12px 30px -6px rgba(244, 63, 94, 0.25); border-color: #f43f5e; }
+      50% { box-shadow: 0 16px 40px -4px rgba(244, 63, 94, 0.45); border-color: #fb7185; }
+      100% { box-shadow: 0 12px 30px -6px rgba(244, 63, 94, 0.25); border-color: #f43f5e; }
+    }
+    
     .container{max-width:1160px;margin:1.75rem auto;padding:0 1rem;display:grid;grid-template-columns:1fr;gap:1.5rem}
     @media(min-width:920px){.container{grid-template-columns:340px 1fr}}
-    .card{background:var(--card-bg);border-radius:var(--radius);padding:1.25rem;border:1px solid var(--border);box-shadow:var(--shadow);color:var(--primary)}
+    .card{background:var(--card-bg);border-radius:var(--radius);padding:1.25rem;border:1px solid var(--border);box-shadow:var(--shadow);color:var(--primary); overflow:hidden;}
     .card-title{font-weight:800;font-size:1.05rem;margin-bottom:1.1rem;color:var(--primary);display:flex;align-items:center;gap:.6rem}
     input[type="text"],input[type="tel"],select,textarea{width:100%;padding:.75rem 1rem;border:1px solid var(--border);background:#fff;border-radius:12px;margin-bottom:.85rem;font-size:.92rem;color:var(--primary);outline:none;transition:border-color .2s,box-shadow .2s}
     input:focus,select:focus,textarea:focus{box-shadow:var(--focus);border-color:var(--brand)}
     .btn-primary{width:100%;padding:.78rem;background:var(--brand-gradient);color:#fff;border:none;border-radius:12px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(217,119,6,0.3);transition:transform .1s,opacity .2s}
     .btn-primary:hover{opacity:.95}
-    .btn-primary:active{transform:scale(.99)}
     .btn-primary.small{padding:.5rem .8rem;font-size:.88rem}
     .btn-danger{padding:.45rem .85rem;background:#ef4444;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:.8rem;cursor:pointer}
     .filter-chip{padding:0.45rem 1rem; border-radius:24px; border:1px solid var(--border); background:#fff; font-size:0.85rem; font-weight:700; cursor:pointer; color:var(--muted); transition:all .2s}
@@ -86,18 +82,13 @@
     .menu-category-dropdown{margin-bottom:1.25rem;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);background:#fff;box-shadow:var(--shadow)}
     .menu-category-dropdown summary{padding:1.1rem 1.25rem;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-weight:800;font-size:1.05rem;list-style:none;background:#fff;transition:background .2s}
     .menu-category-dropdown summary:hover{background:#f8fafc}
-    .menu-category-dropdown summary::-webkit-details-marker{display:none}
     .dropdown-content-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1.1rem;padding:1.25rem;background:#f8fafc}
     .item-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 4px 12px rgba(0,0,0,0.03);transition:transform .2s,box-shadow .2s}
     .item-card:hover{transform:translateY(-3px);box-shadow:0 12px 25px rgba(0,0,0,0.08)}
     
-    /* Premium Shining Special Highlight for Wings & Chips */
-    .item-card.shining-special{border:2px solid #ef4444; box-shadow:0 0 25px rgba(239,68,68,0.4); animation:pulseSpecial 2s infinite;}
-    @keyframes pulseSpecial{0%{box-shadow:0 0 15px rgba(239,68,68,0.3); transform: scale(1);} 50%{box-shadow:0 0 35px rgba(239,68,68,0.65); transform: scale(1.02);} 100%{box-shadow:0 0 15px rgba(239,68,68,0.3); transform: scale(1);}}
-
+    .item-card.shining-special{border: 2px solid #f43f5e; box-shadow: 0 4px 20px rgba(244, 63, 94, 0.2);}
     .item-img-container{width:100%;height:140px;overflow:hidden;background:#e2e8f0;position:relative}
     .item-img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
-    .item-card:hover .item-img{transform:scale(1.05)}
     .item-details{padding:1rem;display:flex;flex-direction:column;justify-content:space-between;flex:1}
     .item-details h4{font-size:.95rem;font-weight:800;color:var(--primary);margin-bottom:.3rem}
     .item-price{font-weight:900;color:var(--brand);font-size:1.05rem}
@@ -112,6 +103,7 @@
       position:fixed; bottom:24px; right:24px; background:var(--primary); color:#fff; padding:1.1rem 1.4rem;
       border-radius:var(--radius); display:flex; gap:.85rem; align-items:center; z-index:300;
       box-shadow:0 15px 35px rgba(0,0,0,0.25); animation:slideUp .3s ease; border-left:4px solid var(--brand);
+      max-width:calc(100% - 48px);
     }
     @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
     .modal-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.75);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:300;padding:1rem}
@@ -161,16 +153,15 @@
       </div>
     </div>
 
-    <!-- Glowing Enticing Special Banner for Wings & Chips -->
     <div class="special-spotlight-banner">
       <div style="z-index:1;">
-        <span style="background:#ef4444; color:#fff; font-size:0.75rem; font-weight:900; padding:0.25rem 0.65rem; border-radius:20px; text-transform:uppercase; letter-spacing:1px; box-shadow:0 2px 10px rgba(239,68,68,0.5);">🔥 STORE SPECIAL ★ BEST SELLER</span>
-        <h3 style="font-size:1.35rem; font-weight:900; margin:0.4rem 0 0.2rem; color:#fff;">Crispy Wings & Golden Chips Combo</h3>
-        <p style="font-size:0.88rem; color:#cbd5e1; margin:0;">Hot, seasoned chicken wings served with a generous side of fresh chips!</p>
+        <span style="background:rgba(244,63,94,0.18); color:#fb7185; border:1px solid rgba(244,63,94,0.3); font-size:0.72rem; font-weight:800; padding:0.25rem 0.65rem; border-radius:20px; text-transform:uppercase; letter-spacing:0.5px;">🔥 Featured Store Special</span>
+        <h3 style="font-size:1.3rem; font-weight:900; margin:0.4rem 0 0.2rem; color:#fff; letter-spacing:-0.01em;">Crispy Wings & Golden Chips Combo</h3>
+        <p style="font-size:0.86rem; color:#cbd5e1; margin:0; line-height:1.4;">Hot, seasoned chicken wings served with a generous side of fresh, golden chips!</p>
       </div>
-      <div style="text-align:right; z-index:1; min-width:130px;">
-        <div style="font-size:1.6rem; font-weight:900; color:#facc15;">R35.00</div>
-        <button onclick="addToCart('cc6')" style="background:var(--special-gradient); color:#fff; border:none; padding:0.55rem 1rem; border-radius:10px; font-weight:900; font-size:0.85rem; cursor:pointer; margin-top:0.35rem; box-shadow:0 4px 15px rgba(239,68,68,0.5); width:100%;">+ Order Special</button>
+      <div style="text-align:right; z-index:1; min-width:140px;">
+        <div style="font-size:1.55rem; font-weight:900; color:#fbbf24;">R35.00</div>
+        <button onclick="addToCart('cc6')" style="background:var(--special-gradient); color:#fff; border:none; padding:0.6rem 1.1rem; border-radius:10px; font-weight:800; font-size:0.85rem; cursor:pointer; margin-top:0.4rem; box-shadow:0 4px 14px rgba(244,63,94,0.35); width:100%; transition:opacity 0.2s;">+ Order Special</button>
       </div>
     </div>
   </div>
@@ -224,8 +215,8 @@
 
     <main>
       <div class="card" style="margin-bottom:1.5rem; padding:1.25rem;">
-        <div style="display:flex; gap:0.75rem; align-items:center;">
-          <input type="text" id="search-input" placeholder="🔍 Search menu items (e.g. Chips, Wings, Bunny)..." style="margin-bottom:0; flex:1;" oninput="renderCatalog()">
+        <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+          <input type="text" id="search-input" placeholder="🔍 Search menu items (e.g. Chips, Wings, Bunny)..." style="margin-bottom:0; flex:1; min-width:200px;" oninput="renderCatalog()">
           <button onclick="clearSearch()" style="padding:.75rem 1.15rem; border-radius:12px; border:1px solid var(--border); background:#f1f5f9; cursor:pointer; font-weight:700; font-size:0.9rem;">Clear</button>
         </div>
         <div id="category-filter-chips" style="display:flex; gap:0.6rem; margin-top:1rem; flex-wrap:wrap;"></div>
@@ -243,6 +234,12 @@
     </div>
     <div class="cart-body">
       <div id="cart-list"></div>
+      <div style="margin-top:1rem;">
+        <div id="redemption-banner" style="background:#fef3c7; border:1px solid #f59e0b; padding:0.75rem; border-radius:10px; font-size:0.85rem; margin-bottom:0.75rem; display:none;">
+          ⭐ You have <strong>1,000+ points</strong>! You can redeem R20 off this order!
+          <button onclick="toggleRedemption()" id="redeem-btn" class="btn-primary small" style="margin-top:0.4rem; background:var(--brand);">Redeem R20 Discount</button>
+        </div>
+      </div>
       <div style="margin-top:1rem;">
         <label style="font-size:0.82rem; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.5px">Special Instructions (Note to Kitchen)</label>
         <textarea id="special-instructions" placeholder="e.g., extra sauce, well done chips..." rows="3" style="margin-top:.4rem"></textarea>
@@ -292,13 +289,18 @@
   </div>
 
   <script>
+    const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co'.trim();
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU'.trim();
     const SHARED_KEY = 'davidsonville_app_state_v15';
-    const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjE0NjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU';
 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { persistSession: false },
-      global: { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY } }
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { 
+        headers: { 
+          'apikey': SUPABASE_ANON_KEY, 
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY 
+        } 
+      }
     });
 
     function getSharedState() {
@@ -323,8 +325,8 @@
     let cart = JSON.parse(localStorage.getItem('dcs_cart')) || [];
     let favorites = JSON.parse(localStorage.getItem('dcs_favorites')) || [];
     let activeCategoryFilter = 'ALL';
+    let isRedeemingPoints = false;
 
-    // UPDATED CATALOG WITH NEW CHIP PRICES (R10, R20, R30) & ENTICING WINGS & CHIPS SPECIAL
     const catalog = [
       { id: 'ch1', name: 'SMALL CHIPS', category: 'Chips', price: 10, img: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80' },
       { id: 'ch2', name: 'MEDIUM CHIPS', category: 'Chips', price: 20, img: 'https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?auto=format&fit=crop&w=500&q=80' },
@@ -389,12 +391,6 @@
           gain1.gain.setValueAtTime(0.5, now);
           gain1.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
           osc1.start(now); osc1.stop(now + 1.0);
-        } else {
-          osc1.type = 'sine';
-          osc1.frequency.setValueAtTime(500, now);
-          gain1.gain.setValueAtTime(0.3, now);
-          gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-          osc1.start(now); osc1.stop(now + 0.3);
         }
       } catch (err) {}
     }
@@ -415,7 +411,7 @@
         msg = '✅ Your order is ready! Come collect it hot and fresh from the counter.';
         chimeType = 'ready';
       } else if (stage === 'completed' || stage === 'order-completed') {
-        msg = '⭐ Thank you for shopping with Davidsonville Community Store! We hope your meal brings warmth to your home. See you again soon! ⭐';
+        msg = '⭐ Thank you for shopping with Davidsonville Community Store! See you again soon! ⭐';
         chimeType = 'completed';
       } else if (stage === 'cancelled') {
         msg = '❌ Order #' + orderId + ' has been cancelled.';
@@ -431,7 +427,6 @@
       toast.className = 'toast-alert';
       toast.innerHTML = '<span>🔔</span><div><strong>Order #' + orderId + '</strong><br>' + msg + '</div>';
       document.body.appendChild(toast);
-      
       playCustomerChime(chimeType);
       
       setTimeout(() => {
@@ -475,12 +470,9 @@
         notesHtml = '<div style="font-size:.72rem; background:#fffbeb; padding:.25rem .5rem; border-left:3px solid var(--brand); margin-bottom:.4rem; border-radius:4px"><strong>Notes:</strong> ' + (order.instructions || order.notes) + '</div>';
       }
 
-      let btnHtml = '';
-      if (isFailedOrCancelled) {
-        btnHtml = '<button onclick="resubmitOrderFromSlip(\'' + oid + '\')" style="font-size:.72rem; font-weight:800; padding:.35rem .6rem; background:#9333ea; color:#fff; border:none; border-radius:6px; cursor:pointer;">🔄 Reorder</button>';
-      } else {
-        btnHtml = '<button onclick="saveOrderAsFavorite(\'' + oid + '\')" style="font-size:.72rem; font-weight:800; padding:.35rem .6rem; background:#059669; color:#fff; border:none; border-radius:6px; cursor:pointer;">⭐ Favorite</button>';
-      }
+      let btnHtml = isFailedOrCancelled ? 
+        '<button onclick="resubmitOrderFromSlip(\'' + oid + '\')" style="font-size:.72rem; font-weight:800; padding:.35rem .6rem; background:#9333ea; color:#fff; border:none; border-radius:6px; cursor:pointer;">🔄 Reorder</button>' :
+        '<button onclick="saveOrderAsFavorite(\'' + oid + '\')" style="font-size:.72rem; font-weight:800; padding:.35rem .6rem; background:#059669; color:#fff; border:none; border-radius:6px; cursor:pointer;">⭐ Favorite</button>';
 
       return '<div style="padding:0.85rem; border:1px solid var(--border); border-radius:10px; margin-bottom:.75rem; background:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.03)">' +
         '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.4rem; border-bottom:1px solid var(--border); padding-bottom:.4rem;">' +
@@ -494,7 +486,7 @@
           btnHtml +
           '<button onclick="showDigitalReceiptFromId(\'' + oid + '\')" style="font-size:.72rem; font-weight:800; padding:.35rem .6rem; background:var(--primary); color:#fff; border:none; border-radius:6px; cursor:pointer;">🧾 Slip</button>' +
         '</div>' +
-      '</div>';
+      '</div>'; 
     }
 
     async function postOrderToSupabase(order) {
@@ -508,43 +500,16 @@
           notes: order.instructions || '',
           total: Number(order.total || 0),
           stage: order.stage || 'received',
+          status: order.stage || 'received',
           created_at: new Date(order.timestamp).toISOString()
         });
-        if (error) { console.error('Supabase error:', error); return false; }
-        return true;
-      } catch (err) { console.error('Network error:', err); return false; }
-    }
-      try {
-        const { error } = await supabaseClient.from('orders').upsert({
-          id: order.id,
-          customer_name: order.clientName,
-          phone: order.phone,
-          address: client?.address || '',
-          items: JSON.stringify(order.items),
-          notes: order.instructions || '',
-          total: Number(order.total || 0),
-          stage: order.stage || 'received',
-          created_at: new Date(order.timestamp).toISOString()
-        });
-        if (error) { console.error('Supabase error:', error); return false; }
-        return true;
-      } catch (err) { console.error('Network error:', err); return false; }
-    }
-      setTimeout(async () => {
-        try {
-          await supabaseClient.from('orders').upsert({
-            id: order.id,
-            customer_name: order.clientName,
-            phone: order.phone,
-            address: client?.address || '',
-            items: JSON.stringify(order.items),
-            notes: order.instructions || '',
-            total: Number(order.total || 0),
-            stage: order.stage || 'received',
-            created_at: new Date(order.timestamp).toISOString()
-          });
-        } catch (e) {}
-      }, 10);
+        
+        if (error) {
+          console.error("❌ Supabase Insert Error:", error.message);
+        }
+      } catch (err) {
+        console.error("❌ Network or Script Exception:", err);
+      }
     }
 
     async function verifyAndFetchSupabaseOrders() {
@@ -563,7 +528,7 @@
 
           const mapped = remoteOrders.map(o => {
             const st = (o.stage || o.status || 'received').toLowerCase().trim().replace(/_/g, '-');
-            const oid = o.order_id || o.id || 'DCS-01';
+            const oid = o.id || 'DCS-01';
             newStages[oid] = st;
             if (prevStages[oid] && prevStages[oid] !== st) {
               showStageNotification(oid, st);
@@ -573,18 +538,21 @@
               date: o.created_at ? new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
               timestamp: o.created_at ? new Date(o.created_at).getTime() : Date.now(),
               items: parseOrderItems(o.items),
-              instructions: o.instructions || o.notes || '',
-              fulfillment: o.fulfillment || 'Pickup',
-              paymentMethod: o.payment_method || 'Cash',
-              subtotal: Number(o.subtotal || o.total || o.total_amount || 0),
-              total: Number(o.total || o.total_amount || 0),
+              instructions: o.notes || '',
+              total: Number(o.total || 0),
               stage: st,
-              clientName: o.client_name || o.customer_name || client.name,
-              phone: o.phone || o.customer_phone || client.phone
+              clientName: o.customer_name || client.name,
+              phone: o.phone || client.phone
             };
           });
           localStorage.setItem('dcs_prev_stages', JSON.stringify(newStages));
-          state.orders = mapped;
+          
+          let existingOrders = state.orders || [];
+          mapped.forEach(mo => {
+            let idx = existingOrders.findIndex(eo => String(eo.id) === String(mo.id));
+            if (idx > -1) { existingOrders[idx] = mo; } else { existingOrders.push(mo); }
+          });
+          state.orders = existingOrders;
           saveSharedState(state);
         }
       } catch (e) {}
@@ -598,7 +566,7 @@
           .on(
             'postgres_changes',
             { event: '*', schema: 'public', table: 'orders' },
-            (payload) => {
+            () => {
               verifyAndFetchSupabaseOrders();
             }
           )
@@ -620,18 +588,13 @@
       const statusBadge = document.getElementById('store-hours-status');
       const closedBanner = document.getElementById('store-closed-banner');
       const checkoutBtn = document.getElementById('checkout-btn');
-
       const isClosed = (hour >= 20 || hour < 7);
 
       if (statusBadge) {
         if (!isClosed) { statusBadge.className = "hours-badge hours-open"; statusBadge.innerText = "● Open Now (7 AM - 8 PM)"; }
         else { statusBadge.className = "hours-badge hours-closed"; statusBadge.innerText = "● Closed (Opens 7 AM)"; }
       }
-
-      if (closedBanner) {
-        closedBanner.style.display = isClosed ? 'block' : 'none';
-      }
-
+      if (closedBanner) closedBanner.style.display = isClosed ? 'block' : 'none';
       if (checkoutBtn && client) {
         if (isClosed) {
           checkoutBtn.disabled = true;
@@ -659,11 +622,9 @@
       const rawPhone = document.getElementById('login-phone').value.trim();
       const phone = cleanAndValidatePhone(rawPhone);
       if (!phone || phone.length < 10) { alert('Please enter a valid South African phone number (e.g. 0646297453)'); return; }
-      
       const state = getSharedState();
       const found = (state.clients || []).find(c => c.phone === phone);
       if (!found) { alert('Account not found with number ' + phone + '. Please register first.'); return; }
-      
       client = found; localStorage.setItem('dcs_client', JSON.stringify(client));
       renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Welcome back, ' + client.name + '!');
     }
@@ -679,19 +640,19 @@
         return; 
       }
 
-      client = { name, phone, address, points: 50 };
+      client = { name, phone, address, points: 0 };
       localStorage.setItem('dcs_client', JSON.stringify(client));
       let state = getSharedState(); 
       if (!state.clients) state.clients = [];
       state.clients.push(client); 
       saveSharedState(state);
-      
-      renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Registered successfully with 50 bonus points!');
+      renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Account registered successfully! Start ordering to earn points.');
     }
 
     function logoutClient() {
       client = null; localStorage.removeItem('dcs_client');
-      renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Logged out');
+      isRedeemingPoints = false;
+      renderClientProfile(); renderCart(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Logged out');
     }
 
     function renderClientProfile() {
@@ -700,7 +661,8 @@
       const now = new Date(); const isClosed = (now.getHours() >= 20 || now.getHours() < 7);
 
       if (client) {
-        box.innerHTML = '👤 <strong>' + client.name + '</strong><br>📞 ' + client.phone + '<br>⭐ Points: ' + client.points + '<br><button onclick="logoutClient()" style="background:#dc2626;color:#fff;border:none;margin-top:.5rem;font-size:.75rem;font-weight:700;padding:.3rem .6rem;border-radius:6px;cursor:pointer">Logout</button>';
+        if (client.points === undefined) client.points = 0;
+        box.innerHTML = '👤 <strong>' + client.name + '</strong><br>📞 ' + client.phone + '<br>⭐ Loyalty Points: <strong>' + client.points + '</strong><br><button onclick="logoutClient()" style="background:#dc2626;color:#fff;border:none;margin-top:.5rem;font-size:.75rem;font-weight:700;padding:.3rem .6rem;border-radius:6px;cursor:pointer">Logout</button>';
         document.getElementById('login-panel').style.display = 'none';
         document.getElementById('registration-panel').style.display = 'none';
         document.getElementById('order-history-panel').style.display = 'block';
@@ -712,12 +674,12 @@
         document.getElementById('order-history-panel').style.display = 'none';
         btn.disabled = true; btn.innerText = 'Login to Order';
       }
+      renderCart();
     }
 
     function renderCatalog() {
       const container = document.getElementById('catalog-dropdowns-container');
       if (!container) return;
-      
       const openCategories = {};
       container.querySelectorAll('details.menu-category-dropdown').forEach(det => {
         const catName = det.getAttribute('data-category');
@@ -727,7 +689,6 @@
       const q = (document.getElementById('search-input')?.value || '').toLowerCase();
       const state = getSharedState();
       const outOfStock = state.outOfStock || [];
-
       const cats = ['Chips', 'Chicken Combos', 'Bunny Chows', 'Specials', 'Toasted Sandwiches'];
       const filteredCats = activeCategoryFilter === 'ALL' ? cats : [activeCategoryFilter];
 
@@ -742,14 +703,14 @@
             '<div class="item-img-container">' +
               '<img src="' + i.img + '" class="item-img" style="' + (isSoldOut ? 'filter: grayscale(100%);' : '') + '">' +
               (isSoldOut ? '<div style="position:absolute; inset:0; background:rgba(15,23,42,0.6); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:0.85rem; letter-spacing:1px;">SOLD OUT</div>' : '') +
-              (isSpecialShining && !isSoldOut ? '<div style="position:absolute; top:8px; right:8px; background:var(--special-gradient); color:#fff; font-size:0.75rem; font-weight:900; padding:0.3rem 0.6rem; border-radius:6px; box-shadow:0 2px 10px rgba(239,68,68,0.5);">🔥 HOT SPECIAL ★</div>' : '') +
+              (isSpecialShining && !isSoldOut ? '<div style="position:absolute; top:8px; right:8px; background:var(--special-gradient); color:#fff; font-size:0.7rem; font-weight:800; padding:0.25rem 0.55rem; border-radius:6px; box-shadow:0 2px 8px rgba(244,63,94,0.35);">★ SPECIAL</div>' : '') +
             '</div>' +
             '<div class="item-details">' +
               '<h4>' + i.name + '</h4>' +
               '<div class="item-price">R' + i.price.toFixed(2) + '</div>' +
               (isSoldOut ? 
                 '<button class="btn-primary small" style="margin-top:.75rem; background:#94a3b8; cursor:not-allowed;" disabled>Sold Out</button>' :
-                '<button onclick="addToCart(\'' + i.id + '\')" class="btn-primary small" style="margin-top:.75rem; ' + (isSpecialShining ? 'background:var(--special-gradient); font-weight:900; box-shadow:0 4px 12px rgba(239,68,68,0.4);' : '') + '">+ Add to Cart</button>'
+                '<button onclick="addToCart(\'' + i.id + '\')" class="btn-primary small" style="margin-top:.75rem; ' + (isSpecialShining ? 'background:var(--special-gradient); font-weight:800; box-shadow:0 4px 12px rgba(244,63,94,0.3);' : '') + '">+ Add to Cart</button>'
               ) +
             '</div>' +
           '</div>';
@@ -759,10 +720,7 @@
 
     function addToCart(id) {
       const state = getSharedState();
-      if ((state.outOfStock || []).includes(id)) {
-        alert('Sorry, this item is currently sold out.');
-        return;
-      }
+      if ((state.outOfStock || []).includes(id)) { alert('Sorry, this item is currently sold out.'); return; }
       const item = catalog.find(i => i.id === id);
       const ex = cart.find(c => c.id === id);
       if (ex) ex.qty += 1; else cart.push({ ...item, qty: 1 });
@@ -776,17 +734,54 @@
       renderCart();
     }
 
+    function toggleRedemption() {
+      if (!client || client.points < 1000) {
+        alert('You need at least 1,000 points to redeem this discount.');
+        return;
+      }
+      isRedeemingPoints = !isRedeemingPoints;
+      renderCart();
+    }
+
     function renderCart() {
       const list = document.getElementById('cart-list');
       const sum = document.getElementById('checkout-summary-box');
+      const redemptionBanner = document.getElementById('redemption-banner');
+      const redeemBtn = document.getElementById('redeem-btn');
+      
       const totalItems = cart.reduce((a, b) => a + b.qty, 0);
       document.getElementById('header-cart-badge').innerText = totalItems;
       document.getElementById('fab-cart-badge').innerText = totalItems;
 
-      if (cart.length === 0) { list.innerHTML = '<p style="font-size:0.9rem; color:var(--muted); text-align:center; padding:1.5rem 0;">Your cart is currently empty</p>'; sum.innerHTML = ''; return; }
+      if (client && client.points >= 1000 && cart.length > 0) {
+        redemptionBanner.style.display = 'block';
+        redeemBtn.innerText = isRedeemingPoints ? '✓ R20 Discount Applied (Click to Remove)' : 'Redeem R20 Discount';
+      } else if (redemptionBanner) {
+        redemptionBanner.style.display = 'none';
+        isRedeemingPoints = false;
+      }
+
+      if (cart.length === 0) { 
+        list.innerHTML = '<p style="font-size:0.9rem; color:var(--muted); text-align:center; padding:1.5rem 0;">Your cart is currently empty</p>'; 
+        sum.innerHTML = ''; 
+        if (redemptionBanner) redemptionBanner.style.display = 'none';
+        isRedeemingPoints = false;
+        return; 
+      }
+
       let sub = cart.reduce((a, b) => a + (b.price * b.qty), 0);
+      let discount = isRedeemingPoints ? 20 : 0;
+      if (discount > sub) discount = sub;
+      let finalTotal = sub - discount;
+
       list.innerHTML = cart.map((i, idx) => '<div class="cart-row"><span style="font-weight:600">' + i.qty + 'x ' + i.name + ' <span style="color:var(--brand);font-weight:800">(R' + (i.price * i.qty).toFixed(2) + ')</span></span><button onclick="removeCartItem(' + idx + ')" style="background:#ef4444; color:#fff; border:none; padding:0.25rem 0.6rem; border-radius:6px; font-size:0.75rem; font-weight:700; cursor:pointer;">Remove</button></div>').join('');
-      sum.innerHTML = '<div style="display:flex; justify-content:space-between; font-size:1.05rem; font-weight:800"><span>Total Due:</span><span style="color:var(--brand)">R' + sub.toFixed(2) + '</span></div>';
+      
+      let summaryHtml = '<div style="display:flex; justify-content:space-between; font-size:0.95rem; font-weight:600; margin-bottom:0.3rem"><span>Subtotal:</span><span>R' + sub.toFixed(2) + '</span></div>';
+      if (isRedeemingPoints) {
+        summaryHtml += '<div style="display:flex; justify-content:space-between; font-size:0.95rem; font-weight:700; color:#059669; margin-bottom:0.3rem"><span>Points Discount:</span><span>-R20.00</span></div>';
+      }
+      summaryHtml += '<div style="display:flex; justify-content:space-between; font-size:1.05rem; font-weight:800; border-top:1px dashed var(--border); padding-top:0.5rem; margin-top:0.3rem"><span>Total Due:</span><span style="color:var(--brand)">R' + finalTotal.toFixed(2) + '</span></div>';
+      sum.innerHTML = summaryHtml;
     }
 
     function toggleCartDrawer() {
@@ -797,19 +792,39 @@
       document.getElementById('live-tracker-panel').classList.toggle('hidden');
     }
 
-    async function checkoutOrder() {
+    function checkoutOrder() {
       const now = new Date();
       if (now.getHours() >= 20 || now.getHours() < 7) {
-        alert('We are closed for the evening (orders close at 8:00 PM and open at 7:00 AM). You can still browse our menu!');
+        alert('We are closed for the evening (orders close at 8:00 PM and open at 7:00 AM).');
         return;
       }
       if (!client || cart.length === 0) return;
       const instructions = document.getElementById('special-instructions').value.trim();
       const sub = cart.reduce((a, b) => a + (b.price * b.qty), 0);
+      let discountApplied = isRedeemingPoints && client.points >= 1000 ? 20 : 0;
+      if (discountApplied > sub) discountApplied = sub;
+      const finalTotal = sub - discountApplied;
+
+      const earnedPoints = Math.floor(finalTotal / 100) * 5;
+      if (client.points === undefined) client.points = 0;
+      
+      if (isRedeemingPoints && client.points >= 1000) {
+        client.points -= 1000;
+      }
+      client.points += earnedPoints;
+      localStorage.setItem('dcs_client', JSON.stringify(client));
 
       let state = getSharedState();
+      if (!state.clients) state.clients = [];
+      let cIdx = state.clients.findIndex(c => c.phone === client.phone);
+      if (cIdx > -1) { state.clients[cIdx].points = client.points; }
+
       if (!state.orders) state.orders = [];
-      const formattedOrderId = 'DCS-' + Date.now();
+
+      let orderCounter = parseInt(localStorage.getItem('dcs_order_counter') || '0', 10);
+      orderCounter++;
+      localStorage.setItem('dcs_order_counter', orderCounter);
+      const formattedOrderId = 'DCS-' + String(orderCounter).padStart(2, '0');
 
       const newOrder = {
         id: formattedOrderId,
@@ -817,10 +832,12 @@
         timestamp: Date.now(),
         items: [...cart],
         instructions: instructions,
-        fulfillment: 'Pickup',
         paymentMethod: document.querySelector('input[name="payment"]:checked').value,
         subtotal: sub,
-        total: sub,
+        discount: discountApplied,
+        total: finalTotal,
+        earnedPoints: earnedPoints,
+        currentPoints: client.points,
         stage: 'received',
         clientName: client.name,
         phone: client.phone
@@ -828,28 +845,13 @@
 
       state.orders.unshift(newOrder);
       saveSharedState(state);
+      postOrderToSupabase(newOrder);
 
-      const success = await postOrderToSupabase(newOrder);
-      if (!success) {
-        alert('Order could not reach the server. Please check your connection.');
-        return;
-      }
-
-      state.orders.unshift(newOrder);
-      saveSharedState(state);
       cart = []; localStorage.removeItem('dcs_cart');
-      if (!success) {
-        alert('Order could not reach the server. Please check your connection.');
-        return;
-      }
-
-      state.orders.unshift(newOrder);
-      saveSharedState(state);
-      cart = []; localStorage.removeItem('dcs_cart');
-      cart = []; localStorage.removeItem('dcs_cart');
+      isRedeemingPoints = false;
       document.getElementById('special-instructions').value = '';
       toggleCartDrawer();
-      renderCart(); renderLiveOrderTrackersUI(); renderOrderHistory();
+      renderCart(); renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory();
       
       showOrderPlacedNotification(newOrder.id);
       showDigitalReceipt(newOrder);
@@ -862,7 +864,7 @@
       const toast = document.createElement('div');
       toast.id = 'order-placed-toast';
       toast.className = 'toast-alert';
-      toast.innerHTML = '<span>🛒</span><div><strong>Order #' + orderId + ' Placed!</strong><br>Your order has been sent to the kitchen and is currently being reviewed.</div>';
+      toast.innerHTML = '<span>🛒</span><div><strong>Order #' + orderId + ' Placed!</strong><br>Sent to the kitchen successfully.</div>';
       document.body.appendChild(toast);
       playCustomerChime('preparing');
       
@@ -874,24 +876,36 @@
     }
 
     function showDigitalReceipt(order) {
+      const sub = Number(order.subtotal || order.total || 0);
+      const disc = Number(order.discount || 0);
+      const finalTot = Number(order.total || 0);
+      const earned = order.earnedPoints !== undefined ? order.earnedPoints : Math.floor(finalTot / 100) * 5;
+      const current = order.currentPoints !== undefined ? order.currentPoints : (client ? client.points : earned);
+
+      let discountRowHtml = disc > 0 ? '<div class="receipt-row" style="color:#059669; font-weight:700;"><span>Points Discount (R20):</span><span>-R' + disc.toFixed(2) + '</span></div>' : '';
+
       document.getElementById('receipt-details-container').innerHTML = 
         '<div class="receipt-box">' +
           '<div style="text-align:center; font-weight:900; font-size:1.15rem; margin-bottom:2px;">DAVIDSONVILLE COMMUNITY STORE</div>' +
           '<div style="text-align:center; font-size:0.78rem; color:#64748b; margin-bottom:2px;">3 Wagenaar St, Davidsonville</div>' +
-          '<div style="text-align:center; font-size:0.75rem; color:#64748b; margin-bottom:12px;">Tel: 064 629 7453 | VAT: 4890219382</div>' +
+          '<div style="text-align:center; font-size:0.75rem; color:#64748b; margin-bottom:12px;">Tel: 064 629 7453 | Verified Slip</div>' +
           '<div style="font-size:0.8rem; border-bottom:1px dashed #cbd5e1; padding-bottom:8px; margin-bottom:10px;">' +
             '<div><strong>Order ID:</strong> #' + order.id + '</div>' +
             '<div><strong>Date:</strong> ' + new Date(order.timestamp).toLocaleString() + '</div>' +
-            '<div><strong>Customer:</strong> ' + order.clientName + ' (' + order.phone + ')</div>' +
-            '<div><strong>Payment:</strong> ' + order.paymentMethod + '</div>' +
+            '<div><strong>Customer:</strong> ' + (order.clientName || order.customer_name) + ' (' + (order.phone || '') + ')</div>' +
+            '<div><strong>Payment:</strong> ' + (order.paymentMethod || 'Cash') + '</div>' +
+            ((order.instructions || order.notes) ? '<div style="margin-top:4px; color:#b45309;"><strong>Note:</strong> ' + (order.instructions || order.notes) + '</div>' : '') +
           '</div>' +
           '<div style="font-size:0.85rem; margin-bottom:10px;">' + renderOrderItemsList(order.items) + '</div>' +
           '<div style="border-top:1px dashed #cbd5e1; padding-top:8px; font-size:0.9rem;">' +
-            '<div class="receipt-row"><span>Subtotal:</span><span>R' + Number(order.total).toFixed(2) + '</span></div>' +
-            '<div class="receipt-row receipt-total"><span>TOTAL DUE:</span> <span>R' + Number(order.total).toFixed(2) + '</span></div>' +
+            '<div class="receipt-row"><span>Subtotal:</span><span>R' + sub.toFixed(2) + '</span></div>' +
+            discountRowHtml +
+            '<div class="receipt-row" style="color:#059669; font-weight:700;"><span>⭐ Points Earned (This Order):</span><span>+' + earned + ' pts</span></div>' +
+            '<div class="receipt-row" style="color:#0f172a; font-weight:800;"><span>⭐ Total Loyalty Balance:</span><span>' + current + ' pts</span></div>' +
+            '<div class="receipt-row receipt-total"><span>TOTAL DUE:</span> <span>R' + finalTot.toFixed(2) + '</span></div>' +
           '</div>' +
           '<div style="text-align:center; font-size:0.75rem; color:#64748b; margin-top:15px; border-top:1px dashed #cbd5e1; padding-top:10px;">' +
-            '⭐ Thank you for shopping with Davidsonville Community Store! We hope your meal brings warmth to your home. See you again soon! ⭐' +
+            '⭐ Thank you for shopping with Davidsonville Community Store! ⭐' +
           '</div>' +
         '</div>';
       document.getElementById('receipt-modal').style.display = 'flex';
@@ -907,20 +921,32 @@
 
     function resubmitOrderFromSlip(id) {
       const now = new Date();
-      if (now.getHours() >= 20 || now.getHours() < 7) {
-        alert('Store is closed. Orders open at 7:00 AM.');
-        return;
-      }
+      if (now.getHours() >= 20 || now.getHours() < 7) { alert('Store is closed. Orders open at 7:00 AM.'); return; }
       const state = getSharedState();
       const o = (state.orders || []).find(x => String(x.id) === String(id));
       if (!o || !confirm('Resubmit this order?')) return;
       
-      const formattedOrderId = 'DCS-' + Date.now();
+      const finalTot = Number(o.total || 0);
+      const earned = Math.floor(finalTot / 100) * 5;
+      if (client) {
+        if (client.points === undefined) client.points = 0;
+        client.points += earned;
+        localStorage.setItem('dcs_client', JSON.stringify(client));
+      }
+
+      let orderCounter = parseInt(localStorage.getItem('dcs_order_counter') || '0', 10);
+      orderCounter++;
+      localStorage.setItem('dcs_order_counter', orderCounter);
+      o.id = 'DCS-' + String(orderCounter).padStart(2, '0');
+
       o.stage = 'received';
       o.timestamp = Date.now();
+      o.earnedPoints = earned;
+      o.currentPoints = client ? client.points : earned;
       state.orders.unshift(o);
       saveSharedState(state);
       postOrderToSupabase(o);
+      renderClientProfile();
       renderLiveOrderTrackersUI();
       renderOrderHistory();
       alert('Order resubmitted!');
@@ -932,7 +958,6 @@
       if (!o) return;
       const favName = prompt('Enter a label for this favorite order:', 'Order #' + o.id);
       if (!favName) return;
-
       favorites.push({ id: 'fav_' + Date.now(), name: favName, items: [...o.items] });
       localStorage.setItem('dcs_favorites', JSON.stringify(favorites));
       renderFavorites();
@@ -942,10 +967,7 @@
     function renderFavorites() {
       const container = document.getElementById('favorites-list');
       if (!container) return;
-      if (favorites.length === 0) {
-        container.innerHTML = '<p style="font-size:0.85rem; color:var(--muted);">No saved favorites yet.</p>';
-        return;
-      }
+      if (favorites.length === 0) { container.innerHTML = '<p style="font-size:0.85rem; color:var(--muted);">No saved favorites yet.</p>'; return; }
       container.innerHTML = favorites.map(f => 
         '<div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; padding:.6rem 0; border-bottom:1px dashed var(--border);">' +
           '<div><strong style="color:var(--primary);">' + f.name + '</strong><br><span style="font-size:0.75rem; color:var(--muted);">' + f.items.length + ' items</span></div>' +
@@ -965,11 +987,15 @@
       }
     }
 
-    function clearOrderHistory() {
-      if (!client) return;
-      if (!confirm('Are you sure you want to clear your order history?')) return;
+    async function clearOrderHistory() {
+      if (!client || !client.phone) return;
+      if (!confirm('Clear your past order history?')) return;
+      const userPhone = client.phone.trim();
+      try {
+        await supabaseClient.from('orders').delete().ilike('phone', '%' + userPhone + '%');
+      } catch (e) {}
       let state = getSharedState();
-      state.orders = (state.orders || []).filter(o => o.phone !== client.phone && o.clientName !== client.name);
+      state.orders = (state.orders || []).filter(o => cleanAndValidatePhone(String(o.phone || '')) !== userPhone);
       saveSharedState(state);
       renderOrderHistory();
       renderLiveOrderTrackersUI();
@@ -980,20 +1006,15 @@
       const container = document.getElementById('order-history-list');
       if (!container) return;
       const state = getSharedState();
-      const myOrders = (state.orders || []).filter(o => client && (o.phone === client.phone || o.clientName === client.name));
-
-      if (myOrders.length === 0) {
-        container.innerHTML = '<p style="font-size:0.85rem; color:var(--muted);">No past orders found.</p>';
-        return;
-      }
+      const myOrders = (state.orders || []).filter(o => client && cleanAndValidatePhone(String(o.phone || '')) === client.phone.trim());
+      if (myOrders.length === 0) { container.innerHTML = '<p style="font-size:0.85rem; color:var(--muted);">No past orders found.</p>'; return; }
 
       container.innerHTML = myOrders.map(o => 
         '<div style="padding:.6rem 0; border-bottom:1px dashed var(--border);">' +
           '<div style="display:flex; justify-content:space-between; align-items:center;">' +
             '<div><strong style="color:var(--primary);">#' + o.id + '</strong> (' + o.date + ')<br><span style="font-size:0.75rem; color:var(--brand); font-weight:bold;">Status: ' + (o.stage || 'received').toUpperCase() + '</span></div>' +
             '<div style="display:flex; gap:6px;">' +
-              '<button onclick="saveOrderAsFavorite(\'' + o.id + '\')" style="font-size:0.72rem; font-weight:800; padding:0.35rem 0.6rem; background:#059669; color:white; border:none; border-radius:6px; cursor:pointer;">⭐ Fav</button>' +
-              '<button onclick="showDigitalReceiptFromId(\'' + o.id + '\')" style="font-size:0.72rem; font-weight:800; padding:0.35rem 0.6rem; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">Slip</button>' +
+              '<button onclick="showDigitalReceiptFromId(\'' + o.id + '\')" style="font-size:0.72rem; font-weight:800; padding:0.35rem 0.6rem; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">🧾 Slip</button>' +
             '</div>' +
           '</div>' +
           renderOrderItemsList(o.items) +
@@ -1006,8 +1027,7 @@
       const panel = document.getElementById('customer-tracker-panel');
       const trackerBody = document.getElementById('live-tracker-body');
       const state = getSharedState();
-      const myOrders = (state.orders || []).filter(o => client && (o.phone === client.phone || o.clientName === client.name));
-      
+      const myOrders = (state.orders || []).filter(o => client && cleanAndValidatePhone(String(o.phone || '')) === client.phone.trim());
       const active = myOrders.filter(o => {
         const st = (o.stage || o.status || 'received').toLowerCase().trim();
         return st !== 'order-completed' && st !== 'completed' && st !== 'cancelled';
