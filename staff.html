@@ -386,7 +386,7 @@
           if (rawStage === 'ready-for-pick-up') rawStage = 'ready';
           if (rawStage === 'order-completed') rawStage = 'completed';
 
-          return {
+         return {
             id: o.id || o.order_id,
             date: o.created_at ? new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (o.date || ''),
             timestamp: o.created_at ? new Date(o.created_at).getTime() : (o.timestamp || Date.now()),
@@ -394,8 +394,8 @@
             instructions: o.notes || o.instructions || '',
             total: tot,
             discount: Number(o.discount || 0),
-            earnedPoints: o.earnedPoints !== undefined ? o.earnedPoints : Math.floor(tot / 100) * 5,
-            currentPoints: o.currentPoints !== undefined ? o.currentPoints : 0,
+            earnedPoints: o.earned_points !== undefined ? o.earned_points : (o.earnedpoints !== undefined ? o.earnedpoints : (o.earnedPoints !== undefined ? o.earnedPoints : Math.floor(tot / 100) * 5)),
+            currentPoints: o.current_points !== undefined ? o.current_points : (o.currentpoints !== undefined ? o.currentpoints : (o.currentPoints !== undefined ? o.currentPoints : 0)),
             stage: rawStage,
             clientName: o.customer_name || o.client_name || 'Customer',
             phone: o.phone || ''

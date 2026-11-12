@@ -499,6 +499,9 @@
           items: JSON.stringify(order.items),
           notes: order.instructions || '',
           total: Number(order.total || 0),
+          discount: Number(order.discount || 0),
+          earned_points: Number(order.earnedPoints || 0),
+          current_points: Number(order.currentPoints || 0),
           stage: order.stage || 'received',
           status: order.stage || 'received',
           created_at: new Date(order.timestamp).toISOString()
