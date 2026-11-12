@@ -327,7 +327,7 @@
     let activeCategoryFilter = 'ALL';
     let isRedeemingPoints = false;
 
-    const catalog = [
+   const catalog = [
       { id: 'ch1', name: 'SMALL CHIPS', category: 'Chips', price: 10, img: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80' },
       { id: 'ch2', name: 'MEDIUM CHIPS', category: 'Chips', price: 20, img: 'https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?auto=format&fit=crop&w=500&q=80' },
       { id: 'ch3', name: 'LARGE CHIPS', category: 'Chips', price: 30, img: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=500&q=80' },
@@ -357,7 +357,6 @@
       { id: 'ts4', name: 'CHEESE & TOMATO', category: 'Toasted Sandwiches', price: 15, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
       { id: 'ts5', name: 'BACON, EGG & CHEESE', category: 'Toasted Sandwiches', price: 38, img: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?auto=format&fit=crop&w=500&q=80' }
     ];
-
     let audioCtx = null;
     function playCustomerChime(type) {
       try {
@@ -536,13 +535,17 @@
             if (prevStages[oid] && prevStages[oid] !== st) {
               showStageNotification(oid, st);
             }
+            const tot = Number(o.total || 0);
             return {
               id: oid,
               date: o.created_at ? new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
               timestamp: o.created_at ? new Date(o.created_at).getTime() : Date.now(),
               items: parseOrderItems(o.items),
               instructions: o.notes || '',
-              total: Number(o.total || 0),
+              total: tot,
+              discount: Number(o.discount || 0),
+              earnedPoints: o.earned_points !== undefined ? o.earned_points : Math.floor(tot / 100) * 5,
+              currentPoints: o.current_points !== undefined ? o.current_points : 0,
               stage: st,
               clientName: o.customer_name || client.name,
               phone: o.phone || client.phone
@@ -577,12 +580,11 @@
       } catch (e) {}
     }
 
- window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', () => {
       checkStoreOperatingHours();
       renderCategoryChips(); renderClientProfile(); renderCatalog(); renderCart(); renderFavorites(); renderOrderHistory(); renderLiveOrderTrackersUI();
       verifyAndFetchSupabaseOrders();
       subscribeToRealtimeCustomer();
-      // Polling interval removed—relying exclusively on Supabase Realtime WebSockets.
     });
 
     function checkStoreOperatingHours() {
