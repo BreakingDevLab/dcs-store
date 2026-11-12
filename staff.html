@@ -168,7 +168,7 @@
     let knownOrderCount = -1;
 
     const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co'.trim();
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6InFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU'.trim();
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU'.trim();
     const OWNER_PIN = '2026';
     const SHARED_KEY = 'davidsonville_app_state_v15';
 
@@ -565,12 +565,12 @@
       } catch (e) {}
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', () => {
       renderInventoryGrid();
       fetchOrders();
       subscribeToRealtimeStaff();
-      setInterval(fetchOrders, 4000);
-    });
+      // Polling interval removed—relying exclusively on Supabase Realtime WebSockets.
+    });   
   </script>
 </body>
 </html>

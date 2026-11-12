@@ -574,12 +574,12 @@
       } catch (e) {}
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+ window.addEventListener('DOMContentLoaded', () => {
       checkStoreOperatingHours();
       renderCategoryChips(); renderClientProfile(); renderCatalog(); renderCart(); renderFavorites(); renderOrderHistory(); renderLiveOrderTrackersUI();
       verifyAndFetchSupabaseOrders();
       subscribeToRealtimeCustomer();
-      setInterval(verifyAndFetchSupabaseOrders, 4000);
+      // Polling interval removed—relying exclusively on Supabase Realtime WebSockets.
     });
 
     function checkStoreOperatingHours() {
