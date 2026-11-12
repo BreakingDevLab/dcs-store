@@ -327,7 +327,7 @@
     let activeCategoryFilter = 'ALL';
     let isRedeemingPoints = false;
 
-   const catalog = [
+    const catalog = [
       { id: 'ch1', name: 'SMALL CHIPS', category: 'Chips', price: 10, img: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80' },
       { id: 'ch2', name: 'MEDIUM CHIPS', category: 'Chips', price: 20, img: 'https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?auto=format&fit=crop&w=500&q=80' },
       { id: 'ch3', name: 'LARGE CHIPS', category: 'Chips', price: 30, img: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=500&q=80' },
@@ -357,6 +357,7 @@
       { id: 'ts4', name: 'CHEESE & TOMATO', category: 'Toasted Sandwiches', price: 15, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
       { id: 'ts5', name: 'BACON, EGG & CHEESE', category: 'Toasted Sandwiches', price: 38, img: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?auto=format&fit=crop&w=500&q=80' }
     ];
+
     let audioCtx = null;
     function playCustomerChime(type) {
       try {
@@ -580,7 +581,7 @@
       } catch (e) {}
     }
 
-window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', () => {
       checkStoreOperatingHours();
       renderCategoryChips(); renderClientProfile(); renderCatalog(); renderCart(); renderFavorites(); renderOrderHistory(); renderLiveOrderTrackersUI();
       verifyAndFetchSupabaseOrders();
@@ -623,7 +624,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function setCategoryFilter(cat) { activeCategoryFilter = cat; renderCategoryChips(); renderCatalog(); }
     function clearSearch() { document.getElementById('search-input').value = ''; activeCategoryFilter = 'ALL'; renderCategoryChips(); renderCatalog(); }
 
-   async function handleLoginClient() {
+    async function handleLoginClient() {
       const rawPhone = document.getElementById('login-phone').value.trim();
       const phone = cleanAndValidatePhone(rawPhone);
       if (!phone || phone.length < 10) { alert('Please enter a valid South African phone number (e.g. 0646297453)'); return; }
@@ -682,7 +683,9 @@ window.addEventListener('DOMContentLoaded', () => {
       } catch (err) {
         alert('Registration failed. Please check your connection.');
       }
-    }    function logoutClient() {
+    }
+
+    function logoutClient() {
       client = null; localStorage.removeItem('dcs_client');
       isRedeemingPoints = false;
       renderClientProfile(); renderCart(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Logged out');
@@ -825,7 +828,7 @@ window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('live-tracker-panel').classList.toggle('hidden');
     }
 
-    function checkoutOrder() {
+    async function checkoutOrder() {
       const now = new Date();
       if (now.getHours() >= 20 || now.getHours() < 7) {
         alert('We are closed for the evening (orders close at 8:00 PM and open at 7:00 AM).');
@@ -839,15 +842,14 @@ window.addEventListener('DOMContentLoaded', () => {
       const finalTotal = sub - discountApplied;
 
       const earnedPoints = Math.floor(finalTotal / 100) * 5;
-     // Inside checkoutOrder():
       if (client.points === undefined) client.points = 0;
+      
       if (isRedeemingPoints && client.points >= 1000) {
         client.points -= 1000;
       }
       client.points += earnedPoints;
       localStorage.setItem('dcs_client', JSON.stringify(client));
 
-      // Sync updated points to Supabase database
       try {
         await supabaseClient.from('clients').upsert({
           phone: client.phone,
@@ -859,15 +861,8 @@ window.addEventListener('DOMContentLoaded', () => {
       } catch (e) {}
 
       let state = getSharedState();
-      if (!state.clients) state.clients = [];
-      let cIdx = state.clients.findIndex(c => c.phone === client.phone);
-      if (cIdx > -1) { state.clients[cIdx].points = client.points; }
-
       if (!state.orders) state.orders = [];
 
-      let orderCounter = parseInt(localStorage.getItem('dcs_order_counter') || '0', 10);
-      orderCounter++;
-      localStorage.setItem('dcs_order_counter', orderCounter);
       const formattedOrderId = 'DCS-' + Date.now();
 
       const newOrder = {
@@ -963,7 +958,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if (o) showDigitalReceipt(o);
     }
 
-function resubmitOrderFromSlip(id) {
+    function resubmitOrderFromSlip(id) {
       const now = new Date();
       if (now.getHours() >= 20 || now.getHours() < 7) { alert('Store is closed. Orders open at 7:00 AM.'); return; }
       const state = getSharedState();
