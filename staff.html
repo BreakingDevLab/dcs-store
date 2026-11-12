@@ -168,8 +168,7 @@
     let knownOrderCount = -1;
 
     const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co'.trim();
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU'.trim();
-    const OWNER_PIN = '2026';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6InFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjEwNjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU'.trim();
     const SHARED_KEY = 'davidsonville_app_state_v15';
 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -285,7 +284,19 @@
 
     async function ownerClearAuditLogs() {
       const pin = prompt('Enter Owner Security PIN to clear audit logs:');
-      if (pin !== OWNER_PIN) { alert('Incorrect Owner PIN. Action denied.'); return; }
+      if (!pin) return;
+
+      try {
+        const { data: isValid, error } = await supabaseClient.rpc('verify_owner_pin', { entered_pin: pin });
+        if (error || !isValid) {
+          alert('Incorrect Owner PIN. Action denied.');
+          return;
+        }
+      } catch (e) {
+        alert('Verification error. Please try again.');
+        return;
+      }
+
       if (!confirm('Clear completed/archived order logs?')) return;
       
       try {
@@ -565,12 +576,11 @@
       } catch (e) {}
     }
 
-window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', () => {
       renderInventoryGrid();
       fetchOrders();
       subscribeToRealtimeStaff();
-      // Polling interval removed—relying exclusively on Supabase Realtime WebSockets.
-    });   
+    });
   </script>
 </body>
 </html>
