@@ -145,7 +145,6 @@
     const SHARED_KEY = 'davidsonville_app_state_v15';
     const SUPABASE_URL = 'https://qbmszgddepljxqxynyxv.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFibXN6Z2RkZXBsanhxeHlueXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODUzMzcsImV4cCI6MjE4NjE2MTMzN30.Xn96bQzIKht44_6IYTkXMY6wk3sT2uf2IJtbOhW1WgU';
-    const OWNER_PIN = '2026';
 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: { persistSession: false },
@@ -189,18 +188,12 @@
     function switchTab(tabName) {
       document.querySelectorAll('.dashboard-section').forEach(sec => sec.classList.add('hidden-tab'));
       document.querySelectorAll('.staff-nav button').forEach(btn => btn.classList.remove('active'));
-
       if (tabName === 'kds') {
-        document.getElementById('tab-kds').classList.remove('hidden-tab');
-        document.getElementById('nav-btn-kds').classList.add('active');
+        document.getElementById('tab-kds').classList.remove('hidden-tab'); document.getElementById('nav-btn-kds').classList.add('active');
       } else if (tabName === 'stock') {
-        document.getElementById('tab-stock').classList.remove('hidden-tab');
-        document.getElementById('nav-btn-stock').classList.add('active');
-        renderInventoryGrid();
+        document.getElementById('tab-stock').classList.remove('hidden-tab'); document.getElementById('nav-btn-stock').classList.add('active'); renderInventoryGrid();
       } else if (tabName === 'audit') {
-        document.getElementById('tab-audit').classList.remove('hidden-tab');
-        document.getElementById('nav-btn-audit').classList.add('active');
-        renderKanban();
+        document.getElementById('tab-audit').classList.remove('hidden-tab'); document.getElementById('nav-btn-audit').classList.add('active'); renderKanban();
       }
     }
 
@@ -210,11 +203,7 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
         playKitchenChime();
         const banner = document.getElementById('audio-banner');
-        if (banner) {
-          banner.style.background = '#059669';
-          banner.innerText = '✅ Audio alerts enabled successfully!';
-          setTimeout(() => banner.style.display = 'none', 1500);
-        }
+        if (banner) { banner.style.background = '#059669'; banner.innerText = '✅ Audio alerts enabled successfully!'; setTimeout(() => banner.style.display = 'none', 1500); }
       } catch (e) {}
     }
 
@@ -223,31 +212,14 @@
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const now = audioCtx.currentTime;
-        const osc1 = audioCtx.createOscillator();
-        const gain1 = audioCtx.createGain();
-        osc1.type = 'triangle';
-        osc1.frequency.setValueAtTime(523.25, now);
-        gain1.gain.setValueAtTime(0.5, now);
-        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-        osc1.connect(gain1); gain1.connect(audioCtx.destination);
-        osc1.start(now); osc1.stop(now + 0.35);
-
-        const osc2 = audioCtx.createOscillator();
-        const gain2 = audioCtx.createGain();
-        osc2.type = 'triangle';
-        osc2.frequency.setValueAtTime(659.25, now + 0.15);
-        gain2.gain.setValueAtTime(0.5, now + 0.15);
-        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
-        osc2.connect(gain2); gain2.connect(audioCtx.destination);
-        osc2.start(now + 0.15); osc2.stop(now + 0.6);
+        const osc1 = audioCtx.createOscillator(); const gain1 = audioCtx.createGain();
+        osc1.type = 'triangle'; osc1.frequency.setValueAtTime(523.25, now);
+        gain1.gain.setValueAtTime(0.5, now); gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc1.connect(gain1); gain1.connect(audioCtx.destination); osc1.start(now); osc1.stop(now + 0.35);
       } catch (e) {}
     }
 
-    document.addEventListener('click', () => {
-      if (!audioCtx) {
-        enableAudioContext();
-      }
-    }, { once: true });
+    document.addEventListener('click', () => { if (!audioCtx) enableAudioContext(); }, { once: true });
 
     function getSharedState() {
       try { const stored = localStorage.getItem(SHARED_KEY); if (stored) return JSON.parse(stored); } catch (e) {}
@@ -258,54 +230,45 @@
       try { localStorage.setItem(SHARED_KEY, JSON.stringify(state)); } catch (e) {}
     }
 
-    function ownerClearAuditLogs() {
+    async function ownerClearAuditLogs() {
       const pin = prompt('Enter Owner Security PIN to clear audit logs:');
-      if (pin !== OWNER_PIN) {
-        alert('Incorrect Owner PIN. Action denied.');
-        return;
-      }
-      if (!confirm('Are you sure you want to clear completed/archived order logs?')) return;
+      if (!pin) return;
+      try {
+        const { data: isValid, error } = await supabaseClient.rpc('verify_owner_pin', { entered_pin: pin });
+        if (error || !isValid) { alert('Incorrect Owner PIN. Action denied.'); return; }
+      } catch (e) { alert('Verification error.'); return; }
+
+      if (!confirm('Permanently delete completed and cancelled order logs from the database?')) return;
+      try {
+        await supabaseClient.from('orders').delete().in('stage', ['completed', 'order-completed', 'cancelled']);
+      } catch (e) {}
+
       let state = getSharedState();
       state.orders = (state.orders || []).filter(o => {
         let st = (o.stage || 'received').toLowerCase().trim();
         return st !== 'completed' && st !== 'order-completed' && st !== 'cancelled';
       });
-      saveSharedState(state);
-      renderKanban();
-      alert('Audit logs cleared successfully by store owner.');
+      saveSharedState(state); renderKanban(); alert('Audit logs cleared permanently.');
     }
 
     function toggleItemStock(itemId) {
-      let state = getSharedState();
-      if (!state.outOfStock) state.outOfStock = [];
+      let state = getSharedState(); if (!state.outOfStock) state.outOfStock = [];
       const idx = state.outOfStock.indexOf(itemId);
-      if (idx > -1) {
-        state.outOfStock.splice(idx, 1);
-      } else {
-        state.outOfStock.push(itemId);
-      }
-      saveSharedState(state);
-      renderInventoryGrid();
+      if (idx > -1) state.outOfStock.splice(idx, 1); else state.outOfStock.push(itemId);
+      saveSharedState(state); renderInventoryGrid();
     }
 
     function renderInventoryGrid() {
-      const container = document.getElementById('inventory-items-grid');
-      if (!container) return;
-      const state = getSharedState();
-      const outOfStock = state.outOfStock || [];
-
+      const container = document.getElementById('inventory-items-grid'); if (!container) return;
+      const state = getSharedState(); const outOfStock = state.outOfStock || [];
       container.innerHTML = catalogItemsRef.map(item => {
         const isOut = outOfStock.includes(item.id);
-        return '<button onclick="toggleItemStock(\'' + item.id + '\')" style="padding:0.6rem 0.8rem; border-radius:10px; border:1px solid ' + (isOut ? '#ef4444' : '#e2e8f0') + '; background:' + (isOut ? '#fee2e2' : '#f8fafc') + '; cursor:pointer; text-align:left; display:flex; justify-content:space-between; align-items:center; font-weight:700; font-size:0.85rem;">' +
-          '<span style="color:var(--primary);">' + item.name + '</span>' +
-          '<span style="font-size:0.75rem; padding:0.2rem 0.5rem; border-radius:6px; background:' + (isOut ? '#dc2626' : '#22c55e') + '; color:#fff;">' + (isOut ? 'SOLD OUT' : 'AVAILABLE') + '</span>' +
-        '</button>';
+        return '<button onclick="toggleItemStock(\'' + item.id + '\')" style="padding:0.6rem 0.8rem; border-radius:10px; border:1px solid ' + (isOut ? '#ef4444' : '#e2e8f0') + '; background:' + (isOut ? '#fee2e2' : '#f8fafc') + '; cursor:pointer; text-align:left; display:flex; justify-content:space-between; align-items:center; font-weight:700; font-size:0.85rem;"><span style="color:var(--primary);">' + item.name + '</span><span style="font-size:0.75rem; padding:0.2rem 0.5rem; border-radius:6px; background:' + (isOut ? '#dc2626' : '#22c55e') + '; color:#fff;">' + (isOut ? 'SOLD OUT' : 'AVAILABLE') + '</span></button>';
       }).join('');
     }
 
     function parseOrderItems(rawItems) {
-      if (!rawItems) return [];
-      if (Array.isArray(rawItems)) return rawItems;
+      if (!rawItems) return []; if (Array.isArray(rawItems)) return rawItems;
       try { const p = JSON.parse(rawItems); if (Array.isArray(p)) return p; return [p]; } catch (e) { return [{ name: rawItems, qty: 1, price: 0 }]; }
     }
 
@@ -313,39 +276,22 @@
       const items = parseOrderItems(itemsInput);
       let html = '<ul style="list-style:none; padding:0; margin:0.25rem 0; font-size:0.78rem;">';
       for (let i = 0; i < items.length; i++) {
-        let item = items[i];
-        let q = item.qty || item.quantity || 1;
-        let n = item.name || item.title || 'Item';
-        let p = Number(item.price || 0);
+        let item = items[i]; let q = item.qty || item.quantity || 1; let n = item.name || item.title || 'Item'; let p = Number(item.price || 0);
         html += '<li style="display:flex; justify-content:space-between; padding:0.15rem 0; border-bottom:1px dotted var(--border);"><span><strong>' + q + 'x</strong> ' + n + '</span><span style="font-weight:800;color:var(--brand)">R' + (q * p).toFixed(2) + '</span></li>';
       }
-      html += '</ul>';
-      return html;
+      html += '</ul>'; return html;
     }
 
     async function fetchOrders() {
       let state = getSharedState();
       try {
-        const { data, error } = await supabaseClient
-          .from('orders')
-          .select('*')
-          .order('created_at', { ascending: false });
-
+        const { data, error } = await supabaseClient.from('orders').select('*').order('created_at', { ascending: false });
         let combined = [...(data || [])];
-
         if (state.orders && Array.isArray(state.orders)) {
-          state.orders.forEach(lo => {
-            if (!combined.some(o => (o.id || o.order_id) === lo.id)) {
-              combined.push(lo);
-            }
-          });
+          state.orders.forEach(lo => { if (!combined.some(o => (o.id || o.order_id) === lo.id)) combined.push(lo); });
         }
-
-        if (knownOrderCount >= 0 && combined.length > knownOrderCount) {
-          playKitchenChime();
-        }
+        if (knownOrderCount >= 0 && combined.length > knownOrderCount) playKitchenChime();
         knownOrderCount = combined.length;
-
         state.orders = combined.map(o => ({
           id: o.order_id || o.id,
           date: o.created_at ? new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (o.date || ''),
@@ -357,7 +303,6 @@
           clientName: o.client_name || o.customer_name || 'Customer',
           phone: o.phone || o.customer_phone || ''
         }));
-
         saveSharedState(state);
       } catch (e) {}
       renderKanban();
@@ -365,150 +310,75 @@
 
     async function updateOrderStatus(orderId, newStage) {
       try {
-        await supabaseClient
-          .from('orders')
-          .update({ stage: newStage, status: newStage })
-          .or(`id.eq.${orderId},order_id.eq.${orderId}`);
+        await supabaseClient.from('orders').update({ stage: newStage, status: newStage }).or(`id.eq.${orderId},order_id.eq.${orderId}`);
       } catch (e) {}
-
-      let state = getSharedState();
-      let ord = (state.orders || []).find(o => String(o.id) === String(orderId));
-      if (ord) {
-        ord.stage = newStage;
-        saveSharedState(state);
-      }
+      let state = getSharedState(); let ord = (state.orders || []).find(o => String(o.id) === String(orderId));
+      if (ord) { ord.stage = newStage; saveSharedState(state); }
       fetchOrders();
     }
 
     function renderKanban() {
-      const state = getSharedState();
-      const orders = state.orders || [];
+      const state = getSharedState(); const orders = state.orders || [];
       const searchQuery = (document.getElementById('audit-search-input')?.value || '').toLowerCase().trim();
       const todayDateStr = new Date().toDateString();
-
       const cols = {
-        'received': document.getElementById('col-received'),
-        'preparing': document.getElementById('col-preparing'),
-        'ready': document.getElementById('col-ready'),
-        'completed': document.getElementById('col-completed'),
-        'cancelled': document.getElementById('col-cancelled')
+        'received': document.getElementById('col-received'), 'preparing': document.getElementById('col-preparing'),
+        'ready': document.getElementById('col-ready'), 'completed': document.getElementById('col-completed'), 'cancelled': document.getElementById('col-cancelled')
       };
-
       const counts = { 'received': 0, 'preparing': 0, 'ready': 0, 'completed': 0, 'cancelled': 0 };
-
       for (let k in cols) { if (cols[k]) cols[k].innerHTML = ''; }
-
       let auditHtml = '<table style="width:100%; border-collapse:collapse;"><tr style="background:#f1f5f9; text-align:left; border-bottom:1px solid var(--border); font-weight:800"><th style="padding:10px;">Order ID</th><th style="padding:10px;">Customer</th><th style="padding:10px;">Phone</th><th style="padding:10px;">Status</th><th style="padding:10px;">Total</th><th style="padding:10px;">Time</th></tr>';
-
       let filteredAuditCount = 0;
 
       orders.forEach(o => {
         let st = (o.stage || 'received').toLowerCase().trim();
-        if (st === 'kitchen-prep') st = 'preparing';
-        if (st === 'ready-for-pick-up') st = 'ready';
-        if (st === 'order-completed') st = 'completed';
+        if (st === 'kitchen-prep') st = 'preparing'; if (st === 'ready-for-pick-up') st = 'ready'; if (st === 'order-completed') st = 'completed';
         if (!cols[st]) st = 'received';
-
-        const orderDate = new Date(o.timestamp);
-        const isFromToday = orderDate.toDateString() === todayDateStr;
-
-        if (isFromToday) {
-          if (st === 'completed') counts.completed++;
-          if (st === 'cancelled') counts.cancelled++;
-        }
-
-        if (st !== 'completed' && st !== 'cancelled') {
-          counts[st]++;
-        }
+        const orderDate = new Date(o.timestamp); const isFromToday = orderDate.toDateString() === todayDateStr;
+        if (isFromToday) { if (st === 'completed') counts.completed++; if (st === 'cancelled') counts.cancelled++; }
+        if (st !== 'completed' && st !== 'cancelled') counts[st]++;
 
         const matchesSearch = !searchQuery || String(o.id).toLowerCase().includes(searchQuery) || String(o.clientName).toLowerCase().includes(searchQuery) || String(o.phone).includes(searchQuery);
-
         if (matchesSearch) {
           filteredAuditCount++;
-          auditHtml += '<tr style="border-bottom:1px solid #f1f5f9;">' +
-            '<td style="padding:10px; font-weight:900; color:var(--brand);">#' + o.id + '</td>' +
-            '<td style="padding:10px; font-weight:600">' + o.clientName + '</td>' +
-            '<td style="padding:10px;">' + o.phone + '</td>' +
-            '<td style="padding:10px; font-weight:800; text-transform:uppercase; font-size:0.75rem;">' + st + '</td>' +
-            '<td style="padding:10px; font-weight:800;">R' + Number(o.total).toFixed(2) + '</td>' +
-            '<td style="padding:10px; color:var(--muted);">' + orderDate.toLocaleString() + '</td>' +
-          '</tr>';
+          auditHtml += '<tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px; font-weight:900; color:var(--brand);">#' + o.id + '</td><td style="padding:10px; font-weight:600">' + o.clientName + '</td><td style="padding:10px;">' + o.phone + '</td><td style="padding:10px; font-weight:800; text-transform:uppercase; font-size:0.75rem;">' + st + '</td><td style="padding:10px; font-weight:800;">R' + Number(o.total).toFixed(2) + '</td><td style="padding:10px; color:var(--muted);">' + orderDate.toLocaleString() + '</td></tr>';
         }
-
-        if (st === 'completed' || st === 'cancelled') {
-          return;
-        }
+        if (st === 'completed' || st === 'cancelled') return;
 
         let notesHtml = o.instructions ? '<div style="font-size:0.72rem; background:#fffbeb; padding:0.25rem 0.5rem; border-left:3px solid var(--brand); margin-bottom:0.4rem; border-radius:4px"><strong>Note:</strong> ' + o.instructions + '</div>' : '';
-
         let btnHtml = '';
-        if (st === 'received') {
-          btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'preparing\')" class="btn-action btn-prep">🔥 Start Prep</button>';
-        } else if (st === 'preparing') {
-          btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'ready\')" class="btn-action btn-ready">✅ Ready</button>';
-        } else if (st === 'ready') {
-          btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'completed\')" class="btn-action btn-complete">🏁 Complete</button>';
-        }
+        if (st === 'received') btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'preparing\')" class="btn-action btn-prep">🔥 Start Prep</button>';
+        else if (st === 'preparing') btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'ready\')" class="btn-action btn-ready">✅ Ready</button>';
+        else if (st === 'ready') btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'completed\')" class="btn-action btn-complete">🏁 Complete</button>';
 
-        let cancelBtn = (st !== 'completed' && st !== 'cancelled') ? '<button onclick="updateOrderStatus(\'' + o.id + '\', \'cancelled\')" class="btn-action btn-cancel" style="padding:0.3rem; font-size:0.72rem; background:#ef4444; margin-top:0.2rem">Cancel</button>' : '';
-
-        const card = document.createElement('div');
-        card.className = 'order-card';
-        card.innerHTML = 
-          '<div class="order-card-header">' +
-            '<div><strong style="font-size:0.85rem">#' + o.id + '</strong><div style="font-size:0.7rem; color:var(--muted); font-weight:600">' + o.clientName + '</div></div>' +
-            '<span style="font-size:0.7rem; font-weight:800; color:var(--brand);">' + o.date + '</span>' +
-          '</div>' +
-          '<div style="background:#f8fafc; padding:0.4rem; border-radius:6px; margin-bottom:0.4rem;">' + renderOrderItemsList(o.items) + '</div>' +
-          notesHtml +
-          '<div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; font-weight:900; margin-bottom:0.4rem;"><span>Total:</span><span style="color:var(--brand); font-size:0.95rem">R' + Number(o.total).toFixed(2) + '</span></div>' +
-          btnHtml + cancelBtn;
-
+        let cancelBtn = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'cancelled\')" class="btn-action btn-cancel" style="padding:0.3rem; font-size:0.72rem; background:#ef4444; margin-top:0.2rem">Cancel</button>';
+        const card = document.createElement('div'); card.className = 'order-card';
+        card.innerHTML = '<div class="order-card-header"><div><strong style="font-size:0.85rem">#' + o.id + '</strong><div style="font-size:0.7rem; color:var(--muted); font-weight:600">' + o.clientName + '</div></div><span style="font-size:0.7rem; font-weight:800; color:var(--brand);">' + o.date + '</span></div>' +
+          '<div style="background:#f8fafc; padding:0.4rem; border-radius:6px; margin-bottom:0.4rem;">' + renderOrderItemsList(o.items) + '</div>' + notesHtml +
+          '<div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; font-weight:900; margin-bottom:0.4rem;"><span>Total:</span><span style="color:var(--brand); font-size:0.95rem">R' + Number(o.total).toFixed(2) + '</span></div>' + btnHtml + cancelBtn;
         if (cols[st]) cols[st].appendChild(card);
       });
 
       auditHtml += '</table>';
-      if (filteredAuditCount === 0) {
-        auditHtml = '<p style="text-align:center; padding:1.5rem; color:var(--muted);">No matching order ID or record found.</p>';
-      }
+      if (filteredAuditCount === 0) auditHtml = '<p style="text-align:center; padding:1.5rem; color:var(--muted);">No matching order ID or record found.</p>';
+      const auditContainer = document.getElementById('audit-log-container'); if (auditContainer) auditContainer.innerHTML = auditHtml;
 
-      const auditContainer = document.getElementById('audit-log-container');
-      if (auditContainer) auditContainer.innerHTML = auditHtml;
-
-      document.getElementById('stat-received').innerText = counts.received;
-      document.getElementById('stat-prep').innerText = counts.preparing;
-      document.getElementById('stat-ready').innerText = counts.ready;
-      document.getElementById('stat-completed').innerText = counts.completed;
+      document.getElementById('stat-received').innerText = counts.received; document.getElementById('stat-prep').innerText = counts.preparing;
+      document.getElementById('stat-ready').innerText = counts.ready; document.getElementById('stat-completed').innerText = counts.completed;
       document.getElementById('stat-cancelled').innerText = counts.cancelled;
-
-      document.getElementById('count-received').innerText = counts.received;
-      document.getElementById('count-prep').innerText = counts.preparing;
-      document.getElementById('count-ready').innerText = counts.ready;
-      document.getElementById('count-completed').innerText = counts.completed;
+      document.getElementById('count-received').innerText = counts.received; document.getElementById('count-prep').innerText = counts.preparing;
+      document.getElementById('count-ready').innerText = counts.ready; document.getElementById('count-completed').innerText = counts.completed;
       document.getElementById('count-cancelled').innerText = counts.cancelled;
     }
 
     function subscribeToRealtimeStaff() {
       try {
-        supabaseClient
-          .channel('staff-realtime-orders')
-          .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'orders' },
-            (payload) => {
-              playKitchenChime();
-              fetchOrders();
-            }
-          )
-          .subscribe();
+        supabaseClient.channel('staff-realtime-orders').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => { playKitchenChime(); fetchOrders(); }).subscribe();
       } catch (e) {}
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      renderInventoryGrid();
-      fetchOrders();
-      subscribeToRealtimeStaff();
-      setInterval(fetchOrders, 4000);
+      renderInventoryGrid(); fetchOrders(); subscribeToRealtimeStaff();
     });
   </script>
 </body>
