@@ -61,7 +61,6 @@
   </header>
 
   <div class="container">
-    <!-- METRICS DASHBOARD -->
     <div class="metrics-grid">
       <div class="metric-card"><div style="font-size:0.8rem; color:var(--muted); font-weight:700;">TOTAL REVENUE (TODAY)</div><div id="metric-revenue" class="metric-value">R0.00</div></div>
       <div class="metric-card"><div style="font-size:0.8rem; color:var(--muted); font-weight:700;">ORDERS COMPLETED</div><div id="metric-orders-count" class="metric-value">0</div></div>
@@ -69,13 +68,11 @@
       <div class="metric-card"><div style="font-size:0.8rem; color:var(--muted); font-weight:700;">⚠️ WORST SELLER</div><div id="metric-worst-seller" class="metric-value" style="font-size:1.1rem; margin-top:0.4rem; color:#ef4444;">-</div></div>
     </div>
 
-    <!-- INVENTORY CONTROL PANEL -->
     <div class="card">
       <div class="card-title">📦 Live Menu Inventory Control (Syncs Instantly to Storefront)</div>
       <div id="inventory-controls-container" class="inventory-grid"></div>
     </div>
 
-    <!-- KANBAN BOARD -->
     <div class="card">
       <div class="card-title">📋 Order Status Kanban</div>
       <div class="grid-kanban">
@@ -118,39 +115,21 @@
       try { localStorage.setItem(SHARED_KEY, JSON.stringify(state)); } catch (e) {}
     }
 
-const catalogItems = [
-      { id: 'ch1', name: 'SMALL CHIPS' }, 
-      { id: 'ch2', name: 'MEDIUM CHIPS' }, 
-      { id: 'ch3', name: 'LARGE CHIPS' },
-      { id: 'cc1', name: 'FULL HOUSE COMBO 1' }, 
-      { id: 'cc2', name: 'FULL CHICKEN' }, 
-      { id: 'cc3', name: 'HALF CHICKEN' },
-      { id: 'cc4', name: '½ CHICKEN & CHIPS' }, 
-      { id: 'cc5', name: '¼ CHICKEN & CHIPS' }, 
-      { id: 'cc6', name: 'CRISPY WINGS & CHIPS (SPECIAL)' },
-      { id: 'bc1', name: 'CHIP BUNNY' }, 
-      { id: 'bc2', name: 'POLONY BUNNY' }, 
-      { id: 'bc3', name: 'RUSSIAN BUNNY' },
-      { id: 'bc4', name: 'PATTY BUNNY' }, 
-      { id: 'bc5', name: 'STEAK BUNNY' }, 
-      { id: 'bc6', name: 'BACON BUNNY' },
-      { id: 'sp1', name: 'FOOTLONG FRANKFURTER' }, 
-      { id: 'sp2', name: 'FOOTLONG FRANK & CHIPS' }, 
-      { id: 'sp3', name: 'STEAK ROLL' },
-      { id: 'sp4', name: 'FOOTLONG STEAKROLL / CHIPS' }, 
-      { id: 'sp5', name: 'X-LARGE RUSSIAN & CHIPS' }, 
-      { id: 'sp6', name: 'BOEREWORS ROLL' },
-      { id: 'sp7', name: 'PREGO ROLL' }, 
-      { id: 'sp8', name: 'CHICKEN MAYO ROLL' },
-      { id: 'ts1', name: 'CHIP BREAD' }, 
-      { id: 'ts2', name: 'TOASTED CHIP BREAD' }, 
-      { id: 'ts3', name: 'SCHOOL BOY' },
-      { id: 'ts4', name: 'CHEESE & TOMATO' }, 
-      { id: 'ts5', name: 'BACON, EGG & CHEESE' },
+    const catalogItems = [
+      { id: 'ch1', name: 'SMALL CHIPS' }, { id: 'ch2', name: 'MEDIUM CHIPS' }, { id: 'ch3', name: 'LARGE CHIPS' },
+      { id: 'cc1', name: 'FULL HOUSE COMBO 1' }, { id: 'cc2', name: 'FULL CHICKEN' }, { id: 'cc3', name: 'HALF CHICKEN' },
+      { id: 'cc4', name: '½ CHICKEN & CHIPS' }, { id: 'cc5', name: '¼ CHICKEN & CHIPS' }, { id: 'cc6', name: 'CRISPY WINGS & CHIPS (SPECIAL)' },
+      { id: 'bc1', name: 'CHIP BUNNY' }, { id: 'bc2', name: 'POLONY BUNNY' }, { id: 'bc3', name: 'RUSSIAN BUNNY' },
+      { id: 'bc4', name: 'PATTY BUNNY' }, { id: 'bc5', name: 'STEAK BUNNY' }, { id: 'bc6', name: 'BACON BUNNY' },
+      { id: 'sp1', name: 'FOOTLONG FRANKFURTER' }, { id: 'sp2', name: 'FOOTLONG FRANK & CHIPS' }, { id: 'sp3', name: 'STEAK ROLL' },
+      { id: 'sp4', name: 'FOOTLONG STEAKROLL / CHIPS' }, { id: 'sp5', name: 'X-LARGE RUSSIAN & CHIPS' }, { id: 'sp6', name: 'BOEREWORS ROLL' },
+      { id: 'sp7', name: 'PREGO ROLL' }, { id: 'sp8', name: 'CHICKEN MAYO ROLL' },
+      { id: 'ts1', name: 'CHIP BREAD' }, { id: 'ts2', name: 'TOASTED CHIP BREAD' }, { id: 'ts3', name: 'SCHOOL BOY' },
+      { id: 'ts4', name: 'CHEESE & TOMATO' }, { id: 'ts5', name: 'BACON, EGG & CHEESE' },
       { id: 'drink_coke', name: '🥤 COKE (ADD-ON)' },
       { id: 'drink_sprite', name: '🟢 SPRITE (ADD-ON)' },
       { id: 'drink_fanta', name: '🟠 FANTA (ADD-ON)' }
-    ]; 
+    ];
 
     let dbInventoryMap = {};
 
@@ -305,7 +284,6 @@ const catalogItems = [
       }
     }
 
-    // --- FIXED ERROR #4: WORST SELLER LOGIC (FILTERS OUT ZERO-SALES ITEMS) ---
     function renderMetrics(orders) {
       let totalRev = 0; let completedCount = 0;
       const itemQtyMap = {};
@@ -335,7 +313,6 @@ const catalogItems = [
       const best = qtyEntries[0];
       document.getElementById('metric-best-seller').innerText = best && best[1] > 0 ? best[0] + ' (' + best[1] + ' sold)' : 'No sales yet';
 
-      // Filter out zero-sales items so worst seller is the lowest performing item that actually sold
       const soldEntries = qtyEntries.filter(entry => entry[1] > 0);
       const worst = soldEntries.length > 0 ? soldEntries[soldEntries.length - 1] : null;
       document.getElementById('metric-worst-seller').innerText = worst ? worst[0] + ' (' + worst[1] + ' sold)' : 'No sales yet';
