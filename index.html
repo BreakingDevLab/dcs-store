@@ -193,6 +193,13 @@
         </div>
       </details>
 
+      <details id="recent-orders-carousel-panel" class="menu-category-dropdown card" style="display:none; margin-top:1.25rem">
+        <summary><span>🔄 Order Again</span><span style="font-size:0.75rem; color:var(--muted); font-weight:normal;">▼ Show / Hide</span></summary>
+        <div style="padding:0.75rem;">
+          <div id="recent-orders-carousel-list" style="display:flex; flex-direction:column; gap:0.6rem;"></div>
+        </div>
+      </details>
+
       <details id="favorites-panel" class="menu-category-dropdown card" style="margin-top:1.25rem">
         <summary><span>⭐ Quick Favorites</span><span style="font-size:0.75rem; color:var(--muted); font-weight:normal;">▼ Show / Hide</span></summary>
         <div class="dropdown-content-grid" style="padding:0.75rem; grid-template-columns:1fr;">
@@ -215,14 +222,37 @@
     <main>
       <div class="card" style="margin-bottom:1.5rem; padding:1.25rem;">
         <div style="display:flex; gap:0.75rem; align-items:center;">
-          <input type="text" id="search-input" placeholder="🔍 Search menu items (e.g. Chips, Wings, Bunny)..." style="margin-bottom:0; flex:1;" oninput="renderCatalog()">
+          <input type="text" id="search-input" placeholder="🔍 Search menu items (e.g. Chips, Wings, Bunny)..." style="margin-bottom:0; flex:1;" oninput="renderCatalog(); renderFeaturedProducts();">
           <button onclick="clearSearch()" style="padding:.75rem 1.15rem; border-radius:12px; border:1px solid var(--border); background:#f1f5f9; cursor:pointer; font-weight:700; font-size:0.9rem;">Clear</button>
         </div>
         <div id="category-filter-chips" style="display:flex; gap:0.6rem; margin-top:1rem; flex-wrap:wrap;"></div>
       </div>
 
+      <!-- FEATURED PRODUCTS SECTION -->
+      <div id="featured-products-container" class="card" style="margin-bottom:1.5rem; padding:1.25rem; background:linear-gradient(135deg, #fffbeb 0%, #ffffff 100%); border:1px solid #fde68a;">
+        <div class="card-title" style="margin-bottom:0.85rem;">🔥 Most Popular</div>
+        <div id="featured-products-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1rem;"></div>
+      </div>
+
       <div id="catalog-dropdowns-container"></div>
     </main>
+  </div>
+
+  <!-- COMBO UPSELL MODAL -->
+  <div id="upsell-modal" class="modal-overlay">
+    <div class="modal-content" style="text-align:center;">
+      <div style="font-size:2.5rem; margin-bottom:0.5rem;">🥤</div>
+      <h3 style="font-size:1.25rem; font-weight:900; margin-bottom:0.5rem; color:var(--primary);">Add a drink for only R10?</h3>
+      <p style="font-size:0.88rem; color:var(--muted); margin-bottom:1.25rem;">Complete your meal with an ice-cold beverage!</p>
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:0.75rem; margin-bottom:1.25rem;">
+        <button onclick="selectUpsellDrink('Coke')" class="filter-chip" style="text-align:center; padding:0.75rem; font-weight:800;">🥤 Coke</button>
+        <button onclick="selectUpsellDrink('Sprite')" class="filter-chip" style="text-align:center; padding:0.75rem; font-weight:800;">🟢 Sprite</button>
+        <button onclick="selectUpsellDrink('Fanta')" class="filter-chip" style="text-align:center; padding:0.75rem; font-weight:800;">🟠 Fanta</button>
+      </div>
+      <div style="display:flex; gap:0.75rem;">
+        <button onclick="declineUpsell()" class="btn-primary" style="background:#64748b; flex:1;">No Thanks</button>
+      </div>
+    </div>
   </div>
 
   <div id="cart-drawer-overlay" class="cart-drawer-overlay" onclick="toggleCartDrawer()"></div>
@@ -320,25 +350,26 @@
     let favorites = JSON.parse(localStorage.getItem('dcs_favorites')) || [];
     let activeCategoryFilter = 'ALL';
     let isRedeemingPoints = false;
+    let pendingUpsellItem = null;
 
     const catalog = [
       { id: 'ch1', name: 'SMALL CHIPS', category: 'Chips', price: 10, img: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80' },
       { id: 'ch2', name: 'MEDIUM CHIPS', category: 'Chips', price: 20, img: 'https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?auto=format&fit=crop&w=500&q=80' },
       { id: 'ch3', name: 'LARGE CHIPS', category: 'Chips', price: 30, img: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=500&q=80' },
       { id: 'cc1', name: 'FULL HOUSE COMBO 1', category: 'Chicken Combos', price: 155, img: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=500&q=80' },
-      { id: 'cc2', name: 'FULL CHICKEN', category: 'Chicken Combos', price: 95, img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=80' },
+      { id: 'cc2', name: 'FULL CHICKEN', category: 'Chicken Combos', price: 95, img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=80', isFeatured: true },
       { id: 'cc3', name: 'HALF CHICKEN', category: 'Chicken Combos', price: 50, img: 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&w=500&q=80' },
       { id: 'cc4', name: '½ CHICKEN & CHIPS', category: 'Chicken Combos', price: 60, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=500&q=80' },
-      { id: 'cc5', name: '¼ CHICKEN & CHIPS', category: 'Chicken Combos', price: 45, img: 'https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&w=500&q=80' },
-      { id: 'cc6', name: '🔥 CRISPY WINGS & CHIPS (SPECIAL)', category: 'Chicken Combos', price: 35, img: 'https://images.unsplash.com/photo-1567620832903-9fc6debc209f?auto=format&fit=crop&w=500&q=80', isSpecial: true },
+      { id: 'cc5', name: '¼ CHICKEN & CHIPS', category: 'Chicken Combos', price: 45, img: 'https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&w=500&q=80', isChickenCombo: true },
+      { id: 'cc6', name: '🔥 CRISPY WINGS & CHIPS (SPECIAL)', category: 'Chicken Combos', price: 35, img: 'https://images.unsplash.com/photo-1567620832903-9fc6debc209f?auto=format&fit=crop&w=500&q=80', isSpecial: true, isFeatured: true },
       { id: 'bc1', name: 'CHIP BUNNY', category: 'Bunny Chows', price: 20, img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=500&q=80' },
       { id: 'bc2', name: 'POLONY BUNNY', category: 'Bunny Chows', price: 38, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
-      { id: 'bc3', name: 'RUSSIAN BUNNY', category: 'Bunny Chows', price: 43, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?auto=format&fit=crop&w=500&q=80' },
+      { id: 'bc3', name: 'RUSSIAN BUNNY', category: 'Bunny Chows', price: 43, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?auto=format&fit=crop&w=500&q=80', isFeatured: true },
       { id: 'bc4', name: 'PATTY BUNNY', category: 'Bunny Chows', price: 50, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=500&q=80' },
       { id: 'bc5', name: 'STEAK BUNNY', category: 'Bunny Chows', price: 55, img: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=500&q=80' },
       { id: 'bc6', name: 'BACON BUNNY', category: 'Bunny Chows', price: 40, img: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?auto=format&fit=crop&w=500&q=80' },
       { id: 'sp1', name: 'FOOTLONG FRANKFURTER', category: 'Specials', price: 40, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?auto=format&fit=crop&w=500&q=80' },
-      { id: 'sp2', name: 'FOOTLONG FRANK & CHIPS', category: 'Specials', price: 45, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=500&q=80' },
+      { id: 'sp2', name: 'FOOTLONG FRANK & CHIPS', category: 'Specials', price: 45, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=500&q=80', isFeatured: true },
       { id: 'sp3', name: 'STEAK ROLL', category: 'Specials', price: 50, img: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=500&q=80' },
       { id: 'sp4', name: 'FOOTLONG STEAKROLL / CHIPS', category: 'Specials', price: 80, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
       { id: 'sp5', name: 'X-LARGE RUSSIAN & CHIPS', category: 'Specials', price: 48, img: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=500&q=80' },
@@ -500,6 +531,8 @@
         }
       } catch (e) {}
       renderLiveOrderTrackersUI();
+      renderClientProfile();
+      renderRecentOrdersCarousel();
     }
 
     function subscribeToRealtimeCustomer() {
@@ -510,7 +543,7 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       checkStoreOperatingHours();
-      renderCategoryChips(); renderClientProfile(); renderCatalog(); renderCart(); renderFavorites(); renderOrderHistory(); renderLiveOrderTrackersUI();
+      renderCategoryChips(); renderFeaturedProducts(); renderClientProfile(); renderCatalog(); renderCart(); renderFavorites(); renderOrderHistory(); renderLiveOrderTrackersUI(); renderRecentOrdersCarousel();
       verifyAndFetchSupabaseOrders();
       subscribeToRealtimeCustomer();
     });
@@ -540,7 +573,33 @@
     }
 
     function setCategoryFilter(cat) { activeCategoryFilter = cat; renderCategoryChips(); renderCatalog(); }
-    function clearSearch() { document.getElementById('search-input').value = ''; activeCategoryFilter = 'ALL'; renderCategoryChips(); renderCatalog(); }
+    function clearSearch() { document.getElementById('search-input').value = ''; activeCategoryFilter = 'ALL'; renderCategoryChips(); renderCatalog(); renderFeaturedProducts(); }
+
+    function renderFeaturedProducts() {
+      const container = document.getElementById('featured-products-grid');
+      const section = document.getElementById('featured-products-container');
+      if (!container || !section) return;
+      
+      const q = (document.getElementById('search-input')?.value || '').toLowerCase();
+      const featured = catalog.filter(i => i.isFeatured && (!q || i.name.toLowerCase().includes(q)));
+      
+      if (featured.length === 0) {
+        section.style.display = 'none';
+        return;
+      }
+      section.style.display = 'block';
+      
+      const state = getSharedState(); const outOfStock = state.outOfStock || [];
+      container.innerHTML = featured.map(i => {
+        const isSoldOut = outOfStock.includes(i.id);
+        return '<div class="item-card" style="' + (isSoldOut ? 'opacity:0.65;' : '') + '">' +
+          '<div class="item-img-container"><img src="' + i.img + '" class="item-img" style="' + (isSoldOut ? 'filter: grayscale(100%);' : '') + '">' +
+          (isSoldOut ? '<div style="position:absolute; inset:0; background:rgba(15,23,42,0.6); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:0.85rem;">SOLD OUT</div>' : '') +
+          '</div><div class="item-details"><h4>' + i.name + '</h4><div class="item-price">R' + i.price.toFixed(2) + '</div>' +
+          (isSoldOut ? '<button class="btn-primary small" style="margin-top:.75rem; background:#94a3b8; cursor:not-allowed;" disabled>Sold Out</button>' : '<button onclick="addToCart(\'' + i.id + '\')" class="btn-primary small" style="margin-top:.75rem;">+ Add to Cart</button>') +
+          '</div></div>';
+      }).join('');
+    }
 
     async function handleLoginClient() {
       const rawPhone = document.getElementById('login-phone').value.trim();
@@ -551,7 +610,7 @@
         if (error || !data) { alert('Account not found with number ' + phone + '. Please register first.'); return; }
         client = { name: data.name, phone: data.phone, address: data.address, points: data.points || 0 };
         localStorage.setItem('dcs_client', JSON.stringify(client));
-        renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Welcome back, ' + client.name + '!');
+        renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); renderRecentOrdersCarousel(); alert('Welcome back, ' + client.name + '!');
       } catch (err) { alert('Login failed.'); }
     }
 
@@ -566,22 +625,53 @@
         const { error } = await supabaseClient.from('clients').upsert({ phone: client.phone, name: client.name, address: client.address, points: 0, updated_at: new Date().toISOString() });
         if (error) { alert('Registration error: ' + error.message); return; }
         localStorage.setItem('dcs_client', JSON.stringify(client));
-        renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Account registered successfully!');
+        renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); renderRecentOrdersCarousel(); alert('Account registered successfully!');
       } catch (err) { alert('Registration failed.'); }
     }
 
     function logoutClient() {
       client = null; localStorage.removeItem('dcs_client'); isRedeemingPoints = false;
-      renderClientProfile(); renderCart(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Logged out');
+      renderClientProfile(); renderCart(); renderLiveOrderTrackersUI(); renderOrderHistory(); renderRecentOrdersCarousel(); alert('Logged out');
     }
 
     function renderClientProfile() {
       const box = document.getElementById('client-details');
       const btn = document.getElementById('checkout-btn');
       const now = new Date(); const isClosed = (now.getHours() >= 20 || now.getHours() < 7);
+      
       if (client) {
         if (client.points === undefined) client.points = 0;
-        box.innerHTML = '👤 <strong>' + client.name + '</strong><br>📞 ' + client.phone + '<br>⭐ Loyalty Points: <strong>' + client.points + '</strong><br><button onclick="logoutClient()" style="background:#dc2626;color:#fff;border:none;margin-top:.5rem;font-size:.75rem;font-weight:700;padding:.3rem .6rem;border-radius:6px;cursor:pointer">Logout</button>';
+        const state = getSharedState();
+        const myOrders = (state.orders || []).filter(o => cleanAndValidatePhone(String(o.phone || '')) === client.phone.trim());
+        const totalOrdersCount = myOrders.length;
+        const lifetimeSpend = myOrders.reduce((acc, o) => acc + Number(o.total || 0), 0);
+
+        // Calculate favourite meal
+        const itemFreq = {};
+        myOrders.forEach(o => {
+          parseOrderItems(o.items).forEach(it => {
+            const n = it.name || it.title;
+            if (n) itemFreq[n] = (itemFreq[n] || 0) + (it.qty || it.quantity || 1);
+          });
+        });
+        let favMeal = 'None yet';
+        let maxQty = 0;
+        for (const [meal, qty] of Object.entries(itemFreq)) {
+          if (qty > maxQty) { maxQty = qty; favMeal = meal; }
+        }
+
+        const lastOrderDate = myOrders.length > 0 ? myOrders[0].date || 'Recent' : 'No orders yet';
+        const tier = client.points >= 1000 ? 'Gold Member' : client.points >= 500 ? 'Silver Member' : 'Member';
+
+        box.innerHTML = '<div style="font-weight:900; font-size:1rem; margin-bottom:0.4rem; color:var(--primary);">👤 ' + client.name + '</div>' +
+          '<div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;"><span>⭐ Points:</span> <strong>' + client.points.toLocaleString() + '</strong></div>' +
+          '<div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;"><span>🥇 Tier:</span> <strong style="color:var(--brand);">' + tier + '</strong></div>' +
+          '<div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;"><span>📦 Orders:</span> <strong>' + totalOrdersCount + '</strong></div>' +
+          '<div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;"><span>💰 Lifetime Spend:</span> <strong>R' + lifetimeSpend.toFixed(2) + '</strong></div>' +
+          '<div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;"><span>🔥 Favourite Meal:</span> <strong style="max-width:150px; text-right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + favMeal + '">' + favMeal + '</strong></div>' +
+          '<div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;"><span>✅ Last Order:</span> <strong>' + lastOrderDate + '</strong></div>' +
+          '<button onclick="logoutClient()" style="background:#dc2626;color:#fff;border:none;margin-top:.4rem;font-size:.75rem;font-weight:700;padding:.3rem .6rem;border-radius:6px;cursor:pointer;width:100%;">Logout</button>';
+
         document.getElementById('login-panel').style.display = 'none';
         document.getElementById('registration-panel').style.display = 'none';
         document.getElementById('order-history-panel').style.display = 'block';
@@ -591,6 +681,7 @@
         document.getElementById('login-panel').style.display = 'block';
         document.getElementById('registration-panel').style.display = 'block';
         document.getElementById('order-history-panel').style.display = 'none';
+        document.getElementById('recent-orders-carousel-panel').style.display = 'none';
         btn.disabled = true; btn.innerText = 'Login to Order';
       }
       renderCart();
@@ -628,10 +719,46 @@
       const state = getSharedState();
       if ((state.outOfStock || []).includes(id)) { alert('Sorry, this item is currently sold out.'); return; }
       const item = catalog.find(i => i.id === id);
-      const ex = cart.find(c => c.id === id);
+      
+      // COMBO UPSELL ENGINE CHECK: If chicken/combo item added, trigger upsell modal
+      if (item && (item.category === 'Chicken Combos' || item.isChickenCombo || item.name.includes('CHICKEN') || item.name.includes('WINGS'))) {
+        pendingUpsellItem = item;
+        document.getElementById('upsell-modal').style.display = 'flex';
+        return;
+      }
+
+      addItemToCartDirect(item);
+    }
+
+    function addItemToCartDirect(item) {
+      const ex = cart.find(c => c.id === item.id);
       if (ex) ex.qty += 1; else cart.push({ ...item, qty: 1 });
       localStorage.setItem('dcs_cart', JSON.stringify(cart));
       renderCart();
+    }
+
+    function selectUpsellDrink(drinkName) {
+      if (pendingUpsellItem) {
+        addItemToCartDirect(pendingUpsellItem);
+        // Add drink as a special custom cart item
+        const drinkItem = { id: 'drink_' + Date.now(), name: '🥤 ' + drinkName + ' (Add-on)', category: 'Drinks', price: 10, qty: 1, img: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=500&q=80' };
+        cart.push(drinkItem);
+        localStorage.setItem('dcs_cart', JSON.stringify(cart));
+        renderCart();
+      }
+      closeUpsellModal();
+    }
+
+    function declineUpsell() {
+      if (pendingUpsellItem) {
+        addItemToCartDirect(pendingUpsellItem);
+      }
+      closeUpsellModal();
+    }
+
+    function closeUpsellModal() {
+      pendingUpsellItem = null;
+      document.getElementById('upsell-modal').style.display = 'none';
     }
 
     function removeCartItem(index) { cart.splice(index, 1); localStorage.setItem('dcs_cart', JSON.stringify(cart)); renderCart(); }
@@ -693,7 +820,7 @@
       postOrderToSupabase(newOrder);
       cart = []; localStorage.removeItem('dcs_cart'); isRedeemingPoints = false;
       document.getElementById('special-instructions').value = '';
-      toggleCartDrawer(); renderCart(); renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory();
+      toggleCartDrawer(); renderCart(); renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); renderRecentOrdersCarousel();
       showOrderPlacedNotification(newOrder.id); showDigitalReceipt(newOrder);
     }
 
@@ -736,7 +863,7 @@
       if (client) { if (client.points === undefined) client.points = 0; client.points += earned; localStorage.setItem('dcs_client', JSON.stringify(client)); }
       o.id = 'DCS-' + Date.now(); o.stage = 'received'; o.timestamp = Date.now(); o.earnedPoints = earned; o.currentPoints = client ? client.points : earned;
       state.orders.unshift(o); saveSharedState(state); postOrderToSupabase(o);
-      renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); alert('Order resubmitted!');
+      renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); renderRecentOrdersCarousel(); alert('Order resubmitted!');
     }
 
     function saveOrderAsFavorite(id) {
@@ -757,12 +884,50 @@
       if (fav) { cart = [...fav.items]; localStorage.setItem('dcs_cart', JSON.stringify(cart)); renderCart(); toggleCartDrawer(); alert('Loaded into cart!'); }
     }
 
+    function renderRecentOrdersCarousel() {
+      const panel = document.getElementById('recent-orders-carousel-panel');
+      const container = document.getElementById('recent-orders-carousel-list');
+      if (!panel || !container) return;
+
+      const state = getSharedState();
+      const myOrders = (state.orders || []).filter(o => client && cleanAndValidatePhone(String(o.phone || '')) === client.phone.trim());
+
+      if (!client || myOrders.length === 0) {
+        panel.style.display = 'none';
+        return;
+      }
+
+      panel.style.display = 'block';
+      const recent = myOrders.slice(0, 3); // Top 3 recent orders
+
+      container.innerHTML = recent.map(o => {
+        const summaryName = parseOrderItems(o.items).map(i => `${i.qty || 1}x ${i.name || i.title}`).join(', ');
+        return '<div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; padding:0.5rem 0; border-bottom:1px dashed var(--border);">' +
+          '<div style="overflow:hidden;"><strong style="font-size:0.85rem; color:var(--primary);">Order #' + o.id.slice(-6) + '</strong><br>' +
+          '<span style="font-size:0.75rem; color:var(--muted); display:inline-block; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + summaryName + '">' + summaryName + '</span></div>' +
+          '<button onclick="reorderRecent(\'' + o.id + '\')" style="font-size:0.75rem; font-weight:800; padding:0.35rem 0.65rem; background:var(--brand); color:#fff; border:none; border-radius:8px; cursor:pointer; white-space:nowrap;">Order Again</button>' +
+        '</div>';
+      }).join('');
+    }
+
+    function reorderRecent(orderId) {
+      const state = getSharedState();
+      const o = (state.orders || []).find(x => String(x.id) === String(orderId));
+      if (o && o.items) {
+        cart = [...o.items];
+        localStorage.setItem('dcs_cart', JSON.stringify(cart));
+        renderCart();
+        toggleCartDrawer();
+        alert('Recent order loaded into cart!');
+      }
+    }
+
     async function clearOrderHistory() {
       if (!client || !client.phone) return; if (!confirm('Clear past order history?')) return;
       const userPhone = cleanAndValidatePhone(client.phone);
       try { await supabaseClient.from('orders').delete().eq('phone', userPhone); } catch (e) {}
       let state = getSharedState(); state.orders = (state.orders || []).filter(o => cleanAndValidatePhone(String(o.phone || '')) !== userPhone);
-      saveSharedState(state); renderOrderHistory(); renderLiveOrderTrackersUI(); alert('Order history cleared.');
+      saveSharedState(state); renderOrderHistory(); renderLiveOrderTrackersUI(); renderRecentOrdersCarousel(); alert('Order history cleared.');
     }
 
     function renderOrderHistory() {
@@ -789,6 +954,8 @@
       if (container) container.innerHTML = active.length ? active.map(buildOrderCardHTML).join('') : '<p style="font-size:0.85rem; color:var(--muted);">No active orders.</p>';
       if (trackerBody) trackerBody.innerHTML = active.length ? active.map(buildOrderCardHTML).join('') : '<p style="font-size:0.9rem; color:var(--muted); text-align:center; padding:1.5rem 0;">No active orders found.</p>';
       renderOrderHistory();
+      renderRecentOrdersCarousel();
+      renderClientProfile();
     }
   </script>
 </body>
