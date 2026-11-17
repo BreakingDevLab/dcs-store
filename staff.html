@@ -234,22 +234,6 @@
       const pin = prompt('Enter Owner Security PIN to clear audit logs:');
       if (!pin) return;
       try {
-
-    if (error || !isValid) {
-      alert('Incorrect Owner PIN. Action denied.');
-      return;
-    }
-
-    // PIN is verified! Proceed with protected action
-    alert('PIN verified successfully. Clearing audit logs...');
-    
-    // Add your delete/clear logic here...
-    
-  } catch (err) {
-    console.error('RPC Error:', err);
-    alert('Verification failed due to a network error.');
-  }
-}
         const { data: isValid, error } = await supabaseClient.rpc('verify_owner_pin', { entered_pin: pin });
         if (error || !isValid) { alert('Incorrect Owner PIN. Action denied.'); return; }
       } catch (e) { alert('Verification error.'); return; }
@@ -459,20 +443,41 @@
     }
   }
 
-  function handleStaffLogin() {
+  async function handleStaffLogin() {
     const role = document.getElementById('staff-role-select').value;
     const pin = document.getElementById('staff-pin-input').value.trim();
     
-    // Simple PIN validation or Supabase RPC check
-    if ((role === 'owner' && pin === '1234') || (role !== 'owner' && pin.length >= 3)) {
-      currentStaffRole = role;
-      localStorage.setItem('dcs_staff_role', role);
-      document.getElementById('staff-login-modal').style.display = 'none';
-      applyRolePermissions(role);
-      alert('Logged in successfully as ' + role.toUpperCase());
-    } else {
-      alert('Incorrect PIN. (Default Owner PIN for testing: 1234)');
+    if (!pin) {
+      alert('Please enter a security PIN.');
+      return;
     }
+
+    if (role === 'owner') {
+      try {
+        const { data: isValid, error } = await supabaseClient.rpc('verify_owner_pin', {
+          entered_pin: pin
+        });
+        if (error || !isValid) {
+          alert('Incorrect Owner PIN. Access denied.');
+          return;
+        }
+      } catch (err) {
+        console.error('RPC Error:', err);
+        alert('Authentication failed due to a network error.');
+        return;
+      }
+    } else {
+      if (pin.length < 3) {
+        alert('Please enter a valid staff PIN.');
+        return;
+      }
+    }
+
+    currentStaffRole = role;
+    localStorage.setItem('dcs_staff_role', role);
+    document.getElementById('staff-login-modal').style.display = 'none';
+    applyRolePermissions(role);
+    alert('Logged in successfully as ' + role.toUpperCase());
   }
 
   function applyRolePermissions(role) {
@@ -485,7 +490,6 @@
     } else if (role === 'kitchen') {
       if (auditBtn) auditBtn.style.display = 'none';
     }
-    // Manager and Owner keep full tab visibility
   }
 
   window.addEventListener('DOMContentLoaded', () => {
