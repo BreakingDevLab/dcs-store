@@ -263,7 +263,18 @@
     </div>
     <div class="cart-body">
       <div id="cart-list"></div>
-      <div style="margin-top:1rem;">
+      
+      <!-- CART RECOMMENDATIONS -->
+      <div style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border);">
+        <h4 style="font-size:0.9rem; font-weight:800; color:var(--primary); margin-bottom:0.75rem;">💡 You may also like</h4>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:0.5rem;">
+          <button onclick="addRecommendation('cc6')" style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:0.5rem; text-align:center; cursor:pointer; font-size:0.75rem; font-weight:700; transition:all 0.2s;">🔥 Wings Special<br><span style="color:var(--brand)">R35.00</span></button>
+          <button onclick="addRecommendation('ch2')" style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:0.5rem; text-align:center; cursor:pointer; font-size:0.75rem; font-weight:700; transition:all 0.2s;">🍟 Med Chips<br><span style="color:var(--brand)">R20.00</span></button>
+          <button onclick="addRecommendation('drink_coke')" style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:0.5rem; text-align:center; cursor:pointer; font-size:0.75rem; font-weight:700; transition:all 0.2s;">🥤 Coke<br><span style="color:var(--brand)">R10.00</span></button>
+        </div>
+      </div>
+
+      <div style="margin-top:1.25rem;">
         <div id="redemption-banner" style="background:#fef3c7; border:1px solid #f59e0b; padding:0.75rem; border-radius:10px; font-size:0.85rem; margin-bottom:0.75rem; display:none;">
           ⭐ You have <strong>1,000+ points</strong>! You can redeem R20 off this order!
           <button onclick="toggleRedemption()" id="redeem-btn" class="btn-primary small" style="margin-top:0.4rem; background:var(--brand);">Redeem R20 Discount</button>
@@ -641,6 +652,7 @@
       
       if (client) {
         if (client.points === undefined) client.points = 0;
+        const pts = client.points;
         const state = getSharedState();
         const myOrders = (state.orders || []).filter(o => cleanAndValidatePhone(String(o.phone || '')) === client.phone.trim());
         const totalOrdersCount = myOrders.length;
@@ -661,14 +673,51 @@
         }
 
         const lastOrderDate = myOrders.length > 0 ? myOrders[0].date || 'Recent' : 'No orders yet';
-        const tier = client.points >= 1000 ? 'Gold Member' : client.points >= 500 ? 'Silver Member' : 'Member';
+
+        // Loyalty Tiers & Progress Bar calculations
+        let tierName = 'Bronze Member';
+        let stars = '★☆☆☆☆';
+        let tierMax = 1000;
+        let tierMin = 0;
+
+        if (pts >= 6000) {
+          tierName = 'Platinum Member';
+          stars = '★★★★★';
+          tierMin = 6000;
+          tierMax = 10000; // Cap visual progress or represent max
+        } else if (pts >= 3000) {
+          tierName = 'Gold Member';
+          stars = '★★★★☆';
+          tierMin = 3000;
+          tierMax = 6000;
+        } else if (pts >= 1000) {
+          tierName = 'Silver Member';
+          stars = '★★★☆☆';
+          tierMin = 1000;
+          tierMax = 3000;
+        } else {
+          tierName = 'Bronze Member';
+          stars = '★★☆☆☆';
+          tierMin = 0;
+          tierMax = 1000;
+        }
+
+        const progressPercent = pts >= 6000 ? 100 : Math.min(100, Math.max(0, ((pts - tierMin) / (tierMax - tierMin)) * 100));
 
         box.innerHTML = '<div style="font-weight:900; font-size:1rem; margin-bottom:0.4rem; color:var(--primary);">👤 ' + client.name + '</div>' +
-          '<div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;"><span>⭐ Points:</span> <strong>' + client.points.toLocaleString() + '</strong></div>' +
-          '<div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;"><span>🥇 Tier:</span> <strong style="color:var(--brand);">' + tier + '</strong></div>' +
+          '<div style="background:#fffbeb; border:1px solid #fde68a; padding:0.6rem; border-radius:10px; margin-bottom:0.6rem;">' +
+            '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.2rem;">' +
+              '<strong style="font-size:0.85rem; color:var(--brand);">' + tierName + '</strong>' +
+              '<span style="font-size:0.8rem; color:#d97706; letter-spacing:1px;">' + stars + '</span>' +
+            '</div>' +
+            '<div style="font-size:0.8rem; font-weight:800; color:var(--primary); margin-bottom:0.3rem;">⭐ ' + pts.toLocaleString() + ' / ' + (pts >= 6000 ? '6000+' : tierMax) + ' points</div>' +
+            '<div style="width:100%; background:#e2e8f0; height:8px; border-radius:4px; overflow:hidden;">' +
+              '<div style="width:' + progressPercent + '%; background:var(--brand-gradient); height:100%; transition:width 0.4s ease;"></div>' +
+            '</div>' +
+          '</div>' +
           '<div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;"><span>📦 Orders:</span> <strong>' + totalOrdersCount + '</strong></div>' +
           '<div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;"><span>💰 Lifetime Spend:</span> <strong>R' + lifetimeSpend.toFixed(2) + '</strong></div>' +
-          '<div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;"><span>🔥 Favourite Meal:</span> <strong style="max-width:150px; text-right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + favMeal + '">' + favMeal + '</strong></div>' +
+          '<div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;"><span>🔥 Favourite Meal:</span> <strong style="max-width:150px; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + favMeal + '">' + favMeal + '</strong></div>' +
           '<div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;"><span>✅ Last Order:</span> <strong>' + lastOrderDate + '</strong></div>' +
           '<button onclick="logoutClient()" style="background:#dc2626;color:#fff;border:none;margin-top:.4rem;font-size:.75rem;font-weight:700;padding:.3rem .6rem;border-radius:6px;cursor:pointer;width:100%;">Logout</button>';
 
@@ -761,7 +810,32 @@
       document.getElementById('upsell-modal').style.display = 'none';
     }
 
-    function removeCartItem(index) { cart.splice(index, 1); localStorage.setItem('dcs_cart', JSON.stringify(cart)); renderCart(); }
+    function updateCartItemQty(index, change) {
+      if (cart[index]) {
+        cart[index].qty += change;
+        if (cart[index].qty <= 0) {
+          cart.splice(index, 1);
+        }
+        localStorage.setItem('dcs_cart', JSON.stringify(cart));
+        renderCart();
+      }
+    }
+
+    function addRecommendation(itemId) {
+      if (itemId === 'drink_coke') {
+        const drinkItem = { id: 'drink_rec_' + Date.now(), name: '🥤 Coke (Add-on)', category: 'Drinks', price: 10, qty: 1, img: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=500&q=80' };
+        cart.push(drinkItem);
+      } else {
+        const item = catalog.find(i => i.id === itemId);
+        if (item) {
+          const ex = cart.find(c => c.id === item.id);
+          if (ex) ex.qty += 1; else cart.push({ ...item, qty: 1 });
+        }
+      }
+      localStorage.setItem('dcs_cart', JSON.stringify(cart));
+      renderCart();
+    }
+
     function toggleRedemption() {
       if (!client || client.points < 1000) { alert('You need at least 1,000 points to redeem this discount.'); return; }
       isRedeemingPoints = !isRedeemingPoints; renderCart();
@@ -779,7 +853,18 @@
       if (cart.length === 0) { list.innerHTML = '<p style="font-size:0.9rem; color:var(--muted); text-align:center; padding:1.5rem 0;">Your cart is currently empty</p>'; sum.innerHTML = ''; if (redemptionBanner) redemptionBanner.style.display = 'none'; isRedeemingPoints = false; return; }
       let sub = cart.reduce((a, b) => a + (b.price * b.qty), 0);
       let discount = isRedeemingPoints ? 20 : 0; if (discount > sub) discount = sub; let finalTotal = sub - discount;
-      list.innerHTML = cart.map((i, idx) => '<div class="cart-row"><span style="font-weight:600">' + i.qty + 'x ' + i.name + ' <span style="color:var(--brand);font-weight:800">(R' + (i.price * i.qty).toFixed(2) + ')</span></span><button onclick="removeCartItem(' + idx + ')" style="background:#ef4444; color:#fff; border:none; padding:0.25rem 0.6rem; border-radius:6px; font-size:0.75rem; font-weight:700; cursor:pointer;">Remove</button></div>').join('');
+      
+      list.innerHTML = cart.map((i, idx) => 
+        '<div class="cart-row">' +
+          '<div><strong style="font-size:0.9rem;">' + i.name + '</strong><br><span style="color:var(--brand);font-weight:800;font-size:0.85rem">R' + (i.price * i.qty).toFixed(2) + '</span></div>' +
+          '<div style="display:flex; align-items:center; gap:0.5rem; background:#f1f5f9; padding:0.25rem 0.5rem; border-radius:8px;">' +
+            '<button onclick="updateCartItemQty(' + idx + ', -1)" style="background:#fff; border:1px solid var(--border); width:24px; height:24px; border-radius:6px; font-weight:900; cursor:pointer;">-</button>' +
+            '<span style="font-weight:900; font-size:0.9rem; min-width:18px; text-align:center;">' + i.qty + '</span>' +
+            '<button onclick="updateCartItemQty(' + idx + ', 1)" style="background:#fff; border:1px solid var(--border); width:24px; height:24px; border-radius:6px; font-weight:900; cursor:pointer;">+</button>' +
+          '</div>' +
+        '</div>'
+      ).join('');
+
       let summaryHtml = '<div style="display:flex; justify-content:space-between; font-size:0.95rem; font-weight:600; margin-bottom:0.3rem"><span>Subtotal:</span><span>R' + sub.toFixed(2) + '</span></div>';
       if (isRedeemingPoints) summaryHtml += '<div style="display:flex; justify-content:space-between; font-size:0.95rem; font-weight:700; color:#059669; margin-bottom:0.3rem"><span>Points Discount:</span><span>-R20.00</span></div>';
       summaryHtml += '<div style="display:flex; justify-content:space-between; font-size:1.05rem; font-weight:800; border-top:1px dashed var(--border); padding-top:0.5rem; margin-top:0.3rem"><span>Total Due:</span><span style="color:var(--brand)">R' + finalTotal.toFixed(2) + '</span></div>';
@@ -898,7 +983,7 @@
       }
 
       panel.style.display = 'block';
-      const recent = myOrders.slice(0, 3); // Top 3 recent orders
+      const recent = myOrders.slice(0, 3);
 
       container.innerHTML = recent.map(o => {
         const summaryName = parseOrderItems(o.items).map(i => `${i.qty || 1}x ${i.name || i.title}`).join(', ');
