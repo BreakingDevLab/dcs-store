@@ -234,6 +234,31 @@
       const pin = prompt('Enter Owner Security PIN to clear audit logs:');
       if (!pin) return;
       try {
+async function verifyPinAndClearLogs() {
+  const pin = prompt('Enter Owner Security PIN to clear audit logs:');
+  if (!pin) return;
+
+  try {
+    // Call the Supabase RPC function
+    const { data: isValid, error } = await supabaseClient.rpc('verify_owner_pin', {
+      entered_pin: pin
+    });
+
+    if (error || !isValid) {
+      alert('Incorrect Owner PIN. Action denied.');
+      return;
+    }
+
+    // PIN is verified! Proceed with protected action
+    alert('PIN verified successfully. Clearing audit logs...');
+    
+    // Add your delete/clear logic here...
+    
+  } catch (err) {
+    console.error('RPC Error:', err);
+    alert('Verification failed due to a network error.');
+  }
+}
         const { data: isValid, error } = await supabaseClient.rpc('verify_owner_pin', { entered_pin: pin });
         if (error || !isValid) { alert('Incorrect Owner PIN. Action denied.'); return; }
       } catch (e) { alert('Verification error.'); return; }
@@ -301,7 +326,8 @@
           total: Number(o.total || o.total_amount || 0),
           stage: (o.stage || o.status || 'received').toLowerCase().trim().replace(/_/g, '-'),
           clientName: o.client_name || o.customer_name || 'Customer',
-          phone: o.phone || o.customer_phone || ''
+          phone: o.phone || o.customer_phone || '',
+          address: o.address || ''
         }));
         saveSharedState(state);
       } catch (e) {}
@@ -315,6 +341,36 @@
       let state = getSharedState(); let ord = (state.orders || []).find(o => String(o.id) === String(orderId));
       if (ord) { ord.stage = newStage; saveSharedState(state); }
       fetchOrders();
+    }
+
+    function getPrepTimerBadge(timestamp) {
+      const mins = Math.max(0, Math.floor((Date.now() - Number(timestamp || Date.now())) / 60000));
+      let bg = '#16a34a';
+      if (mins >= 20) { bg = '#dc2626'; }
+      else if (mins >= 10) { bg = '#ea580c'; }
+      return `<span style="display:inline-block; background:${bg}; color:#fff; font-size:0.72rem; font-weight:900; padding:0.22rem 0.6rem; border-radius:20px; letter-spacing:0.3px;">⏱ ${mins} mins waiting</span>`;
+    }
+
+    function getOrderPriorityBadge(o) {
+      const total = Number(o.total || 0);
+      const itemCount = Array.isArray(o.items) ? o.items.reduce((sum, i) => sum + Number(i.qty || i.quantity || 1), 0) : 1;
+      const notes = String(o.instructions || '').toLowerCase();
+      const addr = String(o.address || '').toLowerCase();
+
+      let label = 'NORMAL';
+      let style = 'background:#e2e8f0; color:#334155;';
+
+      if (notes.includes('vip')) {
+        label = '⭐ VIP CUSTOMER';
+        style = 'background:#7c3aed; color:#fff;';
+      } else if (notes.includes('delivery') || (addr && addr !== '' && !notes.includes('pickup') && !notes.includes('collection'))) {
+        label = '🚗 DELIVERY';
+        style = 'background:#0284c7; color:#fff;';
+      } else if (total >= 150 || itemCount >= 4) {
+        label = '📦 LARGE ORDER';
+        style = 'background:#b45309; color:#fff;';
+      }
+      return `<span style="display:inline-block; ${style} font-size:0.68rem; font-weight:900; padding:0.22rem 0.55rem; border-radius:6px; letter-spacing:0.5px;">${label}</span>`;
     }
 
     function renderKanban() {
@@ -353,7 +409,8 @@
 
         let cancelBtn = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'cancelled\')" class="btn-action btn-cancel" style="padding:0.3rem; font-size:0.72rem; background:#ef4444; margin-top:0.2rem">Cancel</button>';
         const card = document.createElement('div'); card.className = 'order-card';
-        card.innerHTML = '<div class="order-card-header"><div><strong style="font-size:0.85rem">#' + o.id + '</strong><div style="font-size:0.7rem; color:var(--muted); font-weight:600">' + o.clientName + '</div></div><span style="font-size:0.7rem; font-weight:800; color:var(--brand);">' + o.date + '</span></div>' +
+        const badgesRow = `<div style="display:flex; justify-content:space-between; align-items:center; gap:0.4rem; margin-bottom:0.55rem; flex-wrap:wrap;">${getOrderPriorityBadge(o)}${getPrepTimerBadge(o.timestamp)}</div>`;
+        card.innerHTML = badgesRow + '<div class="order-card-header"><div><strong style="font-size:0.85rem">#' + o.id + '</strong><div style="font-size:0.7rem; color:var(--muted); font-weight:600">' + o.clientName + '</div></div><span style="font-size:0.7rem; font-weight:800; color:var(--brand);">' + o.date + '</span></div>' +
           '<div style="background:#f8fafc; padding:0.4rem; border-radius:6px; margin-bottom:0.4rem;">' + renderOrderItemsList(o.items) + '</div>' + notesHtml +
           '<div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; font-weight:900; margin-bottom:0.4rem;"><span>Total:</span><span style="color:var(--brand); font-size:0.95rem">R' + Number(o.total).toFixed(2) + '</span></div>' + btnHtml + cancelBtn;
         if (cols[st]) cols[st].appendChild(card);
@@ -379,6 +436,7 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       renderInventoryGrid(); fetchOrders(); subscribeToRealtimeStaff();
+      setInterval(() => renderKanban(), 30000);
     });
   </script>
 <div id="staff-login-modal" style="position:fixed; inset:0; background:rgba(15,23,42,0.9); z-index:1000; display:flex; align-items:center; justify-content:center; padding:1rem;">
