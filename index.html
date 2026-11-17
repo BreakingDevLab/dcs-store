@@ -152,7 +152,7 @@
       </div>
     </div>
 
-    <div class="special-spotlight-banner">
+    <div id="hero-special-banner" class="special-spotlight-banner">
       <div style="z-index:1;">
         <span style="background:#ef4444; color:#fff; font-size:0.75rem; font-weight:900; padding:0.25rem 0.65rem; border-radius:20px; text-transform:uppercase; letter-spacing:1px; box-shadow:0 2px 10px rgba(239,68,68,0.5);">🔥 STORE SPECIAL ★ BEST SELLER</span>
         <h3 style="font-size:1.35rem; font-weight:900; margin:0.4rem 0 0.2rem; color:#fff;">Crispy Wings & Golden Chips Combo</h3>
@@ -160,7 +160,7 @@
       </div>
       <div style="text-align:right; z-index:1; min-width:130px;">
         <div style="font-size:1.6rem; font-weight:900; color:#facc15;">R35.00</div>
-        <button onclick="addToCart('cc6')" style="background:var(--special-gradient); color:#fff; border:none; padding:0.55rem 1rem; border-radius:10px; font-weight:900; font-size:0.85rem; cursor:pointer; margin-top:0.35rem; box-shadow:0 4px 15px rgba(239,68,68,0.5); width:100%;">+ Order Special</button>
+        <button id="hero-special-btn" onclick="addToCart('cc6')" style="background:var(--special-gradient); color:#fff; border:none; padding:0.55rem 1rem; border-radius:10px; font-weight:900; font-size:0.85rem; cursor:pointer; margin-top:0.35rem; box-shadow:0 4px 15px rgba(239,68,68,0.5); width:100%;">+ Order Special</button>
       </div>
     </div>
   </div>
@@ -267,11 +267,7 @@
       <!-- CART RECOMMENDATIONS -->
       <div style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border);">
         <h4 style="font-size:0.9rem; font-weight:800; color:var(--primary); margin-bottom:0.75rem;">💡 You may also like</h4>
-        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:0.5rem;">
-          <button onclick="addRecommendation('cc6')" style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:0.5rem; text-align:center; cursor:pointer; font-size:0.75rem; font-weight:700; transition:all 0.2s;">🔥 Wings Special<br><span style="color:var(--brand)">R35.00</span></button>
-          <button onclick="addRecommendation('ch2')" style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:0.5rem; text-align:center; cursor:pointer; font-size:0.75rem; font-weight:700; transition:all 0.2s;">🍟 Med Chips<br><span style="color:var(--brand)">R20.00</span></button>
-          <button onclick="addRecommendation('drink_coke')" style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:0.5rem; text-align:center; cursor:pointer; font-size:0.75rem; font-weight:700; transition:all 0.2s;">🥤 Coke<br><span style="color:var(--brand)">R10.00</span></button>
-        </div>
+        <div id="cart-recommendations-grid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:0.5rem;"></div>
       </div>
 
       <div style="margin-top:1.25rem;">
@@ -362,6 +358,7 @@
     let activeCategoryFilter = 'ALL';
     let isRedeemingPoints = false;
     let pendingUpsellItem = null;
+    let dbInventory = {};
 
     const catalog = [
       { id: 'ch1', name: 'SMALL CHIPS', category: 'Chips', price: 10, img: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80' },
@@ -393,6 +390,59 @@
       { id: 'ts4', name: 'CHEESE & TOMATO', category: 'Toasted Sandwiches', price: 15, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=500&q=80' },
       { id: 'ts5', name: 'BACON, EGG & CHEESE', category: 'Toasted Sandwiches', price: 38, img: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?auto=format&fit=crop&w=500&q=80' }
     ];
+
+    // --- CLOUD INVENTORY SYNC (FIXED: DIRECT FROM SUPABASE) ---
+    function isItemSoldOut(itemId) {
+      if (!itemId) return false;
+      return dbInventory[itemId] === false;
+    }
+
+    async function fetchStorefrontInventory() {
+      try {
+        const { data, error } = await supabaseClient.from('inventory').select('*');
+        if (!error && data) {
+          dbInventory = {};
+          data.forEach(row => {
+            dbInventory[row.item_id] = row.available;
+          });
+        }
+      } catch (e) {
+        console.error('Inventory fetch error:', e);
+      }
+      updateHeroSpecialStatus();
+      renderFeaturedProducts();
+      renderCatalog();
+      renderCartRecommendations();
+      renderCart();
+    }
+
+    function subscribeToRealtimeInventory() {
+      try {
+        supabaseClient.channel('storefront-realtime-inventory')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, () => {
+            fetchStorefrontInventory();
+          })
+          .subscribe();
+      } catch (e) {}
+    }
+
+    function updateHeroSpecialStatus() {
+      const btn = document.getElementById('hero-special-btn');
+      if (!btn) return;
+      if (isItemSoldOut('cc6')) {
+        btn.disabled = true;
+        btn.innerText = 'SOLD OUT';
+        btn.style.background = '#64748b';
+        btn.style.boxShadow = 'none';
+        btn.style.cursor = 'not-allowed';
+      } else {
+        btn.disabled = false;
+        btn.innerText = '+ Order Special';
+        btn.style.background = 'var(--special-gradient)';
+        btn.style.boxShadow = '0 4px 15px rgba(239,68,68,0.5)';
+        btn.style.cursor = 'pointer';
+      }
+    }
 
     let audioCtx = null;
     function playCustomerChime(type) {
@@ -554,7 +604,18 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       checkStoreOperatingHours();
-      renderCategoryChips(); renderFeaturedProducts(); renderClientProfile(); renderCatalog(); renderCart(); renderFavorites(); renderOrderHistory(); renderLiveOrderTrackersUI(); renderRecentOrdersCarousel();
+      renderCategoryChips();
+      renderFeaturedProducts();
+      renderClientProfile();
+      renderCatalog();
+      renderCart();
+      renderCartRecommendations();
+      renderFavorites();
+      renderOrderHistory();
+      renderLiveOrderTrackersUI();
+      renderRecentOrdersCarousel();
+      fetchStorefrontInventory();
+      subscribeToRealtimeInventory();
       verifyAndFetchSupabaseOrders();
       subscribeToRealtimeCustomer();
     });
@@ -600,14 +661,13 @@
       }
       section.style.display = 'block';
       
-      const state = getSharedState(); const outOfStock = state.outOfStock || [];
       container.innerHTML = featured.map(i => {
-        const isSoldOut = outOfStock.includes(i.id);
-        return '<div class="item-card" style="' + (isSoldOut ? 'opacity:0.65;' : '') + '">' +
-          '<div class="item-img-container"><img src="' + i.img + '" class="item-img" style="' + (isSoldOut ? 'filter: grayscale(100%);' : '') + '">' +
-          (isSoldOut ? '<div style="position:absolute; inset:0; background:rgba(15,23,42,0.6); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:0.85rem;">SOLD OUT</div>' : '') +
+        const soldOut = isItemSoldOut(i.id);
+        return '<div class="item-card" style="' + (soldOut ? 'opacity:0.65;' : '') + '">' +
+          '<div class="item-img-container"><img src="' + i.img + '" class="item-img" style="' + (soldOut ? 'filter: grayscale(100%);' : '') + '">' +
+          (soldOut ? '<div style="position:absolute; inset:0; background:rgba(15,23,42,0.6); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:0.85rem;">SOLD OUT</div>' : '') +
           '</div><div class="item-details"><h4>' + i.name + '</h4><div class="item-price">R' + i.price.toFixed(2) + '</div>' +
-          (isSoldOut ? '<button class="btn-primary small" style="margin-top:.75rem; background:#94a3b8; cursor:not-allowed;" disabled>Sold Out</button>' : '<button onclick="addToCart(\'' + i.id + '\')" class="btn-primary small" style="margin-top:.75rem;">+ Add to Cart</button>') +
+          (soldOut ? '<button class="btn-primary small" style="margin-top:.75rem; background:#94a3b8; cursor:not-allowed;" disabled>Sold Out</button>' : '<button onclick="addToCart(\'' + i.id + '\')" class="btn-primary small" style="margin-top:.75rem;">+ Add to Cart</button>') +
           '</div></div>';
       }).join('');
     }
@@ -658,7 +718,6 @@
         const totalOrdersCount = myOrders.length;
         const lifetimeSpend = myOrders.reduce((acc, o) => acc + Number(o.total || 0), 0);
 
-        // Calculate favourite meal
         const itemFreq = {};
         myOrders.forEach(o => {
           parseOrderItems(o.items).forEach(it => {
@@ -674,9 +733,8 @@
 
         const lastOrderDate = myOrders.length > 0 ? myOrders[0].date || 'Recent' : 'No orders yet';
 
-        // Loyalty Tiers & Progress Bar calculations
         let tierName = 'Bronze Member';
-        let stars = '★☆☆☆☆';
+        let stars = '★★☆☆☆';
         let tierMax = 1000;
         let tierMin = 0;
 
@@ -684,7 +742,7 @@
           tierName = 'Platinum Member';
           stars = '★★★★★';
           tierMin = 6000;
-          tierMax = 10000; // Cap visual progress or represent max
+          tierMax = 10000;
         } else if (pts >= 3000) {
           tierName = 'Gold Member';
           stars = '★★★★☆';
@@ -695,11 +753,6 @@
           stars = '★★★☆☆';
           tierMin = 1000;
           tierMax = 3000;
-        } else {
-          tierName = 'Bronze Member';
-          stars = '★★☆☆☆';
-          tierMin = 0;
-          tierMax = 1000;
         }
 
         const progressPercent = pts >= 6000 ? 100 : Math.min(100, Math.max(0, ((pts - tierMin) / (tierMax - tierMin)) * 100));
@@ -744,7 +797,6 @@
         const catName = det.getAttribute('data-category'); if (catName && det.open) openCategories[catName] = true;
       });
       const q = (document.getElementById('search-input')?.value || '').toLowerCase();
-      const state = getSharedState(); const outOfStock = state.outOfStock || [];
       const cats = ['Chips', 'Chicken Combos', 'Bunny Chows', 'Specials', 'Toasted Sandwiches'];
       const filteredCats = activeCategoryFilter === 'ALL' ? cats : [activeCategoryFilter];
       container.innerHTML = filteredCats.map(cat => {
@@ -752,25 +804,27 @@
         if (items.length === 0) return '';
         const isOpen = openCategories[cat] ? ' open' : '';
         return '<details class="menu-category-dropdown"' + isOpen + ' data-category="' + cat + '"><summary><span>' + cat + '</span><span style="font-size:0.8rem; color:var(--muted); font-weight:normal;">▼ Show / Hide</span></summary><div class="dropdown-content-grid">' + items.map(i => {
-          const isSoldOut = outOfStock.includes(i.id); const isSpecialShining = i.isSpecial;
-          return '<div class="item-card ' + (isSpecialShining ? 'shining-special' : '') + '" style="' + (isSoldOut ? 'opacity:0.65;' : '') + '">' +
-            '<div class="item-img-container"><img src="' + i.img + '" class="item-img" style="' + (isSoldOut ? 'filter: grayscale(100%);' : '') + '">' +
-            (isSoldOut ? '<div style="position:absolute; inset:0; background:rgba(15,23,42,0.6); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:0.85rem;">SOLD OUT</div>' : '') +
-            (isSpecialShining && !isSoldOut ? '<div style="position:absolute; top:8px; right:8px; background:var(--special-gradient); color:#fff; font-size:0.7rem; font-weight:800; padding:0.25rem 0.55rem; border-radius:6px;">★ SPECIAL</div>' : '') +
+          const soldOut = isItemSoldOut(i.id); const isSpecialShining = i.isSpecial;
+          return '<div class="item-card ' + (isSpecialShining ? 'shining-special' : '') + '" style="' + (soldOut ? 'opacity:0.65;' : '') + '">' +
+            '<div class="item-img-container"><img src="' + i.img + '" class="item-img" style="' + (soldOut ? 'filter: grayscale(100%);' : '') + '">' +
+            (soldOut ? '<div style="position:absolute; inset:0; background:rgba(15,23,42,0.6); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:0.85rem;">SOLD OUT</div>' : '') +
+            (isSpecialShining && !soldOut ? '<div style="position:absolute; top:8px; right:8px; background:var(--special-gradient); color:#fff; font-size:0.7rem; font-weight:800; padding:0.25rem 0.55rem; border-radius:6px;">★ SPECIAL</div>' : '') +
             '</div><div class="item-details"><h4>' + i.name + '</h4><div class="item-price">R' + i.price.toFixed(2) + '</div>' +
-            (isSoldOut ? '<button class="btn-primary small" style="margin-top:.75rem; background:#94a3b8; cursor:not-allowed;" disabled>Sold Out</button>' : '<button onclick="addToCart(\'' + i.id + '\')" class="btn-primary small" style="margin-top:.75rem; ' + (isSpecialShining ? 'background:var(--special-gradient); font-weight:800;' : '') + '">+ Add to Cart</button>') +
+            (soldOut ? '<button class="btn-primary small" style="margin-top:.75rem; background:#94a3b8; cursor:not-allowed;" disabled>Sold Out</button>' : '<button onclick="addToCart(\'' + i.id + '\')" class="btn-primary small" style="margin-top:.75rem; ' + (isSpecialShining ? 'background:var(--special-gradient); font-weight:800;' : '') + '">+ Add to Cart</button>') +
             '</div></div>';
         }).join('') + '</div></details>';
       }).join('');
     }
 
     function addToCart(id) {
-      const state = getSharedState();
-      if ((state.outOfStock || []).includes(id)) { alert('Sorry, this item is currently sold out.'); return; }
+      if (isItemSoldOut(id)) {
+        alert('Sorry, this item is currently sold out.');
+        return;
+      }
       const item = catalog.find(i => i.id === id);
-      
-      // COMBO UPSELL ENGINE CHECK: If chicken/combo item added, trigger upsell modal
-      if (item && (item.category === 'Chicken Combos' || item.isChickenCombo || item.name.includes('CHICKEN') || item.name.includes('WINGS'))) {
+      if (!item) return;
+
+      if (item.category === 'Chicken Combos' || item.isChickenCombo || item.name.includes('CHICKEN') || item.name.includes('WINGS')) {
         pendingUpsellItem = item;
         document.getElementById('upsell-modal').style.display = 'flex';
         return;
@@ -780,6 +834,10 @@
     }
 
     function addItemToCartDirect(item) {
+      if (isItemSoldOut(item.id)) {
+        alert('Sorry, ' + item.name + ' is currently sold out.');
+        return;
+      }
       const ex = cart.find(c => c.id === item.id);
       if (ex) ex.qty += 1; else cart.push({ ...item, qty: 1 });
       localStorage.setItem('dcs_cart', JSON.stringify(cart));
@@ -789,7 +847,6 @@
     function selectUpsellDrink(drinkName) {
       if (pendingUpsellItem) {
         addItemToCartDirect(pendingUpsellItem);
-        // Add drink as a special custom cart item
         const drinkItem = { id: 'drink_' + Date.now(), name: '🥤 ' + drinkName + ' (Add-on)', category: 'Drinks', price: 10, qty: 1, img: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=500&q=80' };
         cart.push(drinkItem);
         localStorage.setItem('dcs_cart', JSON.stringify(cart));
@@ -812,6 +869,10 @@
 
     function updateCartItemQty(index, change) {
       if (cart[index]) {
+        if (change > 0 && isItemSoldOut(cart[index].id)) {
+          alert('Sorry, this item just sold out.');
+          return;
+        }
         cart[index].qty += change;
         if (cart[index].qty <= 0) {
           cart.splice(index, 1);
@@ -821,11 +882,27 @@
       }
     }
 
+    function renderCartRecommendations() {
+      const grid = document.getElementById('cart-recommendations-grid');
+      if (!grid) return;
+      const wingsSoldOut = isItemSoldOut('cc6');
+      const chipsSoldOut = isItemSoldOut('ch2');
+
+      grid.innerHTML =
+        `<button onclick="addRecommendation('cc6')" ${wingsSoldOut ? 'disabled' : ''} style="background:${wingsSoldOut ? '#f1f5f9' : '#f8fafc'}; opacity:${wingsSoldOut ? '0.55' : '1'}; border:1px solid var(--border); border-radius:8px; padding:0.5rem; text-align:center; cursor:${wingsSoldOut ? 'not-allowed' : 'pointer'}; font-size:0.75rem; font-weight:700;">🔥 Wings Special<br><span style="color:${wingsSoldOut ? '#dc2626' : 'var(--brand)'}">${wingsSoldOut ? 'SOLD OUT' : 'R35.00'}</span></button>` +
+        `<button onclick="addRecommendation('ch2')" ${chipsSoldOut ? 'disabled' : ''} style="background:${chipsSoldOut ? '#f1f5f9' : '#f8fafc'}; opacity:${chipsSoldOut ? '0.55' : '1'}; border:1px solid var(--border); border-radius:8px; padding:0.5rem; text-align:center; cursor:${chipsSoldOut ? 'not-allowed' : 'pointer'}; font-size:0.75rem; font-weight:700;">🍟 Med Chips<br><span style="color:${chipsSoldOut ? '#dc2626' : 'var(--brand)'}">${chipsSoldOut ? 'SOLD OUT' : 'R20.00'}</span></button>` +
+        `<button onclick="addRecommendation('drink_coke')" style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:0.5rem; text-align:center; cursor:pointer; font-size:0.75rem; font-weight:700;">🥤 Coke<br><span style="color:var(--brand)">R10.00</span></button>`;
+    }
+
     function addRecommendation(itemId) {
       if (itemId === 'drink_coke') {
         const drinkItem = { id: 'drink_rec_' + Date.now(), name: '🥤 Coke (Add-on)', category: 'Drinks', price: 10, qty: 1, img: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=500&q=80' };
         cart.push(drinkItem);
       } else {
+        if (isItemSoldOut(itemId)) {
+          alert('Sorry, this item is currently sold out.');
+          return;
+        }
         const item = catalog.find(i => i.id === itemId);
         if (item) {
           const ex = cart.find(c => c.id === item.id);
@@ -854,16 +931,17 @@
       let sub = cart.reduce((a, b) => a + (b.price * b.qty), 0);
       let discount = isRedeemingPoints ? 20 : 0; if (discount > sub) discount = sub; let finalTotal = sub - discount;
       
-      list.innerHTML = cart.map((i, idx) => 
-        '<div class="cart-row">' +
-          '<div><strong style="font-size:0.9rem;">' + i.name + '</strong><br><span style="color:var(--brand);font-weight:800;font-size:0.85rem">R' + (i.price * i.qty).toFixed(2) + '</span></div>' +
+      list.innerHTML = cart.map((i, idx) => {
+        const soldOutWarning = isItemSoldOut(i.id) ? '<span style="display:inline-block; background:#dc2626; color:#fff; font-size:0.65rem; font-weight:900; padding:0.1rem 0.4rem; border-radius:4px; margin-left:0.35rem;">SOLD OUT</span>' : '';
+        return '<div class="cart-row">' +
+          '<div><strong style="font-size:0.9rem;">' + i.name + soldOutWarning + '</strong><br><span style="color:var(--brand);font-weight:800;font-size:0.85rem">R' + (i.price * i.qty).toFixed(2) + '</span></div>' +
           '<div style="display:flex; align-items:center; gap:0.5rem; background:#f1f5f9; padding:0.25rem 0.5rem; border-radius:8px;">' +
             '<button onclick="updateCartItemQty(' + idx + ', -1)" style="background:#fff; border:1px solid var(--border); width:24px; height:24px; border-radius:6px; font-weight:900; cursor:pointer;">-</button>' +
             '<span style="font-weight:900; font-size:0.9rem; min-width:18px; text-align:center;">' + i.qty + '</span>' +
             '<button onclick="updateCartItemQty(' + idx + ', 1)" style="background:#fff; border:1px solid var(--border); width:24px; height:24px; border-radius:6px; font-weight:900; cursor:pointer;">+</button>' +
           '</div>' +
-        '</div>'
-      ).join('');
+        '</div>';
+      }).join('');
 
       let summaryHtml = '<div style="display:flex; justify-content:space-between; font-size:0.95rem; font-weight:600; margin-bottom:0.3rem"><span>Subtotal:</span><span>R' + sub.toFixed(2) + '</span></div>';
       if (isRedeemingPoints) summaryHtml += '<div style="display:flex; justify-content:space-between; font-size:0.95rem; font-weight:700; color:#059669; margin-bottom:0.3rem"><span>Points Discount:</span><span>-R20.00</span></div>';
@@ -878,6 +956,15 @@
       const now = new Date();
       if (now.getHours() >= 20 || now.getHours() < 7) { alert('We are closed for the evening.'); return; }
       if (!client || cart.length === 0) return;
+
+      // Verify latest stock against Supabase before allowing order submission
+      await fetchStorefrontInventory();
+      const soldOutInCart = cart.filter(item => isItemSoldOut(item.id));
+      if (soldOutInCart.length > 0) {
+        alert('Cannot complete order because the following item(s) just sold out: ' + soldOutInCart.map(i => i.name).join(', ') + '. Please remove them from your cart.');
+        return;
+      }
+
       const instructions = document.getElementById('special-instructions').value.trim();
       const sub = cart.reduce((a, b) => a + (b.price * b.qty), 0);
       let discountApplied = isRedeemingPoints && client.points >= 1000 ? 20 : 0;
@@ -944,6 +1031,11 @@
       const now = new Date(); if (now.getHours() >= 20 || now.getHours() < 7) { alert('Store is closed.'); return; }
       const state = getSharedState(); const o = (state.orders || []).find(x => String(x.id) === String(id));
       if (!o || !confirm('Resubmit this order?')) return;
+      const soldOutItems = parseOrderItems(o.items).filter(it => isItemSoldOut(it.id));
+      if (soldOutItems.length > 0) {
+        alert('Cannot resubmit because ' + soldOutItems.map(i => i.name).join(', ') + ' is currently sold out.');
+        return;
+      }
       const finalTot = Number(o.total || 0); const earned = Math.floor(finalTot / 100) * 5;
       if (client) { if (client.points === undefined) client.points = 0; client.points += earned; localStorage.setItem('dcs_client', JSON.stringify(client)); }
       o.id = 'DCS-' + Date.now(); o.stage = 'received'; o.timestamp = Date.now(); o.earnedPoints = earned; o.currentPoints = client ? client.points : earned;
@@ -966,7 +1058,17 @@
 
     function loadFavoriteToCart(favId) {
       const fav = favorites.find(f => f.id === favId);
-      if (fav) { cart = [...fav.items]; localStorage.setItem('dcs_cart', JSON.stringify(cart)); renderCart(); toggleCartDrawer(); alert('Loaded into cart!'); }
+      if (fav) {
+        const availableItems = fav.items.filter(i => !isItemSoldOut(i.id));
+        if (availableItems.length < fav.items.length) {
+          alert('Note: One or more items from this favorite are currently sold out and were skipped.');
+        }
+        if (availableItems.length === 0) return;
+        cart = [...availableItems];
+        localStorage.setItem('dcs_cart', JSON.stringify(cart));
+        renderCart();
+        toggleCartDrawer();
+      }
     }
 
     function renderRecentOrdersCarousel() {
@@ -999,11 +1101,16 @@
       const state = getSharedState();
       const o = (state.orders || []).find(x => String(x.id) === String(orderId));
       if (o && o.items) {
-        cart = [...o.items];
+        const parsed = parseOrderItems(o.items);
+        const availableItems = parsed.filter(i => !isItemSoldOut(i.id));
+        if (availableItems.length < parsed.length) {
+          alert('Note: Sold out items from that order were skipped.');
+        }
+        if (availableItems.length === 0) return;
+        cart = [...availableItems];
         localStorage.setItem('dcs_cart', JSON.stringify(cart));
         renderCart();
         toggleCartDrawer();
-        alert('Recent order loaded into cart!');
       }
     }
 
