@@ -381,5 +381,67 @@
       renderInventoryGrid(); fetchOrders(); subscribeToRealtimeStaff();
     });
   </script>
+<div id="staff-login-modal" style="position:fixed; inset:0; background:rgba(15,23,42,0.9); z-index:1000; display:flex; align-items:center; justify-content:center; padding:1rem;">
+  <div style="background:#fff; padding:2rem; border-radius:16px; width:100%; max-width:400px; box-shadow:0 25px 50px rgba(0,0,0,0.3);">
+    <h2 style="font-size:1.25rem; font-weight:900; margin-bottom:0.5rem; color:#0f172a;">🔒 Staff & Management Login</h2>
+    <p style="font-size:0.85rem; color:#64748b; margin-bottom:1.25rem;">Select your role and enter your security PIN to access the KDS.</p>
+    <label style="font-size:0.82rem; font-weight:800; color:#64748b;">Select Role</label>
+    <select id="staff-role-select" style="width:100%; padding:0.75rem; border:1px solid #e2e8f0; border-radius:10px; margin-top:0.35rem; margin-bottom:1rem; font-weight:700;">
+      <option value="cashier">Cashier (View Orders)</option>
+      <option value="kitchen">Kitchen (Update Status)</option>
+      <option value="manager">Manager (Inventory & Reports)</option>
+      <option value="owner">Owner (Full Control)</option>
+    </select>
+    <label style="font-size:0.82rem; font-weight:800; color:#64748b;">Security PIN</label>
+    <input type="password" id="staff-pin-input" placeholder="Enter PIN..." style="width:100%; padding:0.75rem; border:1px solid #e2e8f0; border-radius:10px; margin-top:0.35rem; margin-bottom:1.25rem; outline:none;">
+    <button onclick="handleStaffLogin()" style="width:100%; background:linear-gradient(135deg,#f59e0b,#b45309); color:#fff; border:none; padding:0.8rem; border-radius:10px; font-weight:900; cursor:pointer;">Authenticate Access</button>
+  </div>
+</div>
+<script>
+  let currentStaffRole = localStorage.getItem('dcs_staff_role') || null;
+
+  function checkStaffAuth() {
+    const modal = document.getElementById('staff-login-modal');
+    if (currentStaffRole) {
+      modal.style.display = 'none';
+      applyRolePermissions(currentStaffRole);
+    } else {
+      modal.style.display = 'flex';
+    }
+  }
+
+  function handleStaffLogin() {
+    const role = document.getElementById('staff-role-select').value;
+    const pin = document.getElementById('staff-pin-input').value.trim();
+    
+    // Simple PIN validation or Supabase RPC check
+    if ((role === 'owner' && pin === '1234') || (role !== 'owner' && pin.length >= 3)) {
+      currentStaffRole = role;
+      localStorage.setItem('dcs_staff_role', role);
+      document.getElementById('staff-login-modal').style.display = 'none';
+      applyRolePermissions(role);
+      alert('Logged in successfully as ' + role.toUpperCase());
+    } else {
+      alert('Incorrect PIN. (Default Owner PIN for testing: 1234)');
+    }
+  }
+
+  function applyRolePermissions(role) {
+    const stockBtn = document.getElementById('nav-btn-stock');
+    const auditBtn = document.getElementById('nav-btn-audit');
+    
+    if (role === 'cashier') {
+      if (stockBtn) stockBtn.style.display = 'none';
+      if (auditBtn) auditBtn.style.display = 'none';
+    } else if (role === 'kitchen') {
+      if (auditBtn) auditBtn.style.display = 'none';
+    }
+    // Manager and Owner keep full tab visibility
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    checkStaffAuth();
+  });
+</script>
 </body>
 </html>
