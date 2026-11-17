@@ -26,14 +26,14 @@
     .header-title p{font-size:.75rem;color:#94a3b8;margin-top:2px;font-weight:500}
     
     .staff-nav{
-      background:#1e293b; padding:0.6rem 1.5rem; display:flex; gap:1.25rem; align-items:center; 
+      background:#1e293b; padding:0.6rem 1.5rem; display:flex; gap:1rem; align-items:center; 
       border-bottom:1px solid rgba(255,255,255,0.06); position:sticky; top:65px; z-index:110; overflow-x:auto;
     }
     .staff-nav button{
       background:transparent; border:none; color:#cbd5e1; text-decoration:none; font-weight:700; font-size:0.85rem; 
-      padding:0.35rem 0.75rem; border-radius:8px; transition:all 0.2s; white-space:nowrap; cursor:pointer;
+      padding:0.4rem 0.85rem; border-radius:8px; transition:all 0.2s; white-space:nowrap; cursor:pointer;
     }
-    .staff-nav button:hover, .staff-nav button.active{background:rgba(255,255,255,0.12); color:#fff}
+    .staff-nav button:hover, .staff-nav button.active{background:rgba(255,255,255,0.14); color:#fff}
 
     .container{max-width:1650px;margin:1.5rem auto;padding:0 1rem}
     .audio-alert-banner{
@@ -46,10 +46,11 @@
     .dashboard-section { display: block; }
     .dashboard-section.hidden-tab { display: none; }
 
-    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.25rem}
-    .stat-card{background:#fff;border-radius:12px;padding:1rem;border:1px solid var(--border);box-shadow:var(--shadow)}
-    .stat-card h3{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:.3rem;font-weight:800}
-    .stat-card .value{font-size:1.5rem;font-weight:900;color:var(--primary)}
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1rem;margin-bottom:1.25rem}
+    .stat-card{background:#fff;border-radius:12px;padding:1.1rem;border:1px solid var(--border);box-shadow:var(--shadow)}
+    .stat-card h3{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:.35rem;font-weight:800}
+    .stat-card .value{font-size:1.55rem;font-weight:900;color:var(--primary)}
+    .stat-card .sub{font-size:.78rem;color:var(--muted);margin-top:.25rem;font-weight:600}
 
     .kanban-grid{display:grid;grid-template-columns:repeat(5, minmax(0, 1fr));gap:0.85rem;align-items:start}
     @media(max-width:1200px){.kanban-grid{grid-template-columns:repeat(1, minmax(0, 1fr));}}
@@ -61,6 +62,12 @@
     .order-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,0.06)}
     .order-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border)}
     
+    .kitchen-note-highlight{
+      background:#fef08a; border:2px solid #eab308; color:#713f12; padding:0.55rem 0.7rem;
+      border-radius:8px; margin:0.5rem 0; font-size:0.88rem; font-weight:800; line-height:1.35;
+      display:flex; align-items:flex-start; gap:0.45rem; box-shadow:0 2px 6px rgba(234,179,8,0.2);
+    }
+
     .btn-action{width:100%;padding:0.5rem;margin-top:0.4rem;border:none;border-radius:8px;font-weight:800;font-size:0.78rem;cursor:pointer;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.1);transition:transform .1s,opacity .2s}
     .btn-action:hover{opacity:.95}
     .btn-prep{background:var(--brand-gradient)}
@@ -68,7 +75,7 @@
     .btn-complete{background:#059669}
     .btn-cancel{background:#dc2626}
     
-    .audit-section, .inventory-section{background:#fff; border-radius:var(--radius); padding:1.5rem; margin-top:1.5rem; border:1px solid var(--border); box-shadow:var(--shadow);}
+    .panel-card{background:#fff; border-radius:var(--radius); padding:1.5rem; margin-bottom:1.5rem; border:1px solid var(--border); box-shadow:var(--shadow);}
     .audit-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:1rem;}
     input[type="text"]{padding:0.75rem 1rem; border:1px solid var(--border); border-radius:12px; font-size:0.92rem; width:320px; outline:none; color:var(--primary); transition:all .2s}
     input[type="text"]:focus{box-shadow:var(--focus); border-color:var(--brand);}
@@ -84,23 +91,26 @@
       <div class="brand-icon">🍗</div>
       <div class="header-title">
         <h1>Davidsonville Store</h1>
-        <p>Kitchen & Staff KDS Dashboard</p>
+        <p id="active-staff-subtitle">Kitchen & Staff KDS Dashboard</p>
       </div>
     </div>
-    <div style="display:flex; gap:0.85rem; align-items:center;">
-      <button onclick="fetchOrders()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#fff; padding:0.55rem 1.1rem; border-radius:12px; font-weight:800; cursor:pointer; font-size:0.9rem">🔄 Refresh Orders</button>
+    <div style="display:flex; gap:0.75rem; align-items:center;">
+      <button onclick="fetchOrders(); fetchActivityLogs();" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#fff; padding:0.55rem 1rem; border-radius:12px; font-weight:800; cursor:pointer; font-size:0.85rem">🔄 Refresh</button>
+      <button onclick="logoutStaff()" style="background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.4); color:#fca5a5; padding:0.55rem 0.9rem; border-radius:12px; font-weight:800; cursor:pointer; font-size:0.85rem">🚪 Switch Staff</button>
       <span id="live-status-indicator" style="background:#22c55e; width:12px; height:12px; border-radius:50%; display:inline-block; box-shadow:0 0 10px #22c55e" title="Live Sync Active"></span>
     </div>
   </header>
 
   <nav class="staff-nav">
     <button id="nav-btn-kds" class="active" onclick="switchTab('kds')">📊 KDS Overview</button>
+    <button id="nav-btn-reports" onclick="switchTab('reports')">📈 Sales & Product Reports</button>
     <button id="nav-btn-stock" onclick="switchTab('stock')">⚡ Stock Control</button>
-    <button id="nav-btn-audit" onclick="switchTab('audit')">📋 Audit Log & Search</button>
+    <button id="nav-btn-audit" onclick="switchTab('audit')">📋 Audit & Staff Activity</button>
     <button onclick="window.open('index.html', '_blank')" style="margin-left:auto; background:var(--brand); color:#fff; border-radius:8px; padding:0.35rem 0.75rem;">🛒 View Storefront ↗</button>
   </nav>
 
   <div class="container">
+    <!-- TAB 1: KDS KANBAN -->
     <div id="tab-kds" class="dashboard-section">
       <div class="stats-grid">
         <div class="stat-card"><h3>Incoming Orders</h3><div id="stat-received" class="value">0</div></div>
@@ -119,25 +129,124 @@
       </div>
     </div>
 
+    <!-- TAB 2: MANAGEMENT REPORTS & INSIGHTS -->
+    <div id="tab-reports" class="dashboard-section hidden-tab">
+      <div class="panel-card">
+        <h3 style="font-size:1.15rem; font-weight:900; margin-bottom:1rem;">💰 Sales Dashboard (Today)</h3>
+        <div class="stats-grid" style="margin-bottom:0;">
+          <div class="stat-card" style="border-left:4px solid #16a34a;">
+            <h3>Revenue Today</h3>
+            <div id="rep-revenue-today" class="value" style="color:#16a34a;">R0.00</div>
+            <div class="sub">Completed & active orders</div>
+          </div>
+          <div class="stat-card" style="border-left:4px solid #2563eb;">
+            <h3>Orders Today</h3>
+            <div id="rep-orders-today" class="value">0</div>
+            <div class="sub">Valid non-cancelled orders</div>
+          </div>
+          <div class="stat-card" style="border-left:4px solid #d97706;">
+            <h3>Average Order Value</h3>
+            <div id="rep-avg-order" class="value">R0.00</div>
+            <div class="sub">Per customer checkout</div>
+          </div>
+          <div class="stat-card" style="border-left:4px solid #dc2626;">
+            <h3>Cancelled Orders</h3>
+            <div id="rep-cancelled-today" class="value" style="color:#dc2626;">0</div>
+            <div class="sub">Voided today</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:1.5rem; margin-bottom:1.5rem;">
+        <div class="panel-card" style="margin-bottom:0;">
+          <h3 style="font-size:1.1rem; font-weight:900; margin-bottom:1rem;">🍔 Product Performance</h3>
+          <div style="display:flex; flex-direction:column; gap:0.85rem;">
+            <div style="padding:0.85rem; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px;">
+              <div style="font-size:0.72rem; font-weight:800; color:#166534; text-transform:uppercase;">🏆 Best Seller (By Revenue)</div>
+              <div id="rep-best-seller" style="font-size:1.05rem; font-weight:900; color:#0f172a; margin-top:0.2rem;">No sales data yet</div>
+            </div>
+            <div style="padding:0.85rem; background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px;">
+              <div style="font-size:0.72rem; font-weight:800; color:#1e40af; text-transform:uppercase;">🔥 Most Ordered Item (By Qty)</div>
+              <div id="rep-most-ordered" style="font-size:1.05rem; font-weight:900; color:#0f172a; margin-top:0.2rem;">No sales data yet</div>
+            </div>
+            <div style="padding:0.85rem; background:#fef2f2; border:1px solid #fecaca; border-radius:10px;">
+              <div style="font-size:0.72rem; font-weight:800; color:#991b1b; text-transform:uppercase;">📉 Worst Seller (Lowest Qty)</div>
+              <div id="rep-worst-seller" style="font-size:1.05rem; font-weight:900; color:#0f172a; margin-top:0.2rem;">No sales data yet</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-card" style="margin-bottom:0;">
+          <h3 style="font-size:1.1rem; font-weight:900; margin-bottom:1rem;">⏱️ Kitchen Prep Speed & Peak Hours</h3>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.85rem; margin-bottom:1rem;">
+            <div style="padding:0.85rem; background:#f8fafc; border:1px solid var(--border); border-radius:10px;">
+              <div style="font-size:0.72rem; font-weight:800; color:var(--muted); text-transform:uppercase;">Average Prep Time</div>
+              <div id="rep-avg-prep" style="font-size:1.35rem; font-weight:900; color:var(--primary); margin-top:0.2rem;">-- mins</div>
+            </div>
+            <div style="padding:0.85rem; background:#f8fafc; border:1px solid var(--border); border-radius:10px;">
+              <div style="font-size:0.72rem; font-weight:800; color:var(--muted); text-transform:uppercase;">Fastest Prep Time</div>
+              <div id="rep-fastest-prep" style="font-size:1.35rem; font-weight:900; color:#16a34a; margin-top:0.2rem;">-- mins</div>
+            </div>
+          </div>
+          <div style="padding:0.9rem; background:#fffbeb; border:1px solid #fde68a; border-radius:10px;">
+            <div style="font-size:0.75rem; font-weight:800; color:#92400e; text-transform:uppercase; margin-bottom:0.4rem;">⏰ Busiest Peak Hours (From Order History)</div>
+            <div id="rep-peak-hours" style="font-size:0.95rem; font-weight:800; color:#0f172a; line-height:1.5;">Calculating peak windows...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: STOCK CONTROL -->
     <div id="tab-stock" class="dashboard-section hidden-tab">
-      <div class="inventory-section" style="margin-top:0;">
-        <h3 style="font-size:1.15rem; font-weight:900; margin-bottom:1rem;">⚡ Stock Control & "Out of Stock" Toggles</h3>
-        <p style="font-size:0.88rem; color:var(--muted); margin-bottom:1rem;">Click any item to toggle it as Sold Out or Available instantly on the customer storefront.</p>
+      <div class="panel-card">
+        <h3 style="font-size:1.15rem; font-weight:900; margin-bottom:0.5rem;">⚡ Stock Control & "Out of Stock" Toggles</h3>
+        <p style="font-size:0.88rem; color:var(--muted); margin-bottom:1rem;">Click any item to toggle it as Sold Out or Available instantly across all customer devices.</p>
         <div id="inventory-items-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:0.85rem;"></div>
       </div>
     </div>
 
+    <!-- TAB 4: AUDIT & STAFF ACTIVITY LOG -->
     <div id="tab-audit" class="dashboard-section hidden-tab">
-      <div class="audit-section" style="margin-top:0;">
+      <div class="panel-card">
+        <h3 style="font-size:1.15rem; font-weight:900; margin-bottom:0.75rem;">🕵️ Staff Accountability & Activity Log</h3>
+        <p style="font-size:0.85rem; color:var(--muted); margin-bottom:1rem;">Tracks every status update made by kitchen and front-desk staff.</p>
+        <div id="staff-activity-container" style="max-height:280px; overflow-y:auto; font-size:0.86rem; border:1px solid var(--border); border-radius:10px;"></div>
+      </div>
+
+      <div class="panel-card">
         <div class="audit-header">
-          <h3 style="font-size:1.15rem; font-weight:900;">📋 Audit Log & Order Search (Find Lost Orders)</h3>
+          <h3 style="font-size:1.15rem; font-weight:900;">📋 Order Audit Log & Search</h3>
           <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
             <input type="text" id="audit-search-input" placeholder="🔍 Search Order ID, Customer, or Phone..." oninput="renderKanban()">
             <button onclick="ownerClearAuditLogs()" class="btn-action btn-cancel" style="width:auto; padding:0.7rem 1.1rem; margin-top:0; font-size:0.82rem;">🗑️ Owner Clear Logs</button>
           </div>
         </div>
-        <div id="audit-log-container" style="max-height:480px; overflow-y:auto; font-size:0.88rem;"></div>
+        <div id="audit-log-container" style="max-height:420px; overflow-y:auto; font-size:0.88rem;"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- STAFF LOGIN MODAL -->
+  <div id="staff-login-modal" style="position:fixed; inset:0; background:rgba(15,23,42,0.92); z-index:1000; display:flex; align-items:center; justify-content:center; padding:1rem;">
+    <div style="background:#fff; padding:2rem; border-radius:16px; width:100%; max-width:410px; box-shadow:0 25px 50px rgba(0,0,0,0.35);">
+      <h2 style="font-size:1.25rem; font-weight:900; margin-bottom:0.4rem; color:#0f172a;">🔒 Staff & Management Login</h2>
+      <p style="font-size:0.85rem; color:#64748b; margin-bottom:1.25rem;">Enter your name, role, and security PIN to log into the KDS.</p>
+      
+      <label style="font-size:0.8rem; font-weight:800; color:#64748b; text-transform:uppercase;">Your Name (For Activity Log)</label>
+      <input type="text" id="staff-name-input" placeholder="e.g. John, Mary, Sam..." style="width:100%; padding:0.75rem; border:1px solid #e2e8f0; border-radius:10px; margin-top:0.3rem; margin-bottom:0.9rem; font-weight:700;">
+
+      <label style="font-size:0.8rem; font-weight:800; color:#64748b; text-transform:uppercase;">Select Role</label>
+      <select id="staff-role-select" style="width:100%; padding:0.75rem; border:1px solid #e2e8f0; border-radius:10px; margin-top:0.3rem; margin-bottom:0.9rem; font-weight:700;">
+        <option value="cashier">Cashier (View Orders)</option>
+        <option value="kitchen">Kitchen (Update Status)</option>
+        <option value="manager">Manager (Inventory & Reports)</option>
+        <option value="owner">Owner (Full Control)</option>
+      </select>
+
+      <label style="font-size:0.8rem; font-weight:800; color:#64748b; text-transform:uppercase;">Security PIN</label>
+      <input type="password" id="staff-pin-input" placeholder="Enter PIN..." style="width:100%; padding:0.75rem; border:1px solid #e2e8f0; border-radius:10px; margin-top:0.3rem; margin-bottom:1.25rem; outline:none;">
+
+      <button onclick="handleStaffLogin()" style="width:100%; background:linear-gradient(135deg,#f59e0b,#b45309); color:#fff; border:none; padding:0.85rem; border-radius:10px; font-weight:900; cursor:pointer; font-size:0.95rem;">Authenticate Access</button>
     </div>
   </div>
 
@@ -152,9 +261,9 @@
     });
 
     const catalogItemsRef = [
-      { id: 'ch1', name: 'SMALL CHIPS (R10)', category: 'Chips' },
-      { id: 'ch2', name: 'MEDIUM CHIPS (R20)', category: 'Chips' },
-      { id: 'ch3', name: 'LARGE CHIPS (R30)', category: 'Chips' },
+      { id: 'ch1', name: 'SMALL CHIPS', category: 'Chips' },
+      { id: 'ch2', name: 'MEDIUM CHIPS', category: 'Chips' },
+      { id: 'ch3', name: 'LARGE CHIPS', category: 'Chips' },
       { id: 'cc1', name: 'FULL HOUSE COMBO 1', category: 'Chicken Combos' },
       { id: 'cc2', name: 'FULL CHICKEN', category: 'Chicken Combos' },
       { id: 'cc3', name: 'HALF CHICKEN', category: 'Chicken Combos' },
@@ -184,16 +293,29 @@
 
     let audioCtx = null;
     let knownOrderCount = -1;
+    let currentStaffRole = null;
+    let currentStaffName = localStorage.getItem('dcs_staff_name') || 'Staff';
+    let dbInventory = {};
 
     function switchTab(tabName) {
       document.querySelectorAll('.dashboard-section').forEach(sec => sec.classList.add('hidden-tab'));
       document.querySelectorAll('.staff-nav button').forEach(btn => btn.classList.remove('active'));
       if (tabName === 'kds') {
-        document.getElementById('tab-kds').classList.remove('hidden-tab'); document.getElementById('nav-btn-kds').classList.add('active');
+        document.getElementById('tab-kds').classList.remove('hidden-tab');
+        document.getElementById('nav-btn-kds').classList.add('active');
+      } else if (tabName === 'reports') {
+        document.getElementById('tab-reports').classList.remove('hidden-tab');
+        document.getElementById('nav-btn-reports').classList.add('active');
+        renderManagementReports();
       } else if (tabName === 'stock') {
-        document.getElementById('tab-stock').classList.remove('hidden-tab'); document.getElementById('nav-btn-stock').classList.add('active'); renderInventoryGrid();
+        document.getElementById('tab-stock').classList.remove('hidden-tab');
+        document.getElementById('nav-btn-stock').classList.add('active');
+        fetchInventory();
       } else if (tabName === 'audit') {
-        document.getElementById('tab-audit').classList.remove('hidden-tab'); document.getElementById('nav-btn-audit').classList.add('active'); renderKanban();
+        document.getElementById('tab-audit').classList.remove('hidden-tab');
+        document.getElementById('nav-btn-audit').classList.add('active');
+        fetchActivityLogs();
+        renderKanban();
       }
     }
 
@@ -230,6 +352,134 @@
       try { localStorage.setItem(SHARED_KEY, JSON.stringify(state)); } catch (e) {}
     }
 
+    // --- AUTH & RBAC ---
+    async function checkStaffAuth() {
+      const modal = document.getElementById('staff-login-modal');
+      const savedToken = localStorage.getItem('dcs_staff_session_token');
+
+      if (savedToken) {
+        try {
+          const { data: role, error } = await supabaseClient.rpc('validate_staff_session', {
+            check_token: savedToken
+          });
+
+          if (!error && role) {
+            currentStaffRole = role;
+            currentStaffName = localStorage.getItem('dcs_staff_name') || 'Staff';
+            modal.style.display = 'none';
+            applyRolePermissions(role);
+            return;
+          }
+        } catch (err) {
+          console.error('Session validation error:', err);
+        }
+      }
+
+      localStorage.removeItem('dcs_staff_session_token');
+      modal.style.display = 'flex';
+    }
+
+    async function handleStaffLogin() {
+      const name = document.getElementById('staff-name-input').value.trim();
+      const role = document.getElementById('staff-role-select').value;
+      const pin = document.getElementById('staff-pin-input').value.trim();
+      
+      if (!name) { alert('Please enter your name for the shift activity log.'); return; }
+      if (!pin) { alert('Please enter a security PIN.'); return; }
+
+      try {
+        const { data: sessionToken, error } = await supabaseClient.rpc('verify_staff_login', {
+          entered_role: role,
+          entered_pin: pin
+        });
+
+        if (error || !sessionToken) {
+          alert('Incorrect PIN. Access denied.');
+          return;
+        }
+
+        localStorage.setItem('dcs_staff_session_token', sessionToken);
+        localStorage.setItem('dcs_staff_name', name);
+        currentStaffRole = role;
+        currentStaffName = name;
+        document.getElementById('staff-login-modal').style.display = 'none';
+        applyRolePermissions(role);
+      } catch (err) {
+        alert('Authentication failed. Please check your PIN.');
+      }
+    }
+
+    function logoutStaff() {
+      localStorage.removeItem('dcs_staff_session_token');
+      currentStaffRole = null;
+      document.getElementById('staff-pin-input').value = '';
+      document.getElementById('staff-login-modal').style.display = 'flex';
+    }
+
+    function applyRolePermissions(role) {
+      const sub = document.getElementById('active-staff-subtitle');
+      if (sub) sub.innerText = `Logged in: ${currentStaffName} (${role.toUpperCase()})`;
+
+      const stockBtn = document.getElementById('nav-btn-stock');
+      const auditBtn = document.getElementById('nav-btn-audit');
+      const reportsBtn = document.getElementById('nav-btn-reports');
+
+      if (stockBtn) stockBtn.style.display = 'inline-block';
+      if (auditBtn) auditBtn.style.display = 'inline-block';
+      if (reportsBtn) reportsBtn.style.display = 'inline-block';
+
+      if (role === 'cashier') {
+        if (stockBtn) stockBtn.style.display = 'none';
+        if (auditBtn) auditBtn.style.display = 'none';
+        if (reportsBtn) reportsBtn.style.display = 'none';
+      } else if (role === 'kitchen') {
+        if (auditBtn) auditBtn.style.display = 'none';
+        if (reportsBtn) reportsBtn.style.display = 'none';
+      }
+    }
+
+    // --- STAFF ACTIVITY ACCOUNTABILITY ---
+    async function logStaffActivity(orderId, actionLabel) {
+      try {
+        await supabaseClient.from('staff_activity_log').insert({
+          order_id: String(orderId),
+          staff_name: currentStaffName || 'Staff',
+          staff_role: currentStaffRole || 'staff',
+          action: actionLabel
+        });
+      } catch (e) {}
+    }
+
+    async function fetchActivityLogs() {
+      const container = document.getElementById('staff-activity-container');
+      if (!container) return;
+      try {
+        const { data, error } = await supabaseClient
+          .from('staff_activity_log')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (error || !data || data.length === 0) {
+          container.innerHTML = '<p style="padding:1rem; text-align:center; color:var(--muted);">No staff activity logged yet.</p>';
+          return;
+        }
+
+        container.innerHTML = '<table style="width:100%; border-collapse:collapse;">' +
+          '<tr style="background:#f1f5f9; text-align:left; border-bottom:1px solid var(--border); font-weight:800;">' +
+          '<th style="padding:10px;">Staff Member</th><th style="padding:10px;">Action</th><th style="padding:10px;">Order ID</th><th style="padding:10px;">Time</th></tr>' +
+          data.map(row => {
+            const t = new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            return `<tr style="border-bottom:1px solid #f1f5f9;">
+              <td style="padding:10px; font-weight:800; color:var(--primary);">${row.staff_name} <span style="font-size:0.72rem; color:var(--muted);">(${row.staff_role})</span></td>
+              <td style="padding:10px; font-weight:700; color:#059669;">→ ${row.action}</td>
+              <td style="padding:10px; font-weight:800; color:var(--brand);">#${row.order_id}</td>
+              <td style="padding:10px; color:var(--muted);">${t}</td>
+            </tr>`;
+          }).join('') + '</table>';
+      } catch (e) {}
+    }
+
     async function ownerClearAuditLogs() {
       const pin = prompt('Enter Owner Security PIN to clear audit logs:');
       if (!pin) return;
@@ -251,22 +501,49 @@
       saveSharedState(state); renderKanban(); alert('Audit logs cleared permanently.');
     }
 
-    function toggleItemStock(itemId) {
-      let state = getSharedState(); if (!state.outOfStock) state.outOfStock = [];
-      const idx = state.outOfStock.indexOf(itemId);
-      if (idx > -1) state.outOfStock.splice(idx, 1); else state.outOfStock.push(itemId);
-      saveSharedState(state); renderInventoryGrid();
+    // --- CLOUD INVENTORY ---
+    async function fetchInventory() {
+      try {
+        const { data, error } = await supabaseClient.from('inventory').select('*');
+        if (!error && data) {
+          dbInventory = {};
+          data.forEach(row => { dbInventory[row.item_id] = row.available; });
+        }
+      } catch (e) {}
+      renderInventoryGrid();
+    }
+
+    async function toggleItemStock(itemId) {
+      const currentStatus = dbInventory[itemId] !== undefined ? dbInventory[itemId] : true;
+      const newStatus = !currentStatus;
+      try {
+        const { error } = await supabaseClient
+          .from('inventory')
+          .upsert({ item_id: itemId, available: newStatus, updated_at: new Date().toISOString(), updated_by: currentStaffName });
+        if (error) { alert('Failed to update stock status.'); return; }
+        dbInventory[itemId] = newStatus;
+        renderInventoryGrid();
+      } catch (e) {}
     }
 
     function renderInventoryGrid() {
       const container = document.getElementById('inventory-items-grid'); if (!container) return;
-      const state = getSharedState(); const outOfStock = state.outOfStock || [];
       container.innerHTML = catalogItemsRef.map(item => {
-        const isOut = outOfStock.includes(item.id);
-        return '<button onclick="toggleItemStock(\'' + item.id + '\')" style="padding:0.6rem 0.8rem; border-radius:10px; border:1px solid ' + (isOut ? '#ef4444' : '#e2e8f0') + '; background:' + (isOut ? '#fee2e2' : '#f8fafc') + '; cursor:pointer; text-align:left; display:flex; justify-content:space-between; align-items:center; font-weight:700; font-size:0.85rem;"><span style="color:var(--primary);">' + item.name + '</span><span style="font-size:0.75rem; padding:0.2rem 0.5rem; border-radius:6px; background:' + (isOut ? '#dc2626' : '#22c55e') + '; color:#fff;">' + (isOut ? 'SOLD OUT' : 'AVAILABLE') + '</span></button>';
+        const isAvailable = dbInventory[item.id] !== undefined ? dbInventory[item.id] : true;
+        const isOut = !isAvailable;
+        return '<button onclick="toggleItemStock(\'' + item.id + '\')" style="padding:0.65rem 0.85rem; border-radius:10px; border:1px solid ' + (isOut ? '#ef4444' : '#e2e8f0') + '; background:' + (isOut ? '#fee2e2' : '#f8fafc') + '; cursor:pointer; text-align:left; display:flex; justify-content:space-between; align-items:center; font-weight:700; font-size:0.85rem;"><span style="color:var(--primary);">' + item.name + '</span><span style="font-size:0.75rem; padding:0.2rem 0.5rem; border-radius:6px; background:' + (isOut ? '#dc2626' : '#22c55e') + '; color:#fff;">' + (isOut ? 'SOLD OUT' : 'AVAILABLE') + '</span></button>';
       }).join('');
     }
 
+    function subscribeToRealtimeInventory() {
+      try {
+        supabaseClient.channel('staff-realtime-inventory')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, () => fetchInventory())
+          .subscribe();
+      } catch (e) {}
+    }
+
+    // --- ORDERS & KDS ---
     function parseOrderItems(rawItems) {
       if (!rawItems) return []; if (Array.isArray(rawItems)) return rawItems;
       try { const p = JSON.parse(rawItems); if (Array.isArray(p)) return p; return [p]; } catch (e) { return [{ name: rawItems, qty: 1, price: 0 }]; }
@@ -274,10 +551,10 @@
 
     function renderOrderItemsList(itemsInput) {
       const items = parseOrderItems(itemsInput);
-      let html = '<ul style="list-style:none; padding:0; margin:0.25rem 0; font-size:0.78rem;">';
+      let html = '<ul style="list-style:none; padding:0; margin:0.25rem 0; font-size:0.8rem;">';
       for (let i = 0; i < items.length; i++) {
         let item = items[i]; let q = item.qty || item.quantity || 1; let n = item.name || item.title || 'Item'; let p = Number(item.price || 0);
-        html += '<li style="display:flex; justify-content:space-between; padding:0.15rem 0; border-bottom:1px dotted var(--border);"><span><strong>' + q + 'x</strong> ' + n + '</span><span style="font-weight:800;color:var(--brand)">R' + (q * p).toFixed(2) + '</span></li>';
+        html += '<li style="display:flex; justify-content:space-between; padding:0.18rem 0; border-bottom:1px dotted var(--border);"><span><strong>' + q + 'x</strong> ' + n + '</span><span style="font-weight:800;color:var(--brand)">R' + (q * p).toFixed(2) + '</span></li>';
       }
       html += '</ul>'; return html;
     }
@@ -302,20 +579,42 @@
           stage: (o.stage || o.status || 'received').toLowerCase().trim().replace(/_/g, '-'),
           clientName: o.client_name || o.customer_name || 'Customer',
           phone: o.phone || o.customer_phone || '',
-          address: o.address || ''
+          address: o.address || '',
+          prepDuration: o.prep_duration !== undefined && o.prep_duration !== null ? Number(o.prep_duration) : null
         }));
         saveSharedState(state);
       } catch (e) {}
       renderKanban();
+      renderManagementReports();
     }
 
     async function updateOrderStatus(orderId, newStage) {
+      let state = getSharedState();
+      let ord = (state.orders || []).find(o => String(o.id) === String(orderId));
+      let updatePayload = { stage: newStage, status: newStage };
+      let actionText = `Updated to ${newStage.toUpperCase()}`;
+
+      if (newStage === 'preparing') actionText = 'Started Prep';
+      else if (newStage === 'ready') actionText = 'Marked Ready';
+      else if (newStage === 'cancelled') actionText = 'Cancelled Order';
+      else if (newStage === 'completed') {
+        actionText = 'Completed Order';
+        if (ord && ord.timestamp) {
+          const durationMins = Math.max(1, Math.round((Date.now() - Number(ord.timestamp)) / 60000));
+          updatePayload.prep_duration = durationMins;
+          ord.prepDuration = durationMins;
+        }
+      }
+
       try {
-        await supabaseClient.from('orders').update({ stage: newStage, status: newStage }).or(`id.eq.${orderId},order_id.eq.${orderId}`);
+        await supabaseClient.from('orders').update(updatePayload).or(`id.eq.${orderId},order_id.eq.${orderId}`);
       } catch (e) {}
-      let state = getSharedState(); let ord = (state.orders || []).find(o => String(o.id) === String(orderId));
+
+      await logStaffActivity(orderId, actionText);
+
       if (ord) { ord.stage = newStage; saveSharedState(state); }
       fetchOrders();
+      fetchActivityLogs();
     }
 
     function getPrepTimerBadge(timestamp) {
@@ -348,6 +647,108 @@
       return `<span style="display:inline-block; ${style} font-size:0.68rem; font-weight:900; padding:0.22rem 0.55rem; border-radius:6px; letter-spacing:0.5px;">${label}</span>`;
     }
 
+    // --- MANAGEMENT ANALYTICS ENGINE ---
+    function renderManagementReports() {
+      const state = getSharedState();
+      const orders = state.orders || [];
+      const todayStr = new Date().toDateString();
+
+      let revenueToday = 0;
+      let validOrdersToday = 0;
+      let cancelledToday = 0;
+
+      const itemQtyMap = {};
+      const itemRevMap = {};
+      catalogItemsRef.forEach(c => { itemQtyMap[c.name] = 0; itemRevMap[c.name] = 0; });
+
+      const hourBuckets = {};
+      const prepTimes = [];
+
+      orders.forEach(o => {
+        const st = (o.stage || 'received').toLowerCase().trim();
+        const isCancelled = (st === 'cancelled');
+        const orderDate = new Date(o.timestamp || Date.now());
+        const isToday = orderDate.toDateString() === todayStr;
+
+        if (isToday) {
+          if (isCancelled) {
+            cancelledToday++;
+          } else {
+            validOrdersToday++;
+            revenueToday += Number(o.total || 0);
+          }
+        }
+
+        if (!isCancelled) {
+          // Track Peak Hours
+          const hr = orderDate.getHours();
+          hourBuckets[hr] = (hourBuckets[hr] || 0) + 1;
+
+          // Track Item Sales
+          const items = parseOrderItems(o.items);
+          items.forEach(it => {
+            const rawName = String(it.name || '').trim();
+            const q = Number(it.qty || it.quantity || 1);
+            const rev = q * Number(it.price || 0);
+            itemQtyMap[rawName] = (itemQtyMap[rawName] || 0) + q;
+            itemRevMap[rawName] = (itemRevMap[rawName] || 0) + rev;
+          });
+        }
+
+        if (o.prepDuration !== null && o.prepDuration > 0) {
+          prepTimes.push(o.prepDuration);
+        }
+      });
+
+      // Sales KPIs
+      const avgOrderVal = validOrdersToday > 0 ? (revenueToday / validOrdersToday) : 0;
+      document.getElementById('rep-revenue-today').innerText = 'R' + revenueToday.toFixed(2);
+      document.getElementById('rep-orders-today').innerText = validOrdersToday;
+      document.getElementById('rep-avg-order').innerText = 'R' + avgOrderVal.toFixed(2);
+      document.getElementById('rep-cancelled-today').innerText = cancelledToday;
+
+      // Best, Most Ordered, Worst Seller
+      const revEntries = Object.entries(itemRevMap).filter(([_, r]) => r > 0).sort((a, b) => b[1] - a[1]);
+      const qtyEntries = Object.entries(itemQtyMap).sort((a, b) => b[1] - a[1]);
+
+      document.getElementById('rep-best-seller').innerText = revEntries.length > 0
+        ? `${revEntries[0][0]} (R${revEntries[0][1].toFixed(2)})`
+        : 'No sales recorded yet';
+
+      document.getElementById('rep-most-ordered').innerText = (qtyEntries.length > 0 && qtyEntries[0][1] > 0)
+        ? `${qtyEntries[0][0]} (${qtyEntries[0][1]} sold)`
+        : 'No sales recorded yet';
+
+      const worstEntry = qtyEntries.length > 0 ? qtyEntries[qtyEntries.length - 1] : null;
+      document.getElementById('rep-worst-seller').innerText = worstEntry
+        ? `${worstEntry[0]} (${worstEntry[1]} sold)`
+        : 'No data available';
+
+      // Prep Duration Stats
+      if (prepTimes.length > 0) {
+        const avgPrep = Math.round(prepTimes.reduce((a, b) => a + b, 0) / prepTimes.length);
+        const fastPrep = Math.min(...prepTimes);
+        document.getElementById('rep-avg-prep').innerText = `${avgPrep} mins`;
+        document.getElementById('rep-fastest-prep').innerText = `${fastPrep} mins`;
+      } else {
+        document.getElementById('rep-avg-prep').innerText = '-- mins';
+        document.getElementById('rep-fastest-prep').innerText = '-- mins';
+      }
+
+      // Peak Hours Formatting
+      const sortedHours = Object.entries(hourBuckets).sort((a, b) => b[1] - a[1]).slice(0, 3);
+      if (sortedHours.length > 0) {
+        document.getElementById('rep-peak-hours').innerHTML = sortedHours.map(([hrStr, count]) => {
+          const h = Number(hrStr);
+          const start = String(h).padStart(2, '0') + ':00';
+          const end = String((h + 1) % 24).padStart(2, '0') + ':00';
+          return `<div>🔥 <strong>${start} - ${end}</strong> (${count} orders)</div>`;
+        }).join('');
+      } else {
+        document.getElementById('rep-peak-hours').innerText = 'Not enough order timestamps yet.';
+      }
+    }
+
     function renderKanban() {
       const state = getSharedState(); const orders = state.orders || [];
       const searchQuery = (document.getElementById('audit-search-input')?.value || '').toLowerCase().trim();
@@ -358,7 +759,7 @@
       };
       const counts = { 'received': 0, 'preparing': 0, 'ready': 0, 'completed': 0, 'cancelled': 0 };
       for (let k in cols) { if (cols[k]) cols[k].innerHTML = ''; }
-      let auditHtml = '<table style="width:100%; border-collapse:collapse;"><tr style="background:#f1f5f9; text-align:left; border-bottom:1px solid var(--border); font-weight:800"><th style="padding:10px;">Order ID</th><th style="padding:10px;">Customer</th><th style="padding:10px;">Phone</th><th style="padding:10px;">Status</th><th style="padding:10px;">Total</th><th style="padding:10px;">Time</th></tr>';
+      let auditHtml = '<table style="width:100%; border-collapse:collapse;"><tr style="background:#f1f5f9; text-align:left; border-bottom:1px solid var(--border); font-weight:800"><th style="padding:10px;">Order ID</th><th style="padding:10px;">Customer</th><th style="padding:10px;">Phone</th><th style="padding:10px;">Status</th><th style="padding:10px;">Prep Time</th><th style="padding:10px;">Total</th><th style="padding:10px;">Time</th></tr>';
       let filteredAuditCount = 0;
 
       orders.forEach(o => {
@@ -372,11 +773,16 @@
         const matchesSearch = !searchQuery || String(o.id).toLowerCase().includes(searchQuery) || String(o.clientName).toLowerCase().includes(searchQuery) || String(o.phone).includes(searchQuery);
         if (matchesSearch) {
           filteredAuditCount++;
-          auditHtml += '<tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px; font-weight:900; color:var(--brand);">#' + o.id + '</td><td style="padding:10px; font-weight:600">' + o.clientName + '</td><td style="padding:10px;">' + o.phone + '</td><td style="padding:10px; font-weight:800; text-transform:uppercase; font-size:0.75rem;">' + st + '</td><td style="padding:10px; font-weight:800;">R' + Number(o.total).toFixed(2) + '</td><td style="padding:10px; color:var(--muted);">' + orderDate.toLocaleString() + '</td></tr>';
+          const prepDisplay = o.prepDuration ? `${o.prepDuration} mins` : '-';
+          auditHtml += '<tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px; font-weight:900; color:var(--brand);">#' + o.id + '</td><td style="padding:10px; font-weight:600">' + o.clientName + '</td><td style="padding:10px;">' + o.phone + '</td><td style="padding:10px; font-weight:800; text-transform:uppercase; font-size:0.75rem;">' + st + '</td><td style="padding:10px; font-weight:700;">' + prepDisplay + '</td><td style="padding:10px; font-weight:800;">R' + Number(o.total).toFixed(2) + '</td><td style="padding:10px; color:var(--muted);">' + orderDate.toLocaleString() + '</td></tr>';
         }
         if (st === 'completed' || st === 'cancelled') return;
 
-        let notesHtml = o.instructions ? '<div style="font-size:0.72rem; background:#fffbeb; padding:0.25rem 0.5rem; border-left:3px solid var(--brand); margin-bottom:0.4rem; border-radius:4px"><strong>Note:</strong> ' + o.instructions + '</div>' : '';
+        // HIGHLIGHTED KITCHEN NOTE
+        let notesHtml = o.instructions
+          ? `<div class="kitchen-note-highlight"><span>⚠️</span><div><strong>KITCHEN NOTE:</strong> ${o.instructions}</div></div>`
+          : '';
+
         let btnHtml = '';
         if (st === 'received') btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'preparing\')" class="btn-action btn-prep">🔥 Start Prep</button>';
         else if (st === 'preparing') btnHtml = '<button onclick="updateOrderStatus(\'' + o.id + '\', \'ready\')" class="btn-action btn-ready">✅ Ready</button>';
@@ -405,96 +811,21 @@
 
     function subscribeToRealtimeStaff() {
       try {
-        supabaseClient.channel('staff-realtime-orders').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => { playKitchenChime(); fetchOrders(); }).subscribe();
+        supabaseClient.channel('staff-realtime-orders')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => { playKitchenChime(); fetchOrders(); })
+          .subscribe();
       } catch (e) {}
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      renderInventoryGrid(); fetchOrders(); subscribeToRealtimeStaff();
+      checkStaffAuth();
+      fetchInventory();
+      fetchOrders();
+      fetchActivityLogs();
+      subscribeToRealtimeStaff();
+      subscribeToRealtimeInventory();
       setInterval(() => renderKanban(), 30000);
     });
   </script>
-<div id="staff-login-modal" style="position:fixed; inset:0; background:rgba(15,23,42,0.9); z-index:1000; display:flex; align-items:center; justify-content:center; padding:1rem;">
-  <div style="background:#fff; padding:2rem; border-radius:16px; width:100%; max-width:400px; box-shadow:0 25px 50px rgba(0,0,0,0.3);">
-    <h2 style="font-size:1.25rem; font-weight:900; margin-bottom:0.5rem; color:#0f172a;">🔒 Staff & Management Login</h2>
-    <p style="font-size:0.85rem; color:#64748b; margin-bottom:1.25rem;">Select your role and enter your security PIN to access the KDS.</p>
-    <label style="font-size:0.82rem; font-weight:800; color:#64748b;">Select Role</label>
-    <select id="staff-role-select" style="width:100%; padding:0.75rem; border:1px solid #e2e8f0; border-radius:10px; margin-top:0.35rem; margin-bottom:1rem; font-weight:700;">
-      <option value="cashier">Cashier (View Orders)</option>
-      <option value="kitchen">Kitchen (Update Status)</option>
-      <option value="manager">Manager (Inventory & Reports)</option>
-      <option value="owner">Owner (Full Control)</option>
-    </select>
-    <label style="font-size:0.82rem; font-weight:800; color:#64748b;">Security PIN</label>
-    <input type="password" id="staff-pin-input" placeholder="Enter PIN..." style="width:100%; padding:0.75rem; border:1px solid #e2e8f0; border-radius:10px; margin-top:0.35rem; margin-bottom:1.25rem; outline:none;">
-    <button onclick="handleStaffLogin()" style="width:100%; background:linear-gradient(135deg,#f59e0b,#b45309); color:#fff; border:none; padding:0.8rem; border-radius:10px; font-weight:900; cursor:pointer;">Authenticate Access</button>
-  </div>
-</div>
-<script>
-  let currentStaffRole = localStorage.getItem('dcs_staff_role') || null;
-
-  function checkStaffAuth() {
-    const modal = document.getElementById('staff-login-modal');
-    if (currentStaffRole) {
-      modal.style.display = 'none';
-      applyRolePermissions(currentStaffRole);
-    } else {
-      modal.style.display = 'flex';
-    }
-  }
-
-  async function handleStaffLogin() {
-    const role = document.getElementById('staff-role-select').value;
-    const pin = document.getElementById('staff-pin-input').value.trim();
-    
-    if (!pin) {
-      alert('Please enter a security PIN.');
-      return;
-    }
-
-    if (role === 'owner') {
-      try {
-        const { data: isValid, error } = await supabaseClient.rpc('verify_owner_pin', {
-          entered_pin: pin
-        });
-        if (error || !isValid) {
-          alert('Incorrect Owner PIN. Access denied.');
-          return;
-        }
-      } catch (err) {
-        console.error('RPC Error:', err);
-        alert('Authentication failed due to a network error.');
-        return;
-      }
-    } else {
-      if (pin.length < 3) {
-        alert('Please enter a valid staff PIN.');
-        return;
-      }
-    }
-
-    currentStaffRole = role;
-    localStorage.setItem('dcs_staff_role', role);
-    document.getElementById('staff-login-modal').style.display = 'none';
-    applyRolePermissions(role);
-    alert('Logged in successfully as ' + role.toUpperCase());
-  }
-
-  function applyRolePermissions(role) {
-    const stockBtn = document.getElementById('nav-btn-stock');
-    const auditBtn = document.getElementById('nav-btn-audit');
-    
-    if (role === 'cashier') {
-      if (stockBtn) stockBtn.style.display = 'none';
-      if (auditBtn) auditBtn.style.display = 'none';
-    } else if (role === 'kitchen') {
-      if (auditBtn) auditBtn.style.display = 'none';
-    }
-  }
-
-  window.addEventListener('DOMContentLoaded', () => {
-    checkStaffAuth();
-  });
-</script>
 </body>
 </html>
