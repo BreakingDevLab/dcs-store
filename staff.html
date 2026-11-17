@@ -234,15 +234,6 @@
       const pin = prompt('Enter Owner Security PIN to clear audit logs:');
       if (!pin) return;
       try {
-async function verifyPinAndClearLogs() {
-  const pin = prompt('Enter Owner Security PIN to clear audit logs:');
-  if (!pin) return;
-
-  try {
-    // Call the Supabase RPC function
-    const { data: isValid, error } = await supabaseClient.rpc('verify_owner_pin', {
-      entered_pin: pin
-    });
 
     if (error || !isValid) {
       alert('Incorrect Owner PIN. Action denied.');
