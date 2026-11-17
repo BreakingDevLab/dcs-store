@@ -589,7 +589,6 @@
         }
       } catch (e) {}
       
-      // Decoupled clean update
       renderTrackers();
       renderProfileData();
       renderRecentOrdersCarousel();
@@ -696,7 +695,7 @@
       if (!name || !phone || phone.length < 10 || !address) { alert('Please fill all fields and enter a valid SA phone number.'); return; }
       client = { name, phone, address, points: 0 };
       try {
-        const { error } = await supabaseClient.from('clients').upsert({ phone: client.phone, name: client.name, address: client.address, points: 0, updated_at: new Date().toISOString() });
+        const { error } = await supabaseClient.from('clients').upsert({ phone: client.phone, name: client.name, address: client.address, points: 0 });
         if (error) { alert('Registration error: ' + error.message); return; }
         localStorage.setItem('dcs_client', JSON.stringify(client));
         renderProfileData();
@@ -717,7 +716,6 @@
       alert('Logged out');
     }
 
-    // --- DECOUPLED RENDER FUNCTIONS (FIXED RECURSION & LOOPS) ---
     function renderProfileData() {
       const box = document.getElementById('client-details');
       const btn = document.getElementById('checkout-btn');
@@ -1004,7 +1002,7 @@
       client.points += earnedPoints;
       localStorage.setItem('dcs_client', JSON.stringify(client));
       try {
-        await supabaseClient.from('clients').upsert({ phone: client.phone, name: client.name, address: client.address, points: client.points, updated_at: new Date().toISOString() });
+        await supabaseClient.from('clients').upsert({ phone: client.phone, name: client.name, address: client.address, points: client.points });
       } catch (e) {}
       let state = getSharedState(); if (!state.orders) state.orders = [];
       const formattedOrderId = 'DCS-' + Date.now();
