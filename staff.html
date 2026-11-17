@@ -351,7 +351,7 @@
       return html;
     }
 
-    async function fetchOrders() {
+async function fetchOrders() {
       if (isUpdatingStatus) return; 
       let state = getSharedState();
       try {
@@ -390,7 +390,7 @@
             earnedPoints: o.earnedPoints !== undefined ? o.earnedPoints : Math.floor(tot / 100) * 5,
             currentPoints: o.currentPoints !== undefined ? o.currentPoints : 0,
             stage: rawStage,
-            clientName: o.customer_name || o.client_name || 'Customer',
+            clientName: o.customer_name || o.client_name || o.clientName || 'Customer',
             phone: o.phone || ''
           };
         });
