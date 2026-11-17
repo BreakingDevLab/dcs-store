@@ -560,14 +560,15 @@
     }
     window.renderKanban = renderKanban;
 
-    function subscribeToRealtimeStaff() {
+   function subscribeToRealtimeStaff() {
       try {
         supabaseClient
           .channel('staff-realtime-orders')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
             if (!isUpdatingStatus) {
               playKitchenChime();
               fetchOrders();
+              renderKanban(); // <--- Forces the KDS columns to redraw immediately!
             }
           })
           .subscribe();
