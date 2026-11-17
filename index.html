@@ -391,7 +391,6 @@
       { id: 'ts5', name: 'BACON, EGG & CHEESE', category: 'Toasted Sandwiches', price: 38, img: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?auto=format&fit=crop&w=500&q=80' }
     ];
 
-    // --- CLOUD INVENTORY SYNC (FIXED: DIRECT FROM SUPABASE) ---
     function isItemSoldOut(itemId) {
       if (!itemId) return false;
       return dbInventory[itemId] === false;
@@ -406,9 +405,7 @@
             dbInventory[row.item_id] = row.available;
           });
         }
-      } catch (e) {
-        console.error('Inventory fetch error:', e);
-      }
+      } catch (e) {}
       updateHeroSpecialStatus();
       renderFeaturedProducts();
       renderCatalog();
@@ -591,8 +588,10 @@
           saveSharedState(state);
         }
       } catch (e) {}
-      renderLiveOrderTrackersUI();
-      renderClientProfile();
+      
+      // Decoupled clean update
+      renderTrackers();
+      renderProfileData();
       renderRecentOrdersCarousel();
     }
 
@@ -606,13 +605,13 @@
       checkStoreOperatingHours();
       renderCategoryChips();
       renderFeaturedProducts();
-      renderClientProfile();
+      renderProfileData();
       renderCatalog();
       renderCart();
       renderCartRecommendations();
       renderFavorites();
       renderOrderHistory();
-      renderLiveOrderTrackersUI();
+      renderTrackers();
       renderRecentOrdersCarousel();
       fetchStorefrontInventory();
       subscribeToRealtimeInventory();
@@ -681,7 +680,11 @@
         if (error || !data) { alert('Account not found with number ' + phone + '. Please register first.'); return; }
         client = { name: data.name, phone: data.phone, address: data.address, points: data.points || 0 };
         localStorage.setItem('dcs_client', JSON.stringify(client));
-        renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); renderRecentOrdersCarousel(); alert('Welcome back, ' + client.name + '!');
+        renderProfileData();
+        renderTrackers();
+        renderOrderHistory();
+        renderRecentOrdersCarousel();
+        alert('Welcome back, ' + client.name + '!');
       } catch (err) { alert('Login failed.'); }
     }
 
@@ -696,16 +699,26 @@
         const { error } = await supabaseClient.from('clients').upsert({ phone: client.phone, name: client.name, address: client.address, points: 0, updated_at: new Date().toISOString() });
         if (error) { alert('Registration error: ' + error.message); return; }
         localStorage.setItem('dcs_client', JSON.stringify(client));
-        renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); renderRecentOrdersCarousel(); alert('Account registered successfully!');
+        renderProfileData();
+        renderTrackers();
+        renderOrderHistory();
+        renderRecentOrdersCarousel();
+        alert('Account registered successfully!');
       } catch (err) { alert('Registration failed.'); }
     }
 
     function logoutClient() {
       client = null; localStorage.removeItem('dcs_client'); isRedeemingPoints = false;
-      renderClientProfile(); renderCart(); renderLiveOrderTrackersUI(); renderOrderHistory(); renderRecentOrdersCarousel(); alert('Logged out');
+      renderProfileData();
+      renderCart();
+      renderTrackers();
+      renderOrderHistory();
+      renderRecentOrdersCarousel();
+      alert('Logged out');
     }
 
-    function renderClientProfile() {
+    // --- DECOUPLED RENDER FUNCTIONS (FIXED RECURSION & LOOPS) ---
+    function renderProfileData() {
       const box = document.getElementById('client-details');
       const btn = document.getElementById('checkout-btn');
       const now = new Date(); const isClosed = (now.getHours() >= 20 || now.getHours() < 7);
@@ -786,7 +799,23 @@
         document.getElementById('recent-orders-carousel-panel').style.display = 'none';
         btn.disabled = true; btn.innerText = 'Login to Order';
       }
-      renderCart();
+    }
+
+    function renderTrackers() {
+      const container = document.getElementById('active-orders-tracker-container');
+      const panel = document.getElementById('customer-tracker-panel');
+      const trackerBody = document.getElementById('live-tracker-body');
+      const state = getSharedState();
+      const myOrders = (state.orders || []).filter(o => client && cleanAndValidatePhone(String(o.phone || '')) === client.phone.trim());
+      const active = myOrders.filter(o => {
+        const st = (o.stage || o.status || 'received').toLowerCase().trim();
+        return st !== 'order-completed' && st !== 'completed' && st !== 'cancelled';
+      });
+      const badgeEl = document.getElementById('header-orders-badge');
+      if (badgeEl) badgeEl.innerText = active.length;
+      if (panel) panel.style.display = (client && active.length > 0) ? 'block' : 'none';
+      if (container) container.innerHTML = active.length ? active.map(buildOrderCardHTML).join('') : '<p style="font-size:0.85rem; color:var(--muted);">No active orders.</p>';
+      if (trackerBody) trackerBody.innerHTML = active.length ? active.map(buildOrderCardHTML).join('') : '<p style="font-size:0.9rem; color:var(--muted); text-align:center; padding:1.5rem 0;">No active orders found.</p>';
     }
 
     function renderCatalog() {
@@ -957,7 +986,6 @@
       if (now.getHours() >= 20 || now.getHours() < 7) { alert('We are closed for the evening.'); return; }
       if (!client || cart.length === 0) return;
 
-      // Verify latest stock against Supabase before allowing order submission
       await fetchStorefrontInventory();
       const soldOutInCart = cart.filter(item => isItemSoldOut(item.id));
       if (soldOutInCart.length > 0) {
@@ -992,7 +1020,12 @@
       postOrderToSupabase(newOrder);
       cart = []; localStorage.removeItem('dcs_cart'); isRedeemingPoints = false;
       document.getElementById('special-instructions').value = '';
-      toggleCartDrawer(); renderCart(); renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); renderRecentOrdersCarousel();
+      toggleCartDrawer(); 
+      renderCart(); 
+      renderProfileData();
+      renderTrackers();
+      renderOrderHistory(); 
+      renderRecentOrdersCarousel();
       showOrderPlacedNotification(newOrder.id); showDigitalReceipt(newOrder);
     }
 
@@ -1040,7 +1073,11 @@
       if (client) { if (client.points === undefined) client.points = 0; client.points += earned; localStorage.setItem('dcs_client', JSON.stringify(client)); }
       o.id = 'DCS-' + Date.now(); o.stage = 'received'; o.timestamp = Date.now(); o.earnedPoints = earned; o.currentPoints = client ? client.points : earned;
       state.orders.unshift(o); saveSharedState(state); postOrderToSupabase(o);
-      renderClientProfile(); renderLiveOrderTrackersUI(); renderOrderHistory(); renderRecentOrdersCarousel(); alert('Order resubmitted!');
+      renderProfileData();
+      renderTrackers();
+      renderOrderHistory(); 
+      renderRecentOrdersCarousel(); 
+      alert('Order resubmitted!');
     }
 
     function saveOrderAsFavorite(id) {
@@ -1119,7 +1156,11 @@
       const userPhone = cleanAndValidatePhone(client.phone);
       try { await supabaseClient.from('orders').delete().eq('phone', userPhone); } catch (e) {}
       let state = getSharedState(); state.orders = (state.orders || []).filter(o => cleanAndValidatePhone(String(o.phone || '')) !== userPhone);
-      saveSharedState(state); renderOrderHistory(); renderLiveOrderTrackersUI(); renderRecentOrdersCarousel(); alert('Order history cleared.');
+      saveSharedState(state); 
+      renderOrderHistory(); 
+      renderTrackers(); 
+      renderRecentOrdersCarousel(); 
+      alert('Order history cleared.');
     }
 
     function renderOrderHistory() {
@@ -1128,26 +1169,6 @@
       const myOrders = (state.orders || []).filter(o => client && cleanAndValidatePhone(String(o.phone || '')) === client.phone.trim());
       if (myOrders.length === 0) { container.innerHTML = '<p style="font-size:0.85rem; color:var(--muted);">No past orders found.</p>'; return; }
       container.innerHTML = myOrders.map(o => '<div style="padding:.6rem 0; border-bottom:1px dashed var(--border);"><div style="display:flex; justify-content:space-between; align-items:center;"><div><strong style="color:var(--primary);">#' + o.id + '</strong> (' + o.date + ')<br><span style="font-size:0.75rem; color:var(--brand); font-weight:bold;">Status: ' + (o.stage || 'received').toUpperCase() + '</span></div><div style="display:flex; gap:6px;"><button onclick="showDigitalReceiptFromId(\'' + o.id + '\')" style="font-size:0.72rem; font-weight:800; padding:0.35rem 0.6rem; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">🧾 Slip</button></div></div>' + renderOrderItemsList(o.items) + '</div>').join('');
-    }
-
-    function renderLiveOrderTrackersUI() {
-      const container = document.getElementById('active-orders-tracker-container');
-      const panel = document.getElementById('customer-tracker-panel');
-      const trackerBody = document.getElementById('live-tracker-body');
-      const state = getSharedState();
-      const myOrders = (state.orders || []).filter(o => client && cleanAndValidatePhone(String(o.phone || '')) === client.phone.trim());
-      const active = myOrders.filter(o => {
-        const st = (o.stage || o.status || 'received').toLowerCase().trim();
-        return st !== 'order-completed' && st !== 'completed' && st !== 'cancelled';
-      });
-      const badgeEl = document.getElementById('header-orders-badge');
-      if (badgeEl) badgeEl.innerText = active.length;
-      if (panel) panel.style.display = (client && active.length > 0) ? 'block' : 'none';
-      if (container) container.innerHTML = active.length ? active.map(buildOrderCardHTML).join('') : '<p style="font-size:0.85rem; color:var(--muted);">No active orders.</p>';
-      if (trackerBody) trackerBody.innerHTML = active.length ? active.map(buildOrderCardHTML).join('') : '<p style="font-size:0.9rem; color:var(--muted); text-align:center; padding:1.5rem 0;">No active orders found.</p>';
-      renderOrderHistory();
-      renderRecentOrdersCarousel();
-      renderClientProfile();
     }
   </script>
 </body>
